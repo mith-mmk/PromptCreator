@@ -1,6 +1,6 @@
 --prompt
 "{{masterpiece}}, {{{best quality}}}, {{ultra-detailed}}, {{illustration}}, {{disheveled hair}},
-,$1,$2,a blonde twin-tail girl wearing school uniform in falling cherry blossoms,wind,
+,a $1,$2,girl wearing school uniform in falling cherry blossoms,wind,
 1girl, solo"
 --negative_prompt
 "longbody, lowres, bad anatomy, bad hands, missing fingers,
