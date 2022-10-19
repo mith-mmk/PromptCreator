@@ -90,7 +90,7 @@ for i in x:
             j.extend(j2)
     for n,k in enumerate(j):
         rep = '$' + str(n+1)
-        new_prompt = new_prompt.replace(rep,appends[n][j[n]])
+        new_prompt = new_prompt.replace(rep,str(appends[n][j[n]]))
     if args.output is None:
         print(new_prompt)
     else:
