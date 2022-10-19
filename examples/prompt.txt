@@ -4,7 +4,7 @@
 1girl, solo"
 --negative_prompt
 "longbody, lowres, bad anatomy, bad hands, missing fingers,
-text, error,heart_mark,signature, watermark, username, blurry, artist name
+text, error,heart_mark,signature, watermark, username, blurry, artist name,
 pubic hair,extra digit, fewer digits, cropped, worst quality,
 low quality,(((bad hands)))"
 --seed 2027904422
