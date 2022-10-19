@@ -1,0 +1,34 @@
+appends:
+    -
+       - black eyes
+       - blue eyes
+       - white eyes
+    -
+       - blonde
+       - brown 
+       - pink twin-tail
+command:
+    prompt: "((masterpiece)), (((best quality))), ((ultra-detailed)), ((illustration)), ((disheveled hair)),$1,$2,a blonde twin-tail girl wearing school uniform in falling cherry blossoms,wind1girl, solo"
+    negative_prompt: "longbody, lowres, bad anatomy, bad hands, missing fingers,text, error,heart_mark,signature, watermark, username, blurry, artist namepubic hair,extra digit, fewer digits, cropped, worst quality,low quality,{{{bad hands}}}"
+    seed: -1
+    width: 640
+    height: 448
+    cfg_scale: 7.5
+
+#    sd_model: None
+#    outpath_samples: process_string_tag
+#    outpath_grids: process_string_tag
+#    prompt_for_display: process_string_tag
+#    styles: process_string_tag
+#    subseed_strength: process_float_tag
+#    subseed: process_int_tag
+#    seed_resize_from_h: process_int_tag
+#    seed_resize_from_w: process_int_tag
+#    sampler_index: process_int_tag
+#    batch_size: process_int_tag
+#    n_iter: process_int_tag
+#    steps: process_int_tag
+#    restore_faces: process_boolean_tag
+#    tiling: process_boolean_tag
+#    do_not_save_samples: process_boolean_tag
+#    do_not_save_grid: process_boolean_ta
