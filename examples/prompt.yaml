@@ -14,6 +14,7 @@ command:
     width: 640
     height: 448
     cfg_scale: 7.5
+    steps: 20
 
 #    sd_model: None
 #    outpath_samples: process_string_tag
@@ -27,7 +28,6 @@ command:
 #    sampler_index: process_int_tag
 #    batch_size: process_int_tag
 #    n_iter: process_int_tag
-#    steps: process_int_tag
 #    restore_faces: process_boolean_tag
 #    tiling: process_boolean_tag
 #    do_not_save_samples: process_boolean_tag
