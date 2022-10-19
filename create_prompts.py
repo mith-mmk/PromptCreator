@@ -74,13 +74,14 @@ for i in x:
     new_prompt = prompts
     j = list(i)
     for k in (range(2,len(appends))):
-        a,b = j[0]
         if len(j) == 2:
+            a,b = j[0]
             if type(a) is int:
                 j = [a,b,j[1]]
             else:
                 j = [a[0],a[1],b,j[1]]                    
-        else:
+        elif type(j[0]) != int:
+            a,b = j[0]
             j2=j[1:]
             if type(a) is int:
                 j = [a,b]
