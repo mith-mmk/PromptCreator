@@ -3,7 +3,7 @@ import yaml
 import argparse
 import itertools as it
 
-def yamlParse(filename):
+def yaml_parse(filename):
     with open(filename) as f:
         yml = yaml.safe_load(f)
     command = yml['command']
@@ -16,7 +16,7 @@ def yamlParse(filename):
             prompts = prompts + '--' + key + ' "' + item + '" '
         else:
             prompts = prompts + '--' + key + ' ' + str(item) + ' '
-    return (prompts, appends)
+    return (prompts, appends, yml)
 
 def readFile(filename):
     strs = []
@@ -25,6 +25,45 @@ def readFile(filename):
             str = str.replace('\n','')
             strs.append(str)
     return strs
+
+def prompt_multiple(prompts,appends,console_mode):
+    x = list(range(0,len(appends[0])))
+    if len(appends) >= 2:
+        for i in range(1,len(appends)):
+            a = list(range(0, len(appends[i])))
+            x = list(it.product(x,a))
+
+    output_text = ''
+    for i in x:
+        new_prompt = prompts
+        if type(i) is int:
+            j = [i]
+        else:
+            j = list(i)
+        for k in (range(2,len(appends))):
+            if len(j) == 2:
+                a,b = j[0]
+                if type(a) is int:
+                    j = [a,b,j[1]]
+                else:
+                    j = [a[0],a[1],b,j[1]]                    
+            elif type(j[0]) != int:
+                a,b = j[0]
+                j2=j[1:]
+                if type(a) is int:
+                    j = [a,b]
+                else:
+                    j = [a[0],a[1],b]                    
+                j.extend(j2)
+        for n,_ in enumerate(j):
+            rep = '$' + str(n+1)
+            new_prompt = new_prompt.replace(rep,str(appends[n][j[n]]))
+        if console_mode:
+            print(new_prompt)
+        else:
+            output_text = output_text + new_prompt + '\n'
+    return output_text
+    
 
 
 parser = argparse.ArgumentParser()
@@ -46,7 +85,7 @@ prompt_file = args.input
 ext = os.path.splitext(prompt_file)[-1:][0]
 if ext == '.yaml' or ext == '.yml':
     #yaml mode
-    prompts, appends = yamlParse(prompt_file)
+    prompts, appends, _ = yaml_parse(prompt_file)
 else:
     #text mode
     appends = []
@@ -61,43 +100,13 @@ else:
         for l in f.readlines():
             prompts = prompts + ' ' + l.replace('\n','')
 
+if args.output is None:
+    console_mode = True
+else:
+    console_mode = False
 
 
-x = list(range(0,len(appends[0])))
-if len(appends) >= 2:
-    for i in range(1,len(appends)):
-        a = list(range(0, len(appends[i])))
-        x = list(it.product(x,a))
-
-output_text = ''
-for i in x:
-    new_prompt = prompts
-    if type(i) is int:
-        j = [i]
-    else:
-        j = list(i)
-    for k in (range(2,len(appends))):
-        if len(j) == 2:
-            a,b = j[0]
-            if type(a) is int:
-                j = [a,b,j[1]]
-            else:
-                j = [a[0],a[1],b,j[1]]                    
-        elif type(j[0]) != int:
-            a,b = j[0]
-            j2=j[1:]
-            if type(a) is int:
-                j = [a,b]
-            else:
-                j = [a[0],a[1],b]                    
-            j.extend(j2)
-    for n,k in enumerate(j):
-        rep = '$' + str(n+1)
-        new_prompt = new_prompt.replace(rep,str(appends[n][j[n]]))
-    if args.output is None:
-        print(new_prompt)
-    else:
-        output_text = output_text + new_prompt + '\n'
+output_text = prompt_multiple(prompts,appends,console_mode)
 
 if args.output is not None:
     with open(args.output,'w',encoding='utf-8',newline='\n') as fw:

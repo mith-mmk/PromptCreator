@@ -1,3 +1,9 @@
+#option:
+#    filename: list.txt 
+#    method: random # default= multiple,random, ...
+#    number: 100    # list limit, "multiple" is not use
+#    
+
 appends:
     -
        - black eyes
@@ -25,9 +31,11 @@ command:
 #    subseed: process_int_tag
 #    seed_resize_from_h: process_int_tag
 #    seed_resize_from_w: process_int_tag
-#    sampler_index: process_int_tag
+#    sampler_index: process_int_tag 
+    # 0 Euler a 1 Euler 2  3 LMS 4 DPM2 5 DPM2 a 6 DPM fast 7 DPM adaptive 8 LMS Karras
+    # 9 DPM2 Karras 10 DPM2 a Karras 11 DDIM 12 Heun
 #    batch_size: process_int_tag
-#    n_iter: process_int_tag
+#    n_iter: process_int_tag    #Batch count
 #    restore_faces: process_boolean_tag
 #    tiling: process_boolean_tag
 #    do_not_save_samples: process_boolean_tag
