@@ -1,7 +1,12 @@
+#!/bin/python3
+#!pip3 install pyyaml
+
+# version 0.1 (C) 2022 MITH@mmk
 import os
 import yaml
 import argparse
 import itertools as it
+import random
 
 def yaml_parse(filename):
     with open(filename) as f:
@@ -18,7 +23,7 @@ def yaml_parse(filename):
             prompts = prompts + '--' + key + ' ' + str(item) + ' '
     return (prompts, appends, yml)
 
-def readFile(filename):
+def read_file(filename):
     strs = []
     with open(filename,'r',encoding='utf_8') as f:
         for str in f.readlines():
@@ -64,7 +69,23 @@ def prompt_multiple(prompts,appends,console_mode):
             output_text = output_text + new_prompt + '\n'
     return output_text
     
+def prompt_random(prompts,appends,console_mode,max_number):
+    output_text = ''
 
+    for _ in range(0,max_number):
+        new_prompt = prompts
+        for i in range(0,len(appends)):
+            n = random.randint(0,len(appends[i])-1)
+            if i < 9:
+                rep = '$' + str(i+1)
+            else:
+                rep = '$' + chr(i+97-9)
+            new_prompt = new_prompt.replace(rep,str(appends[i][n]))            
+        if console_mode:
+            print(new_prompt)
+        else:
+            output_text = output_text + new_prompt + '\n'
+    return output_text
 
 parser = argparse.ArgumentParser()
 parser.add_argument('input', type=str,
@@ -83,9 +104,10 @@ current = args.append_dir
 prompt_file = args.input
 
 ext = os.path.splitext(prompt_file)[-1:][0]
+yml = None
 if ext == '.yaml' or ext == '.yml':
     #yaml mode
-    prompts, appends, _ = yaml_parse(prompt_file)
+    prompts, appends, yml = yaml_parse(prompt_file)
 else:
     #text mode
     appends = []
@@ -95,7 +117,7 @@ else:
     for filename in dirs:
         path = os.path.join(current,filename)
         if os.path.isfile(path):
-            appends.append(readFile(path))
+            appends.append(read_file(path))
     with open(prompt_file,'r',encoding='utf_8') as f:
         for l in f.readlines():
             prompts = prompts + ' ' + l.replace('\n','')
@@ -105,8 +127,14 @@ if args.output is None:
 else:
     console_mode = False
 
-
-output_text = prompt_multiple(prompts,appends,console_mode)
+if yml is not None and 'options' in yml and 'method' in yml['options'] and yml['options']['method'] == 'random':
+    options = yml['options']
+    max_number = 100
+    if 'number' in yml['options']:
+        max_number = yml['options']['number']
+    output_text = prompt_random(prompts,appends,console_mode,max_number)    
+else:
+    output_text = prompt_multiple(prompts,appends,console_mode)
 
 if args.output is not None:
     with open(args.output,'w',encoding='utf-8',newline='\n') as fw:
