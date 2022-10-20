@@ -72,7 +72,10 @@ if len(appends) >= 2:
 output_text = ''
 for i in x:
     new_prompt = prompts
-    j = list(i)
+    if type(i) is int:
+        j = [i]
+    else:
+        j = list(i)
     for k in (range(2,len(appends))):
         if len(j) == 2:
             a,b = j[0]
