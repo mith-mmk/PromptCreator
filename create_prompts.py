@@ -9,7 +9,7 @@ import itertools as it
 import random
 
 def yaml_parse(filename):
-    with open(filename) as f:
+    with open(filename, encoding='utf-8') as f:
         yml = yaml.safe_load(f)
     command = yml['command']
     appends = yml['appends']
@@ -62,7 +62,10 @@ def prompt_multiple(prompts,appends,console_mode):
                 j.extend(j2)
         for n,_ in enumerate(j):
             rep = '$' + str(n+1)
-            new_prompt = new_prompt.replace(rep,str(appends[n][j[n]]))
+            re_str = appends[n][j[n]]
+            if re_str is None:
+                re_str = ''
+            new_prompt = new_prompt.replace(rep,str(re_str))
         if console_mode:
             print(new_prompt)
         else:
@@ -80,7 +83,10 @@ def prompt_random(prompts,appends,console_mode,max_number):
                 rep = '$' + str(i+1)
             else:
                 rep = '$' + chr(i+97-9)
-            new_prompt = new_prompt.replace(rep,str(appends[i][n]))            
+            re_str = appends[i][n]
+            if re_str is None:
+                re_str = ''
+            new_prompt = new_prompt.replace(rep,str(re_str))            
         if console_mode:
             print(new_prompt)
         else:
