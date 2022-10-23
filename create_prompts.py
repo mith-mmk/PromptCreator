@@ -71,26 +71,105 @@ def prompt_multiple(prompts,appends,console_mode):
         else:
             output_text = output_text + new_prompt + '\n'
     return output_text
-    
-def prompt_random(prompts,appends,console_mode,max_number):
+
+def weight_calc(append):
+    weight_append = []
+    max_value = 0.0
+    for item in append:
+        weight = max_value + 0.1
+        if item is None:
+            item = ''
+        weight_txt = {'weight':weight, 'text': item}
+        split = item.split(';')
+        if len(split) > 1:
+            weight = float(split[0]) + max_value
+            text = ''.join(split[1:])
+            weight_txt = {'weight':weight, 'text': text}
+        max_value = weight_txt['weight']
+        weight_append.append(weight_txt)        
+    return (weight_append, max_value)
+
+def prompt_random(prompts,appends,console_mode,max_number,weight_mode = False):
     output_text = ''
 
-    for _ in range(0,max_number):
-        new_prompt = prompts
-        for i in range(0,len(appends)):
-            n = random.randint(0,len(appends[i])-1)
-            if i < 9:
-                rep = '$' + str(i+1)
+    if weight_mode == False:
+        for _ in range(0,max_number):
+            new_prompt = prompts
+            for i in range(0,len(appends)):
+                n = random.randint(0,len(appends[i])-1)
+                if i < 9:
+                    rep = '$' + str(i+1)
+                else:
+                    rep = '$' + chr(i+97-9)
+                re_str = appends[i][n]
+                if re_str is None:
+                    re_str = ''
+                new_prompt = new_prompt.replace(rep,str(re_str))            
+            if console_mode:
+                print(new_prompt)
             else:
-                rep = '$' + chr(i+97-9)
-            re_str = appends[i][n]
-            if re_str is None:
-                re_str = ''
-            new_prompt = new_prompt.replace(rep,str(re_str))            
-        if console_mode:
-            print(new_prompt)
-        else:
-            output_text = output_text + new_prompt + '\n'
+                output_text = output_text + new_prompt + '\n'
+    else:   # weighted
+        weight_appends = []
+        for append in appends:
+            weighted = weight_calc(append)
+#            print(weighted)
+            weight_appends.append(weighted)
+
+        for _ in range(0,max_number):
+            new_prompt = prompts
+            for i,weighted in enumerate(weight_appends):
+                append, max_weight = weighted
+                n = max_weight
+                while n >= max_weight:
+                    n = random.uniform(0.0,max_weight)
+
+                pos = int(len(append) / 2)
+                cnt = int((len(append) + 1) / 2)
+                while True:
+                    w = append[pos]['weight']
+#                    print (cnt,pos,n,w)
+                    if n < w:
+                        if pos == 0:
+                            break
+                        if n >= append[pos - 1]['weight']:
+#                            print ('break')
+                            break
+                        pos = pos - cnt
+                        cnt = int((cnt + 1) / 2)
+                        if pos < 0:
+                            pos = 0
+                        if cnt == 0:
+                            break
+                    elif n == w:
+                        break
+                    else:
+                        if pos == len(append) - 1:
+                            break
+                        if n < w:
+                            if n >= append[pos - 1]['weight']:
+                                break                           
+                        pos = pos + cnt
+                        cnt = int((cnt + 1) / 2)
+                        if pos >= len(append):
+                            pos = len(append) - 1
+                        if cnt == 0:
+                            break
+#                print (n,pos)
+                if i < 9:
+                    rep = '$' + str(i+1)
+                else:
+                    rep = '$' + chr(i+97-9)
+                re_str = append[pos]['text']
+                if re_str is None:
+                    re_str = ''
+                new_prompt = new_prompt.replace(rep,str(re_str))            
+            if console_mode:
+                print(new_prompt)
+            else:
+                output_text = output_text + new_prompt + '\n'
+
+
     return output_text
 
 parser = argparse.ArgumentParser()
@@ -136,9 +215,13 @@ else:
 if yml is not None and 'options' in yml and 'method' in yml['options'] and yml['options']['method'] == 'random':
     options = yml['options']
     max_number = 100
-    if 'number' in yml['options']:
-        max_number = yml['options']['number']
-    output_text = prompt_random(prompts,appends,console_mode,max_number)    
+    if options is not None and 'number' in options:
+        max_number = options['number']
+
+    flag = False
+    if options is not None and 'weight' in options:
+        flag = options['weight']
+    output_text = prompt_random(prompts,appends,console_mode,max_number,weight_mode = flag)   
 else:
     output_text = prompt_multiple(prompts,appends,console_mode)
 
