@@ -1,18 +1,31 @@
 #!/bin/python3
 #!pip3 install pyyaml
 
-# version 0.1 (C) 2022 MITH@mmk
+# version 0.3 (C) 2022 MITH@mmk
 import os
 import yaml
 import argparse
 import itertools as it
+import re
 import random
 
 def yaml_parse(filename):
     with open(filename, encoding='utf-8') as f:
         yml = yaml.safe_load(f)
     command = yml['command']
-    appends = yml['appends']
+    appends = []
+
+    for items in yml['appends']:
+        if type(items) is str:
+            # filemode
+            append = read_file(items) 
+        else:
+            # inline mode
+            append = []
+            for item in items:
+                append.append(item_split(item))
+        appends.append(append)
+#    print(appends)
 
     prompts = ''
 
@@ -25,11 +38,50 @@ def yaml_parse(filename):
 
 def read_file(filename):
     strs = []
-    with open(filename,'r',encoding='utf_8') as f:
-        for str in f.readlines():
-            str = str.replace('\n','')
-            strs.append(str)
+    filenames = filename.split()
+    for filename in filenames:
+        with open(filename,'r',encoding='utf_8') as f:
+            for i,item in enumerate(f.readlines()):
+                if re.match('^\s*#.+',item) or re.match('^\s*$',item):
+                    continue
+                item = re.sub('\s*#.+$','',item)
+                try:
+                    strs.append(item_split(item))
+                except:
+                    print('Errro happen line %s %d %s' % (filename, i, item))
     return strs
+
+def item_split(item):
+    if type(item) is not str:
+        return [str(item)]
+    item = item.replace('\n',' ').strip().replace('\;',r'${semicolon}')
+    split = item.split(';')
+
+    if type(split) is list:
+        for i in range(0,len(split)):
+           split[i] = split[i].replace(r'${semicolon}',';')
+    return split
+
+def prompt_replace(string,replace_texts,n):
+    if type(replace_texts) is not list:
+        replace_texts = [replace_texts]
+    # mode version <= 0.2
+    rep = ''.join(replace_texts)
+    if n < 9:
+        i = '$' + str(n+1)
+    else:
+        i = '$' + chr(n+97-9)
+    string = string.replace(i,rep)
+
+    # mode version >= 0.3
+    i = n + 1
+    string = string.replace('${%d}' % (i),rep)
+    for j in range(0,len(replace_texts)):
+        rep = replace_texts[j]
+        string = string.replace('${%d,%d}' % (i,j + 1),rep)
+    
+    string = re.sub(r'\${%d,.+}' % (i) ,'',string)
+    return string
 
 def prompt_multiple(prompts,appends,console_mode):
     x = list(range(0,len(appends[0])))
@@ -63,8 +115,15 @@ def prompt_multiple(prompts,appends,console_mode):
         for n,_ in enumerate(j):
             rep = '$' + str(n+1)
             re_str = appends[n][j[n]]
-            if re_str is None:
-                re_str = ''
+
+            if len(re_str) == 1:
+                new_prompt = prompt_replace(new_prompt, re_str, n)
+            else:
+                try:
+                    float(re_str[0])
+                    new_prompt = prompt_replace(new_prompt, re_str[1:], n)
+                except:
+                    new_prompt = prompt_replace(new_prompt, re_str, n)
             new_prompt = new_prompt.replace(rep,str(re_str))
         if console_mode:
             print(new_prompt)
@@ -72,23 +131,27 @@ def prompt_multiple(prompts,appends,console_mode):
             output_text = output_text + new_prompt + '\n'
     return output_text
 
+
+
 def weight_calc(append):
     weight_append = []
     max_value = 0.0
     for item in append:
-        weight = max_value + 0.1
-        if item is None:
-            item = ''
-        weight_txt = {'weight':weight, 'text': item}
-        split = item.split(';')
-        if len(split) > 1:
-            weight = float(split[0]) + max_value
-            text = ''.join(split[1:])
-            weight_txt = {'weight':weight, 'text': text}
+        if len(item) == 1:
+            weight = max_value + 0.1
+            text = item[0]
+        else:
+            weight = max_value + float(item[0])
+            text = item[1:]
+
+        weight_txt = {'weight':weight, 'text': text}
+
         max_value = weight_txt['weight']
         weight_append.append(weight_txt)        
     return (weight_append, max_value)
 
+
+   
 def prompt_random(prompts,appends,console_mode,max_number,weight_mode = False):
     output_text = ''
 
@@ -97,14 +160,8 @@ def prompt_random(prompts,appends,console_mode,max_number,weight_mode = False):
             new_prompt = prompts
             for i in range(0,len(appends)):
                 n = random.randint(0,len(appends[i])-1)
-                if i < 9:
-                    rep = '$' + str(i+1)
-                else:
-                    rep = '$' + chr(i+97-9)
                 re_str = appends[i][n]
-                if re_str is None:
-                    re_str = ''
-                new_prompt = new_prompt.replace(rep,str(re_str))            
+                new_prompt = prompt_replace(new_prompt, re_str, i)
             if console_mode:
                 print(new_prompt)
             else:
@@ -156,14 +213,8 @@ def prompt_random(prompts,appends,console_mode,max_number,weight_mode = False):
                         if cnt == 0:
                             break
 #                print (n,pos)
-                if i < 9:
-                    rep = '$' + str(i+1)
-                else:
-                    rep = '$' + chr(i+97-9)
                 re_str = append[pos]['text']
-                if re_str is None:
-                    re_str = ''
-                new_prompt = new_prompt.replace(rep,str(re_str))            
+                new_prompt = prompt_replace(new_prompt, re_str, i)
             if console_mode:
                 print(new_prompt)
             else:
