@@ -1,0 +1,39 @@
+option:
+#    filename: list.txt 
+    method: random # default= multiple,random, ...
+    number: 3    # list limit, "multiple" is not use
+    weight: True
+
+appends:
+    - appends/1.txt
+    - appends/2.txt
+    - 
+        - 0.5;2234;40
+        - 0.5;3342;50
+command:
+    prompt: "((masterpiece)), (((best quality))), ((ultra-detailed)), ((illustration)), ((disheveled hair)),a ${1} ${2} girl wearing school uniform in falling cherry blossoms,wind, 1girl, solo"
+    negative_prompt: "longbody, lowres, bad anatomy, bad hands, missing fingers,text, error,heart_mark,signature, watermark, username, blurry, artist name, pubic hair,extra digit, fewer digits, cropped, worst quality,low quality,{{{bad hands}}}"
+    seed: ${3,1}
+    width: 640
+    height: 448
+    cfg_scale: 7.5
+    steps: ${3,2}
+
+#    sd_model: None
+#    outpath_samples: process_string_tag
+#    outpath_grids: process_string_tag
+#    prompt_for_display: process_string_tag
+#    styles: process_string_tag
+#    subseed_strength: process_float_tag
+#    subseed: process_int_tag
+#    seed_resize_from_h: process_int_tag
+#    seed_resize_from_w: process_int_tag
+#    sampler_index: process_int_tag 
+    # 0 Euler a 1 Euler 2  3 LMS 4 DPM2 5 DPM2 a 6 DPM fast 7 DPM adaptive 8 LMS Karras
+    # 9 DPM2 Karras 10 DPM2 a Karras 11 DDIM 12 Heun
+#    batch_size: process_int_tag
+#    n_iter: process_int_tag    #Batch count
+#    restore_faces: process_boolean_tag
+#    tiling: process_boolean_tag
+#    do_not_save_samples: process_boolean_tag
+#    do_not_save_grid: process_boolean_ta

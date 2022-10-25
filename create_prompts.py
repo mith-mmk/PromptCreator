@@ -66,7 +66,7 @@ def prompt_replace(string,replace_texts,n):
     if type(replace_texts) is not list:
         replace_texts = [replace_texts]
     # mode version <= 0.2
-    rep = ''.join(replace_texts)
+    rep = replace_texts[0]
     if n < 9:
         i = '$' + str(n+1)
     else:
@@ -78,9 +78,10 @@ def prompt_replace(string,replace_texts,n):
     string = string.replace('${%d}' % (i),rep)
     for j in range(0,len(replace_texts)):
         rep = replace_texts[j]
-        string = string.replace('${%d,%d}' % (i,j + 1),rep)
+        k = j + 1
+        string = string.replace('${%d,%d}' % (i,k),rep)
     
-    string = re.sub(r'\${%d,.+}' % (i) ,'',string)
+    string = re.sub(r'\${%d,.+?}' % (i) ,'',string)
     return string
 
 def prompt_multiple(prompts,appends,console_mode):
