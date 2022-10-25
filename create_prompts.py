@@ -81,7 +81,8 @@ def prompt_replace(string,replace_texts,n):
         k = j + 1
         string = string.replace('${%d,%d}' % (i,k),rep)
     
-    string = re.sub(r'\${%d,.+?}' % (i) ,'',string)
+    string = re.sub(r'\${%d,.*?}' % (i) ,'',string)
+    string = string.replace(r'\${%d}' % (i) ,'')
     return string
 
 def prompt_multiple(prompts,appends,console_mode):
