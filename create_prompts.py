@@ -135,16 +135,21 @@ def prompt_multiple(prompts,appends,console_mode):
 
 
 
-def weight_calc(append):
+def weight_calc(append,num):
     weight_append = []
     max_value = 0.0
-    for item in append:
+    for i,item in enumerate(append):
         if len(item) == 1:
             weight = max_value + 0.1
             text = item[0]
         else:
-            weight = max_value + float(item[0])
-            text = item[1:]
+            try:
+                weight = max_value + float(item[0])
+            except:
+                print('float convert error append %d line %d %s use default' % (num + 1,i,item[0]))
+                weight = max_value + 0.1
+            finally:
+                text = item[1:]
 
         weight_txt = {'weight':weight, 'text': text}
 
@@ -170,8 +175,8 @@ def prompt_random(prompts,appends,console_mode,max_number,weight_mode = False):
                 output_text = output_text + new_prompt + '\n'
     else:   # weighted
         weight_appends = []
-        for append in appends:
-            weighted = weight_calc(append)
+        for num,append in enumerate(appends):
+            weighted = weight_calc(append, num)
 #            print(weighted)
             weight_appends.append(weighted)
 
