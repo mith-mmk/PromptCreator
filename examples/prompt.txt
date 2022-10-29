@@ -1,4 +1,4 @@
---promptlowres
+--prompt
 "((masterpiece)), (((best quality))), ((ultra-detailed)), ((illustration)), ((disheveled hair)),
 ,a $1,$2,girl wearing school uniform in falling cherry blossoms,wind,
 1girl, solo"
