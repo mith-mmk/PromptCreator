@@ -63,6 +63,10 @@ def item_split(item):
     return split
 
 def prompt_replace(string,replace_texts,n):
+    if type(string) is string or type(string) is dict:
+        print("Repacing String is type error ",type(string))
+        exit(-1)
+
     if type(replace_texts) is not list:
         replace_texts = [replace_texts]
     # mode version <= 0.2
@@ -71,18 +75,35 @@ def prompt_replace(string,replace_texts,n):
         i = '$' + str(n+1)
     else:
         i = '$' + chr(n+97-9)
-    string = string.replace(i,rep)
+    if type(string) is str:
+        string = string.replace(i,rep)
+    elif type(string) is dict: 
+        for key in string:
+            if type(string[key]) is str:
+                string[key] = string[key].replace(i,rep)
 
     # mode version >= 0.3
     i = n + 1
-    string = string.replace('${%d}' % (i),rep)
+    if type(string) is str:
+        string = string.replace('${%d}' % (i),rep)
+    elif type(string) is dict: 
+        for key in string:
+            if type(string[key]) is str:
+                string[key] = string[key].replace('${%d}' % (i),rep)
+
     for j in range(0,len(replace_texts)):
         rep = replace_texts[j]
         k = j + 1
-        string = string.replace('${%d,%d}' % (i,k),rep)
+        if type(string) is str:
+            string = string.replace('${%d,%d}' % (i,k),rep)
+        elif type(string) is dict: 
+            for key in string:
+                if type(string[key]) is str:
+                    string[key] = string[key].replace('${%d,%d}' % (i,k),rep)
     
-    string = re.sub(r'\${%d,.*?}' % (i) ,'',string)
-    string = string.replace(r'\${%d}' % (i) ,'')
+    if type(string) is str:
+        string = re.sub(r'\${%d,.*?}' % (i) ,'',string)
+        string = string.replace(r'\${%d}' % (i) ,'')
     return string
 
 def prompt_multiple(prompts,appends,console_mode):
@@ -240,6 +261,25 @@ parser.add_argument('--append-dir', type=str,
 parser.add_argument('--output', type=str,
                     default=None,
                     help='direcory of output file of prompt list file')
+
+# parser.add_argument('--api-mode', type=bool,
+#                    default=False,
+#                    help='output api mode(JSON)')
+
+# parser.add_argument('--api-url', type=str,
+#                    default=None,
+#                    help='direct call api ex http://127.0.0.1:7860/sdapi/v1/txt2img ')
+
+## default from .env ?
+# parser.add_argument('--api-input-dir', type=bool,
+#                    default='./',
+#                    help='api input image directory for img2img')
+
+## default from .env ?
+# parser.add_argument('--api-output-dir', type=bool,
+#                    default='./',
+#                    help='api output image directory')
+
 
 args = parser.parse_args()
 

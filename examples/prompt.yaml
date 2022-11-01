@@ -40,3 +40,8 @@ command:
 #    tiling: process_boolean_tag
 #    do_not_save_samples: process_boolean_tag
 #    do_not_save_grid: process_boolean_ta
+# higher.fix
+#    enable_hr: True
+#    denoising_strength=denoising_strength: 0.3
+#    firstphase_width=firstphase_width: 512
+#    firstphase_height=firstphase_height: 512
