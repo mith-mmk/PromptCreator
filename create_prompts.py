@@ -8,8 +8,9 @@ import argparse
 import itertools as it
 import re
 import random
+import json
 
-def yaml_parse(filename):
+def yaml_parse(filename, mode='text'):
     with open(filename, encoding='utf-8') as f:
         yml = yaml.safe_load(f)
     command = yml['command']
@@ -36,11 +37,14 @@ def yaml_parse(filename):
 
     prompts = ''
 
-    for key, item in command.items():
-        if type(item) is str:
-            prompts = prompts + '--' + key + ' "' + item + '" '
-        else:
-            prompts = prompts + '--' + key + ' ' + str(item) + ' '
+    if mode == 'text':
+        for key, item in command.items():
+            if type(item) is str:
+                prompts = prompts + '--' + key + ' "' + item + '" '
+            else:
+                prompts = prompts + '--' + key + ' ' + str(item) + ' '
+    elif mode == 'json':
+        prompts = command
     return (prompts, appends, yml)
 
 def read_file(filename):
@@ -70,7 +74,7 @@ def item_split(item):
     return split
 
 def prompt_replace(string,replace_texts,var):
-    if type(string) is string or type(string) is dict:
+    if type(string) is string:
         print("Repacing String is type error ",type(string))
         exit(-1)
 
@@ -78,12 +82,12 @@ def prompt_replace(string,replace_texts,var):
         replace_texts = [replace_texts]
     # mode version <= 0.2
     rep = replace_texts[0]
-    i = ''
-    if '1' <= var <= '9':
-        i = '$' + var
-    elif  '10' <= var <= '36':
-        n = int(var)
-        i = '$' + chr(n +97-10)
+#    i = ''
+#    if '1' <= var <= '9':
+#        i = '$' + var
+#    elif  '10' <= var <= '36':
+#        n = int(var)
+#        i = '$' + chr(n +97-10)
 #    if type(string) is str:
 #        string = string.replace(i,rep)
 #    elif type(string) is dict: 
@@ -116,7 +120,12 @@ def prompt_replace(string,replace_texts,var):
         string = string.replace(r'\${%s}' % (var) ,'')
     return string
 
-def prompt_multiple(prompts,appends,console_mode):
+def prompt_multiple(prompts,appends,console_mode,mode='text'):
+    if mode =='text':
+        output_text = ''
+    elif mode == 'json':
+        output_text = []
+
     array = list(appends.values())
     keys = list(appends.keys())
     x = list(range(0,len(array[0])))
@@ -125,7 +134,6 @@ def prompt_multiple(prompts,appends,console_mode):
             a = list(range(0, len(array[i])))
             x = list(it.product(x,a))
 
-    output_text = ''
     for i in x:
         new_prompt = prompts
         if type(i) is int:
@@ -161,7 +169,10 @@ def prompt_multiple(prompts,appends,console_mode):
         if console_mode:
             print(new_prompt)
         else:
-            output_text = output_text + new_prompt + '\n'
+            if mode == 'text':
+                output_text = output_text + new_prompt + '\n'
+            elif mode == 'json':
+                output_text.append(new_prompt)
     return output_text
 
 
@@ -190,8 +201,12 @@ def weight_calc(append,num,default_weight = 0.1):
 
 
    
-def prompt_random(prompts,appends,console_mode,max_number,weight_mode = False,default_weight = 0.1):
-    output_text = ''
+def prompt_random(prompts,appends,console_mode,max_number,weight_mode = False,default_weight = 0.1,mode = 'text'):
+    if mode =='text':
+        output_text = ''
+    elif mode == 'json':
+        output_text = []
+
     keys = list(appends.keys())
     appends = list(appends.values())
     if weight_mode == False:
@@ -205,7 +220,10 @@ def prompt_random(prompts,appends,console_mode,max_number,weight_mode = False,de
             if console_mode:
                 print(new_prompt)
             else:
-                output_text = output_text + new_prompt + '\n'
+                if mode == 'text':
+                    output_text = output_text + new_prompt + '\n'
+                elif mode == 'json':
+                    output_text.append(new_prompt)
     else:   # weighted
         weight_appends = []
         for num,append in enumerate(appends):
@@ -260,9 +278,10 @@ def prompt_random(prompts,appends,console_mode,max_number,weight_mode = False,de
             if console_mode:
                 print(new_prompt)
             else:
-                output_text = output_text + new_prompt + '\n'
-
-
+                if mode == 'text':
+                    output_text = output_text + new_prompt + '\n'
+                elif mode == 'json':
+                    output_text.append(new_prompt)
     return output_text
 
 parser = argparse.ArgumentParser()
@@ -276,9 +295,9 @@ parser.add_argument('--output', type=str,
                     default=None,
                     help='direcory of output file of prompt list file')
 
-# parser.add_argument('--api-mode', type=bool,
-#                    default=False,
-#                    help='output api mode(JSON)')
+parser.add_argument('--api-mode', type=bool,
+                    default=False,
+                    help='output api mode(JSON)')
 
 # parser.add_argument('--api-url', type=str,
 #                    default=None,
@@ -297,6 +316,11 @@ parser.add_argument('--output', type=str,
 
 args = parser.parse_args()
 
+if args.api_mode:
+    mode = 'json'
+else:
+    mode = 'text'
+
 current = args.append_dir
 prompt_file = args.input
 
@@ -304,7 +328,7 @@ ext = os.path.splitext(prompt_file)[-1:][0]
 yml = None
 if ext == '.yaml' or ext == '.yml':
     #yaml mode
-    prompts, appends, yml = yaml_parse(prompt_file)
+    prompts, appends, yml = yaml_parse(prompt_file,mode = mode)
 else:
     #text mode
     appends = []
@@ -324,6 +348,7 @@ if args.output is None:
 else:
     console_mode = False
 
+
 if yml is not None and 'options' in yml and 'method' in yml['options'] and yml['options']['method'] == 'random':
     options = yml['options']
     max_number = 100
@@ -337,10 +362,14 @@ if yml is not None and 'options' in yml and 'method' in yml['options'] and yml['
         default_weight = options['default_weight']
     else:
         default_weight = 0.1
-    output_text = prompt_random(prompts,appends,console_mode,max_number,weight_mode = flag,default_weight = default_weight)   
+    output_text = prompt_random(prompts,appends,console_mode,max_number,weight_mode = flag,default_weight = default_weight,mode = mode)   
 else:
-    output_text = prompt_multiple(prompts,appends,console_mode)
+    output_text = prompt_multiple(prompts,appends,console_mode,mode = mode)
 
 if args.output is not None:
     with open(args.output,'w',encoding='utf-8',newline='\n') as fw:
-        fw.write(output_text)
+        if type(output_text) is str:
+            fw.write(output_text)
+
+        else:
+            json.dump(output_text,fp=fw,indent=2)
