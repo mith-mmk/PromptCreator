@@ -13,18 +13,25 @@ def yaml_parse(filename):
     with open(filename, encoding='utf-8') as f:
         yml = yaml.safe_load(f)
     command = yml['command']
-    appends = []
+    appends = {}
 
-    for items in yml['appends']:
+    for n,items in enumerate(yml['appends']):
+        if type(yml['appends']) is dict:
+            key = items
+            items = yml['appends'][items]
+
+        else:
+            key = str(n+1)            
+
         if type(items) is str:
             # filemode
-            append = read_file(items) 
+            append = read_file(items)
         else:
             # inline mode
             append = []
             for item in items:
                 append.append(item_split(item))
-        appends.append(append)
+        appends[key] = append
 #    print(appends)
 
     prompts = ''
@@ -62,7 +69,7 @@ def item_split(item):
            split[i] = split[i].replace(r'${semicolon}',';')
     return split
 
-def prompt_replace(string,replace_texts,n):
+def prompt_replace(string,replace_texts,var):
     if type(string) is string or type(string) is dict:
         print("Repacing String is type error ",type(string))
         exit(-1)
@@ -71,46 +78,51 @@ def prompt_replace(string,replace_texts,n):
         replace_texts = [replace_texts]
     # mode version <= 0.2
     rep = replace_texts[0]
-    if n < 9:
-        i = '$' + str(n+1)
-    else:
-        i = '$' + chr(n+97-9)
-    if type(string) is str:
-        string = string.replace(i,rep)
-    elif type(string) is dict: 
-        for key in string:
-            if type(string[key]) is str:
-                string[key] = string[key].replace(i,rep)
+    i = ''
+    if '1' <= var <= '9':
+        i = '$' + var
+    elif  '10' <= var <= '36':
+        n = int(var)
+        i = '$' + chr(n +97-10)
+#    if type(string) is str:
+#        string = string.replace(i,rep)
+#    elif type(string) is dict: 
+#        for key in string:
+#            if type(string[key]) is str:
+#                pass
+#                string[key] = string[key].replace(i,rep)
 
     # mode version >= 0.3
-    i = n + 1
+#    i = n + 1
     if type(string) is str:
-        string = string.replace('${%d}' % (i),rep)
+        string = string.replace('${%s}' % (var),rep)
     elif type(string) is dict: 
         for key in string:
             if type(string[key]) is str:
-                string[key] = string[key].replace('${%d}' % (i),rep)
+                string[key] = string[key].replace('${%s}' % (var),rep)
 
     for j in range(0,len(replace_texts)):
         rep = replace_texts[j]
         k = j + 1
         if type(string) is str:
-            string = string.replace('${%d,%d}' % (i,k),rep)
+            string = string.replace('${%s,%d}' % (var,k),rep)
         elif type(string) is dict: 
             for key in string:
                 if type(string[key]) is str:
-                    string[key] = string[key].replace('${%d,%d}' % (i,k),rep)
+                    string[key] = string[key].replace('${%s,%d}' % (var,k),rep)
     
     if type(string) is str:
-        string = re.sub(r'\${%d,.*?}' % (i) ,'',string)
-        string = string.replace(r'\${%d}' % (i) ,'')
+        string = re.sub(r'\${%s,.*?}' % (var) ,'',string)
+        string = string.replace(r'\${%s}' % (var) ,'')
     return string
 
 def prompt_multiple(prompts,appends,console_mode):
-    x = list(range(0,len(appends[0])))
-    if len(appends) >= 2:
-        for i in range(1,len(appends)):
-            a = list(range(0, len(appends[i])))
+    array = list(appends.values())
+    keys = list(appends.keys())
+    x = list(range(0,len(array[0])))
+    if len(array) >= 2:
+        for i in range(1,len(array)):
+            a = list(range(0, len(array[i])))
             x = list(it.product(x,a))
 
     output_text = ''
@@ -120,7 +132,7 @@ def prompt_multiple(prompts,appends,console_mode):
             j = [i]
         else:
             j = list(i)
-        for k in (range(2,len(appends))):
+        for _ in (range(2,len(array))):
             if len(j) == 2:
                 a,b = j[0]
                 if type(a) is int:
@@ -136,18 +148,16 @@ def prompt_multiple(prompts,appends,console_mode):
                     j = [a[0],a[1],b]                    
                 j.extend(j2)
         for n,_ in enumerate(j):
-            rep = '$' + str(n+1)
-            re_str = appends[n][j[n]]
-
+            re_str = appends[keys[n]][j[n]]
+            var = keys[n]
             if len(re_str) == 1:
-                new_prompt = prompt_replace(new_prompt, re_str, n)
+                new_prompt = prompt_replace(new_prompt, re_str, var)
             else:
                 try:
                     float(re_str[0])
-                    new_prompt = prompt_replace(new_prompt, re_str[1:], n)
+                    new_prompt = prompt_replace(new_prompt, re_str[1:], var)
                 except:
-                    new_prompt = prompt_replace(new_prompt, re_str, n)
-            new_prompt = new_prompt.replace(rep,str(re_str))
+                    new_prompt = prompt_replace(new_prompt, re_str, var)
         if console_mode:
             print(new_prompt)
         else:
@@ -156,19 +166,19 @@ def prompt_multiple(prompts,appends,console_mode):
 
 
 
-def weight_calc(append,num):
+def weight_calc(append,num,default_weight = 0.1):
     weight_append = []
     max_value = 0.0
     for i,item in enumerate(append):
         if len(item) == 1:
-            weight = max_value + 0.1
+            weight = max_value + default_weight
             text = item[0]
         else:
             try:
                 weight = max_value + float(item[0])
             except:
                 print('float convert error append %d line %d %s use default' % (num + 1,i,item[0]))
-                weight = max_value + 0.1
+                weight = max_value + default_weight
             finally:
                 text = item[1:]
 
@@ -180,16 +190,18 @@ def weight_calc(append,num):
 
 
    
-def prompt_random(prompts,appends,console_mode,max_number,weight_mode = False):
+def prompt_random(prompts,appends,console_mode,max_number,weight_mode = False,default_weight = 0.1):
     output_text = ''
-
+    keys = list(appends.keys())
+    appends = list(appends.values())
     if weight_mode == False:
         for _ in range(0,max_number):
             new_prompt = prompts
             for i in range(0,len(appends)):
                 n = random.randint(0,len(appends[i])-1)
                 re_str = appends[i][n]
-                new_prompt = prompt_replace(new_prompt, re_str, i)
+                var = keys[i]
+                new_prompt = prompt_replace(new_prompt, re_str, var)
             if console_mode:
                 print(new_prompt)
             else:
@@ -197,7 +209,7 @@ def prompt_random(prompts,appends,console_mode,max_number,weight_mode = False):
     else:   # weighted
         weight_appends = []
         for num,append in enumerate(appends):
-            weighted = weight_calc(append, num)
+            weighted = weight_calc(append, num, default_weight)
 #            print(weighted)
             weight_appends.append(weighted)
 
@@ -241,8 +253,10 @@ def prompt_random(prompts,appends,console_mode,max_number,weight_mode = False):
                         if cnt == 0:
                             break
 #                print (n,pos)
+                var = keys[i]
                 re_str = append[pos]['text']
-                new_prompt = prompt_replace(new_prompt, re_str, i)
+#                print(var, re_str)
+                new_prompt = prompt_replace(new_prompt, re_str, var)
             if console_mode:
                 print(new_prompt)
             else:
@@ -319,7 +333,11 @@ if yml is not None and 'options' in yml and 'method' in yml['options'] and yml['
     flag = False
     if options is not None and 'weight' in options:
         flag = options['weight']
-    output_text = prompt_random(prompts,appends,console_mode,max_number,weight_mode = flag)   
+    if options is not None and 'default_weight' in options:
+        default_weight = options['default_weight']
+    else:
+        default_weight = 0.1
+    output_text = prompt_random(prompts,appends,console_mode,max_number,weight_mode = flag,default_weight = default_weight)   
 else:
     output_text = prompt_multiple(prompts,appends,console_mode)
 

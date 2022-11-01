@@ -5,6 +5,7 @@
 - 後ろから順に出てくる仕様になっています
 - リプレイス変数は、$1,$2,...$9の次は$a(10番目)...$zになる
 - $\{n\}で括る方法 コチラの方が安全 $\{1\},$\{2\},...$\{100\}
+- 変数モードを追加 配列ではなくキーで指定。上から順番にリプレイスするので再帰する場合は、再帰する変数を後で指定すること。指定方法は$\{変数名\}　ただし、$\{semicolon\}などの予約語は使えません。
 
 ```
 usage: create_prompts.py [-h] [--append-dir APPEND_DIR] [--output OUTPUT] input
@@ -30,7 +31,7 @@ low quality,(((bad hands)))"
 ## yamlモード
 　拡張子がyamlもしくはymlの場合 yamlで読み込む
 
-例：
+例：配列モード
 ```yaml
 appends:
     -
@@ -43,6 +44,26 @@ appends:
        - pink twin-tail
 command:
     prompt: "((masterpiece)), (((best quality))), ((ultra-detailed)), ((illustration)), ((disheveled hair)),a $1 $2 girl wearing school uniform in falling cherry blossoms,wind1girl, solo"
+    negative_prompt: "longbody, lowres, bad anatomy, bad hands, missing fingers,text, error,heart_mark,signature, watermark, username, blurry, artist namepubic hair,extra digit, fewer digits, cropped, worst quality,low quality,{{{bad hands}}}"
+    seed: -1
+    width: 640
+    height: 448
+    cfg_scale: 7.5
+```
+
+例：変数モード
+```yaml
+appends:
+    eye:
+       - black eyes
+       - blue eyes
+       - white eyes
+    hair:
+       - blonde
+       - brown 
+       - pink twin-tail
+command:
+    prompt: "((masterpiece)), (((best quality))), ((ultra-detailed)), ((illustration)), ((disheveled hair)),a ${eye} ${hair} girl wearing school uniform in falling cherry blossoms,wind1girl, solo"
     negative_prompt: "longbody, lowres, bad anatomy, bad hands, missing fingers,text, error,heart_mark,signature, watermark, username, blurry, artist namepubic hair,extra digit, fewer digits, cropped, worst quality,low quality,{{{bad hands}}}"
     seed: -1
     width: 640
