@@ -1,7 +1,10 @@
 #!/bin/python3
-#!pip3 install pyyaml
+#!pip install pyyaml
+#!pip install Pillow
+#!pip install requests
 
-# version 0.3 (C) 2022 MITH@mmk
+# version 0.4 (C) 2022 MITH@mmk
+from email import header
 import os
 import yaml
 import argparse
@@ -9,6 +12,7 @@ import itertools as it
 import re
 import random
 import json
+import copy
 
 def yaml_parse(filename, mode='text'):
     with open(filename, encoding='utf-8') as f:
@@ -135,7 +139,7 @@ def prompt_multiple(prompts,appends,console_mode,mode='text'):
             x = list(it.product(x,a))
 
     for i in x:
-        new_prompt = prompts
+        new_prompt = copy.deepcopy(prompts)
         if type(i) is int:
             j = [i]
         else:
@@ -168,11 +172,10 @@ def prompt_multiple(prompts,appends,console_mode,mode='text'):
                     new_prompt = prompt_replace(new_prompt, re_str, var)
         if console_mode:
             print(new_prompt)
-        else:
-            if mode == 'text':
-                output_text = output_text + new_prompt + '\n'
-            elif mode == 'json':
-                output_text.append(new_prompt)
+        if mode == 'text':
+            output_text = output_text + new_prompt + '\n'
+        elif mode == 'json':
+            output_text.append(new_prompt)
     return output_text
 
 
@@ -211,7 +214,7 @@ def prompt_random(prompts,appends,console_mode,max_number,weight_mode = False,de
     appends = list(appends.values())
     if weight_mode == False:
         for _ in range(0,max_number):
-            new_prompt = prompts
+            new_prompt = copy.deepcopy(prompts)
             for i in range(0,len(appends)):
                 n = random.randint(0,len(appends[i])-1)
                 re_str = appends[i][n]
@@ -232,7 +235,7 @@ def prompt_random(prompts,appends,console_mode,max_number,weight_mode = False,de
             weight_appends.append(weighted)
 
         for _ in range(0,max_number):
-            new_prompt = prompts
+            new_prompt = copy.deepcopy(prompts)
             for i,weighted in enumerate(weight_appends):
                 append, max_weight = weighted
                 n = max_weight
@@ -275,13 +278,13 @@ def prompt_random(prompts,appends,console_mode,max_number,weight_mode = False,de
                 re_str = append[pos]['text']
 #                print(var, re_str)
                 new_prompt = prompt_replace(new_prompt, re_str, var)
+            print(new_prompt)
             if console_mode:
                 print(new_prompt)
-            else:
-                if mode == 'text':
-                    output_text = output_text + new_prompt + '\n'
-                elif mode == 'json':
-                    output_text.append(new_prompt)
+            if mode == 'text':
+                output_text = output_text + new_prompt + '\n'
+            elif mode == 'json':
+                output_text.append(new_prompt)
     return output_text
 
 parser = argparse.ArgumentParser()
@@ -299,19 +302,18 @@ parser.add_argument('--api-mode', type=bool,
                     default=False,
                     help='output api mode(JSON)')
 
-# parser.add_argument('--api-url', type=str,
-#                    default=None,
-#                    help='direct call api ex http://127.0.0.1:7860/sdapi/v1/txt2img ')
+parser.add_argument('--api-url', type=str,
+                    default=None,
+                    help='direct call api ex http://127.0.0.1:7860/sdapi/v1/txt2img ')
 
 ## default from .env ?
-# parser.add_argument('--api-input-dir', type=bool,
-#                    default='./',
+#parser.add_argument('--api-input-dir', type=str,
+#                    default='inputs',
 #                    help='api input image directory for img2img')
 
-## default from .env ?
-# parser.add_argument('--api-output-dir', type=bool,
-#                    default='./',
-#                    help='api output image directory')
+parser.add_argument('--api-output-dir', type=str,
+                    default='outputs',
+                    help='api output image directory')
 
 
 args = parser.parse_args()
@@ -370,6 +372,58 @@ if args.output is not None:
     with open(args.output,'w',encoding='utf-8',newline='\n') as fw:
         if type(output_text) is str:
             fw.write(output_text)
-
         else:
             json.dump(output_text,fp=fw,indent=2)
+
+if args.api_mode == True and args.api_url is not None:
+    print ('\n\n\n\n Enter API mode')
+    dir = args.api_output_dir
+    print("dir",args.api_output_dir)
+    os.makedirs(dir,exist_ok=True)
+    import requests
+    import io
+    import base64
+    import datetime
+    import re
+    from PIL import Image, PngImagePlugin
+    t = datetime.datetime.now()
+    url = args.api_url
+    headers  = {
+        'accept': 'application/json',
+        'content-type': 'application.json'
+    }
+
+    num = -1
+    files = os.listdir(dir)
+    for file in files:
+        if os.path.isfile(os.path.join(dir,file)):
+            name = file[0:5]
+            try:
+                num = max(num,int(name))
+            except:
+                pass
+    num += 1
+    for item in output_text:
+        payload = json.dumps(item)
+        print('call api .... wait.... long time')
+        response = requests.post(url, data=payload)
+        print(response.status_code)
+        if response.status_code != 200:
+            print ('Error!',response.status_code, response.text)
+            exit(-1)
+
+        r = response.json()
+        load_r = json.loads(r['info'])
+        meta = load_r["infotexts"][0]
+        print('success return',len(r['images']),'images')
+        for i in r['images']:
+            image = Image.open(io.BytesIO(base64.b64decode(i.split(",",1)[1])))
+            pnginfo = PngImagePlugin.PngInfo()
+            pnginfo.add_text("parameters", meta)
+            seed = re.findall('Seed: (\d+),', meta)
+            print(seed[0])
+            filename = str(num).zfill(5) +'-' +  str(seed[0]) + '.png'
+            filename = os.path.join(dir,filename)
+            num += 1
+            print('save...', filename)
+            image.save(filename , pnginfo=pnginfo)
