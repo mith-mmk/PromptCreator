@@ -2,6 +2,7 @@
 #!pip install pyyaml
 #!pip install Pillow
 #!pip install requests
+#!pip install aiohttp[speedups]
 
 # version 0.4 (C) 2022 MITH@mmk
 import os
@@ -12,12 +13,23 @@ import re
 import random
 import json
 import copy
+import aiohttp
+import asyncio
+
+async def json_request_wrapper(url,payload):
+    header = {
+        'Content-Type': 'application/json',
+    }
+    data = json.dumps(payload)
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url,data,header=header) as response:
+            return response
 
 def txt2img(output_text,base_url='http://127.0.0.1:8760',output_dir='./outputs'):
     url = base_url + '/sdapi/v1/txt2img'
-    print ('\n\n\n\n Enter API mode, connect', url)
+    print ('Enter API mode, connect', url)
     dir = output_dir
-    print("dir",dir)
+    print('output dir',dir)
     os.makedirs(dir,exist_ok=True)
     import requests
     import io
@@ -41,30 +53,36 @@ def txt2img(output_text,base_url='http://127.0.0.1:8760',output_dir='./outputs')
     print('API loop count is %d times' % (count))
     print('')
     for (n,item) in enumerate(output_text):
-        print('(%d/%d) call api .... wait.... long time' % (n+1,count))
+        print('\033[K(%d/%d) call api .... wait.... long time' % (n+1,count))
         # Why is an error happening? json=payload or json=item
         payload = json.dumps(item)
         response = requests.post(url, data=payload)
         if response.status_code != 200:
-            print ('Error!',response.status_code, response.text)
-            exit(-1)
+            print ('\033[KError!',response.status_code, response.text)
+            print('\033[%dA' % (2),end='')
+            continue
 
         r = response.json()
         load_r = json.loads(r['info'])
         meta = load_r["infotexts"][0]
-        print('return %d images' % (len(r['images'])))
-        prt_cnt = len(r['images']) + 3
+        print('\033[Kreturn %d images' % (len(r['images'])))
         for i in r['images']:
-            image = Image.open(io.BytesIO(base64.b64decode(i.split(",",1)[1])))
-            pnginfo = PngImagePlugin.PngInfo()
-            pnginfo.add_text("parameters", meta)
-            seed = re.findall('Seed: (\d+),', meta)
-            filename = str(num).zfill(5) +'-' +  str(seed[0]) + '.png'
-            filename = os.path.join(dir,filename)
-            num += 1
-            print('save... ',filename)
-            image.save(filename , pnginfo=pnginfo)
+            try:
+#                image = Image.open(io.BytesIO(base64.b64decode(i.split(",",1)[1])))
+                image = Image.open(io.BytesIO(base64.b64decode(i)))
+                pnginfo = PngImagePlugin.PngInfo()
+                pnginfo.add_text("parameters", meta)
+                seed = re.findall('Seed: (\d+),', meta)
+                filename = str(num).zfill(5) +'-' +  str(seed[0]) + '.png'
+                print('\033[Ksave... ',filename)
+                filename = os.path.join(dir,filename)
+                num += 1
+                image.save(filename , pnginfo=pnginfo)
+            except BaseException as e:
+                print ('\033[Ksave error',e)
+        prt_cnt = len(r['images']) + 2
         print('\033[%dA' % (prt_cnt),end='')
+    print('')
 
 
 def yaml_parse(filename, mode='text'):
@@ -137,8 +155,9 @@ def prompt_replace(string,replace_texts,var):
 
     if type(replace_texts) is not list:
         replace_texts = [replace_texts]
-    # mode version <= 0.2
+
     rep = replace_texts[0]
+# $1 mode version <= 0.2, 0.4 expired
 #    i = ''
 #    if '1' <= var <= '9':
 #        i = '$' + var
@@ -153,7 +172,7 @@ def prompt_replace(string,replace_texts,var):
 #                pass
 #                string[key] = string[key].replace(i,rep)
 
-    # mode version >= 0.3
+# mode version >= 0.3
 #    i = n + 1
     if type(string) is str:
         string = string.replace('${%s}' % (var),rep)
@@ -331,7 +350,6 @@ def prompt_random(prompts,appends,console_mode,max_number,weight_mode = False,de
                 re_str = append[pos]['text']
 #                print(var, re_str)
                 new_prompt = prompt_replace(new_prompt, re_str, var)
-            print(new_prompt)
             if console_mode:
                 print(new_prompt)
             if mode == 'text':
