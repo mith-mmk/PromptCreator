@@ -4,7 +4,6 @@
 #!pip install requests
 
 # version 0.4 (C) 2022 MITH@mmk
-from email import header
 import os
 import yaml
 import argparse
@@ -13,6 +12,60 @@ import re
 import random
 import json
 import copy
+
+def txt2img(output_text,base_url='http://127.0.0.1:8760',output_dir='./outputs'):
+    url = base_url + '/sdapi/v1/txt2img'
+    print ('\n\n\n\n Enter API mode, connect', url)
+    dir = output_dir
+    print("dir",dir)
+    os.makedirs(dir,exist_ok=True)
+    import requests
+    import io
+    import base64
+#    import datetime
+    import re
+    from PIL import Image, PngImagePlugin
+#    dt = datetime.datetime.now().strftime('%y%m%d')
+
+    num = -1
+    files = os.listdir(dir)
+    for file in files:
+        if os.path.isfile(os.path.join(dir,file)):
+            name = file[0:5]
+            try:
+                num = max(num,int(name))
+            except:
+                pass
+    num += 1
+    count = len(output_text)
+    print('API loop count is %d times' % (count))
+    print('')
+    for (n,item) in enumerate(output_text):
+        print('(%d/%d) call api .... wait.... long time' % (n+1,count))
+        # Why is an error happening? json=payload or json=item
+        payload = json.dumps(item)
+        response = requests.post(url, data=payload)
+        if response.status_code != 200:
+            print ('Error!',response.status_code, response.text)
+            exit(-1)
+
+        r = response.json()
+        load_r = json.loads(r['info'])
+        meta = load_r["infotexts"][0]
+        print('return %d images' % (len(r['images'])))
+        prt_cnt = len(r['images']) + 3
+        for i in r['images']:
+            image = Image.open(io.BytesIO(base64.b64decode(i.split(",",1)[1])))
+            pnginfo = PngImagePlugin.PngInfo()
+            pnginfo.add_text("parameters", meta)
+            seed = re.findall('Seed: (\d+),', meta)
+            filename = str(num).zfill(5) +'-' +  str(seed[0]) + '.png'
+            filename = os.path.join(dir,filename)
+            num += 1
+            print('save... ',filename)
+            image.save(filename , pnginfo=pnginfo)
+        print('\033[%dA' % (prt_cnt),end='')
+
 
 def yaml_parse(filename, mode='text'):
     with open(filename, encoding='utf-8') as f:
@@ -287,143 +340,101 @@ def prompt_random(prompts,appends,console_mode,max_number,weight_mode = False,de
                 output_text.append(new_prompt)
     return output_text
 
-parser = argparse.ArgumentParser()
-parser.add_argument('input', type=str,
-                    default='./prompt.txt',
-                    help='input promptfile')
-parser.add_argument('--append-dir', type=str,
-                    default='./appends',
-                    help='direcory of input append prompt files')
-parser.add_argument('--output', type=str,
-                    default=None,
-                    help='direcory of output file of prompt list file')
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('input', type=str,
+                        default='./prompt.txt',
+                        help='input promptfile')
+    parser.add_argument('--append-dir', type=str,
+                        default='./appends',
+                        help='direcory of input append prompt files')
+    parser.add_argument('--output', type=str,
+                        default=None,
+                        help='direcory of output file of prompt list file')
 
-parser.add_argument('--api-mode', type=bool,
-                    default=False,
-                    help='output api mode(JSON)')
+    parser.add_argument('--json', type=bool,nargs='?',
+                        const=True, default=False,
+                        help='output JSON')
 
-parser.add_argument('--api-url', type=str,
-                    default=None,
-                    help='direct call api ex http://127.0.0.1:7860/sdapi/v1/txt2img ')
+    parser.add_argument('--api-mode', type=bool,nargs='?',
+                        const=True, default=False,
+                        help='output api force set --json')
 
-## default from .env ?
-#parser.add_argument('--api-input-dir', type=str,
-#                    default='inputs',
-#                    help='api input image directory for img2img')
+    parser.add_argument('--api-base', type=str,
+                        default='http://127.0.0.1:7860',
+                        help='direct call api ex http://127.0.0.1:7860')
 
-parser.add_argument('--api-output-dir', type=str,
-                    default='outputs',
-                    help='api output image directory')
+    ## default from .env ?
+    #parser.add_argument('--api-input-dir', type=str,
+    #                    default='inputs',
+    #                    help='api input image directory for img2img')
 
-
-args = parser.parse_args()
-
-if args.api_mode:
-    mode = 'json'
-else:
-    mode = 'text'
-
-current = args.append_dir
-prompt_file = args.input
-
-ext = os.path.splitext(prompt_file)[-1:][0]
-yml = None
-if ext == '.yaml' or ext == '.yml':
-    #yaml mode
-    prompts, appends, yml = yaml_parse(prompt_file,mode = mode)
-else:
-    #text mode
-    appends = []
-    prompts = ''
-    dirs = os.listdir(current)
-    sorted(dirs)
-    for filename in dirs:
-        path = os.path.join(current,filename)
-        if os.path.isfile(path):
-            appends.append(read_file(path))
-    with open(prompt_file,'r',encoding='utf_8') as f:
-        for l in f.readlines():
-            prompts = prompts + ' ' + l.replace('\n','')
-
-if args.output is None:
-    console_mode = True
-else:
-    console_mode = False
+    parser.add_argument('--api-output-dir', type=str,
+                        default='outputs',
+                        help='api output image directory')
 
 
-if yml is not None and 'options' in yml and 'method' in yml['options'] and yml['options']['method'] == 'random':
-    options = yml['options']
-    max_number = 100
-    if options is not None and 'number' in options:
-        max_number = options['number']
+    args = parser.parse_args()
 
-    flag = False
-    if options is not None and 'weight' in options:
-        flag = options['weight']
-    if options is not None and 'default_weight' in options:
-        default_weight = options['default_weight']
+    if args.json or args.api_mode:
+        mode = 'json'
     else:
-        default_weight = 0.1
-    output_text = prompt_random(prompts,appends,console_mode,max_number,weight_mode = flag,default_weight = default_weight,mode = mode)   
-else:
-    output_text = prompt_multiple(prompts,appends,console_mode,mode = mode)
+        mode = 'text'
 
-if args.output is not None:
-    with open(args.output,'w',encoding='utf-8',newline='\n') as fw:
-        if type(output_text) is str:
-            fw.write(output_text)
+    current = args.append_dir
+    prompt_file = args.input
+
+    ext = os.path.splitext(prompt_file)[-1:][0]
+    yml = None
+    if ext == '.yaml' or ext == '.yml':
+        #yaml mode
+        prompts, appends, yml = yaml_parse(prompt_file,mode = mode)
+    else:
+        #text mode
+        appends = []
+        prompts = ''
+        dirs = os.listdir(current)
+        sorted(dirs)
+        for filename in dirs:
+            path = os.path.join(current,filename)
+            if os.path.isfile(path):
+                appends.append(read_file(path))
+        with open(prompt_file,'r',encoding='utf_8') as f:
+            for l in f.readlines():
+                prompts = prompts + ' ' + l.replace('\n','')
+
+    if args.output is None and args.api_mode == False:
+        console_mode = True
+    else:
+        console_mode = False
+
+
+    if yml is not None and 'options' in yml and 'method' in yml['options'] and yml['options']['method'] == 'random':
+        options = yml['options']
+        max_number = 100
+        if options is not None and 'number' in options:
+            max_number = options['number']
+
+        flag = False
+        if options is not None and 'weight' in options:
+            flag = options['weight']
+        if options is not None and 'default_weight' in options:
+            default_weight = options['default_weight']
         else:
-            json.dump(output_text,fp=fw,indent=2)
+            default_weight = 0.1
+        output_text = prompt_random(prompts,appends,console_mode,max_number,weight_mode = flag,default_weight = default_weight,mode = mode)   
+    else:
+        output_text = prompt_multiple(prompts,appends,console_mode,mode = mode)
 
-if args.api_mode == True and args.api_url is not None:
-    print ('\n\n\n\n Enter API mode')
-    dir = args.api_output_dir
-    print("dir",args.api_output_dir)
-    os.makedirs(dir,exist_ok=True)
-    import requests
-    import io
-    import base64
-    import datetime
-    import re
-    from PIL import Image, PngImagePlugin
-    t = datetime.datetime.now()
-    url = args.api_url
-    headers  = {
-        'accept': 'application/json',
-        'content-type': 'application.json'
-    }
+    if args.output is not None:
+        with open(args.output,'w',encoding='utf-8',newline='\n') as fw:
+            if type(output_text) is str:
+                fw.write(output_text)
+            else:
+                json.dump(output_text,fp=fw,indent=2)
 
-    num = -1
-    files = os.listdir(dir)
-    for file in files:
-        if os.path.isfile(os.path.join(dir,file)):
-            name = file[0:5]
-            try:
-                num = max(num,int(name))
-            except:
-                pass
-    num += 1
-    for item in output_text:
-        payload = json.dumps(item)
-        print('call api .... wait.... long time')
-        response = requests.post(url, data=payload)
-        print(response.status_code)
-        if response.status_code != 200:
-            print ('Error!',response.status_code, response.text)
-            exit(-1)
+    if args.api_mode:
+        txt2img(output_text, base_url=args.api_base, output_dir=args.api_output_dir)
 
-        r = response.json()
-        load_r = json.loads(r['info'])
-        meta = load_r["infotexts"][0]
-        print('success return',len(r['images']),'images')
-        for i in r['images']:
-            image = Image.open(io.BytesIO(base64.b64decode(i.split(",",1)[1])))
-            pnginfo = PngImagePlugin.PngInfo()
-            pnginfo.add_text("parameters", meta)
-            seed = re.findall('Seed: (\d+),', meta)
-            print(seed[0])
-            filename = str(num).zfill(5) +'-' +  str(seed[0]) + '.png'
-            filename = os.path.join(dir,filename)
-            num += 1
-            print('save...', filename)
-            image.save(filename , pnginfo=pnginfo)
+if __name__ == "__main__":
+    main()
