@@ -24,18 +24,15 @@ async def async_post(url,data):
     async with httpx.AsyncClient() as client:
         try:
             return await client.post(url,data=data,headers=headers,timeout=(5,10000))
+        except httpx.ReadTimeout:
+            print('Read timeout')
+            return None
         except httpx.TimeoutException:
             print('Connect Timeout')
             return None
         except BaseException as error:
-            print(error)
+            print('Exception',error)
             return None
-
-loop = asyncio.get_event_loop()
-
-def post_wrapper(url,data):
-    result = loop.run_until_complete(async_post(url,data))
-    return result    
 
 async def progress_writer(url,data,progress_url):
     headers = {
@@ -58,18 +55,28 @@ async def progress_writer(url,data,progress_url):
             print(string,end='\r')
 
         async def progress_get(progress_url):
-            start_time = time.time()
-            response = await client.get(progress_url)
-            result = response.json()
-            right = 1.0
-            await write_progress(result,start_time)
-            await asyncio.sleep(1.0) # initializing wait
-            while right != 0.0:
-                await asyncio.sleep(0.1)
+            async with httpx.AsyncClient() as client:
+                retry = 0
+                start_time = time.time()
                 response = await client.get(progress_url)
                 result = response.json()
-                right = result['progress']
+                right = 1.0
                 await write_progress(result,start_time)
+                await asyncio.sleep(1.0) # initializing wait
+                while right != 0.0:
+                    await asyncio.sleep(0.1)
+                    try: 
+                        response = await client.get(progress_url)
+                        retry = 0
+                        result = response.json()
+                        right = result['progress']
+                        await write_progress(result,start_time)
+                    except:
+                        retry += 1
+                        if retry >= 10:
+                            print('Progress is unknown')
+                            return
+
         tasks = [
             client.post(url,data=data,headers=headers,timeout=(5,10000)),
             progress_get(progress_url)
@@ -119,6 +126,7 @@ def txt2img(output_text,base_url='http://127.0.0.1:8760',output_dir='./outputs')
         response = request_post_wrapper(url, data=payload, progress_url=progress)
 
         if response is None:
+            print('http connection - happening error')
             exit(-1)
         
         if response.status_code != 200:
@@ -455,6 +463,10 @@ def main():
                         default='outputs',
                         help='api output image directory')
 
+    parser.add_argument('--max-number', type=int,
+                        default=-1,
+                        help='override option.number for yaml mode')
+
 
     args = parser.parse_args()
 
@@ -465,6 +477,7 @@ def main():
 
     current = args.append_dir
     prompt_file = args.input
+    output = args.output        
 
     ext = os.path.splitext(prompt_file)[-1:][0]
     yml = None
@@ -485,31 +498,42 @@ def main():
             for l in f.readlines():
                 prompts = prompts + ' ' + l.replace('\n','')
 
-    if args.output is None and args.api_mode == False:
-        console_mode = True
-    else:
-        console_mode = False
 
-
-    if yml is not None and 'options' in yml and 'method' in yml['options'] and yml['options']['method'] == 'random':
+    if yml is not None and 'options' in yml and yml['options'] is not None:
         options = yml['options']
-        max_number = 100
-        if options is not None and 'number' in options:
-            max_number = options['number']
+    else:
+        options = None
 
-        flag = False
-        if options is not None and 'weight' in options:
-            flag = options['weight']
-        if options is not None and 'default_weight' in options:
-            default_weight = options['default_weight']
+    console_mode = False
+    if output is None and args.api_mode == False:
+        if 'output' in options and options['output'] is not None:
+            output = options['output']
         else:
-            default_weight = 0.1
-        output_text = prompt_random(prompts,appends,console_mode,max_number,weight_mode = flag,default_weight = default_weight,mode = mode)   
+            console_mode = True
+        
+
+    if options is not None and 'method' in options and options['method'] == 'random':
+        max_number = 100
+        default_weight = 0.1
+        weight_mode = False
+        if options is not None:
+            if 'number' in options:
+                max_number = options['number']
+
+            if args.max_number != -1:
+                max_number = args.max_number
+
+            if 'weight' in options:
+                weight_mode = options['weight']
+            if 'default_weight' in options:
+                default_weight = options['default_weight']
+
+        output_text = prompt_random(prompts,appends,console_mode,max_number,weight_mode = weight_mode,default_weight = default_weight,mode = mode)   
     else:
         output_text = prompt_multiple(prompts,appends,console_mode,mode = mode)
 
-    if args.output is not None:
-        with open(args.output,'w',encoding='utf-8',newline='\n') as fw:
+    if output is not None:
+        with open(output,'w',encoding='utf-8',newline='\n') as fw:
             if type(output_text) is str:
                 fw.write(output_text)
             else:

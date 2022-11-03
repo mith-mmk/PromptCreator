@@ -176,3 +176,4 @@ green
 - img2img
 - Prompt上書きモード
 - バージョニング
+- extension mode

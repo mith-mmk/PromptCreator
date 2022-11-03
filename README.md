@@ -210,3 +210,5 @@ green
 - img2img
 - Overritde Prompt
 - versioning
+- extension mode
+- mix mode
