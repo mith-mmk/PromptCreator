@@ -1,7 +1,6 @@
 #!/bin/python3
 #!pip install pyyaml
 #!pip install Pillow
-#!pip install requests
 #!pip install httpx
 
 # version 0.4 (C) 2022 MITH@mmk
@@ -16,38 +15,45 @@ import copy
 
 import httpx
 import asyncio
-import time
+
+loop = asyncio.get_event_loop()
+loop1 = asyncio.get_event_loop()
 
 async def async_post(url,data):
     headers = {
         'Content-Type': 'application/json',
     }
     async with httpx.AsyncClient() as client:
-#        async with client.post(url,data=data,headers=headers) as response:
-#            return response
         return await client.post(url,data=data,headers=headers,timeout=(5,10000))
 
-loop = asyncio.get_event_loop()
+async def progress_writer(url):
+    left = -1.0
+    while left != 0.0:
+        await asyncio.sleep(0.1)
+        response = httpx.get(url)
+        result = response.json()
+        left = result['progress']
+        print('\033[K{:.1f} %'.format(left),end='')
 
-def request_post_wrapper(url,data):
-    task = async_post(url,data)
-#    loop.create_task()
-    response = loop.run_until_complete(task)
-    while loop.is_running():
-        print('.',end='' )
-        time.sleep(0.1)
-    return response
+def request_post(url,data,progress_url=None):
+    result = loop.run_until_complete(async_post(url,data))
+    return result
 
+def request_post_wrapper(url,data,progress_url=None):
+    return request_post(url,data,progress_url)
 
 def txt2img(output_text,base_url='http://127.0.0.1:8760',output_dir='./outputs'):
-    url = base_url + '/sdapi/v1/txt2img'
+    if base_url[-1] == '/':
+        base_url = base_url[:-1]
+    url = (base_url + '/sdapi/v1/txt2img')
+    progress = base_url + '/sdapi/v1/progress?skip_current_image=false'
     print ('Enter API mode, connect', url)
     dir = output_dir
     print('output dir',dir)
     os.makedirs(dir,exist_ok=True)
-    import requests
     import io
     import base64
+    import requests
 #    import datetime
     import re
     from PIL import Image, PngImagePlugin
@@ -73,7 +79,7 @@ def txt2img(output_text,base_url='http://127.0.0.1:8760',output_dir='./outputs')
         # Why is an error happening? json=payload or json=item
         payload = json.dumps(item)
 #        response = requests.post(url, data=payload)
-        response = request_post_wrapper(url, data=payload)
+        response = request_post_wrapper(url, data=payload, progress_url=progress)
         
         if response.status_code != 200:
             print ('\033[KError!',response.status_code, response.text)
