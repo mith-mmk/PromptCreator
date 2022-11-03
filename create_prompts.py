@@ -2,7 +2,6 @@
 #!pip install pyyaml
 #!pip install Pillow
 #!pip install httpx
-#!pip install tqdm
 
 # version 0.4 (C) 2022 MITH@mmk
 import os
@@ -23,7 +22,14 @@ async def async_post(url,data):
         'Content-Type': 'application/json',
     }
     async with httpx.AsyncClient() as client:
-        return await client.post(url,data=data,headers=headers,timeout=(5,10000))
+        try:
+            return await client.post(url,data=data,headers=headers,timeout=(5,10000))
+        except httpx.TimeoutException:
+            print('Connect Timeout')
+            return None
+        except BaseException as error:
+            print(error)
+            return None
 
 loop = asyncio.get_event_loop()
 
@@ -37,25 +43,33 @@ async def progress_writer(url,data,progress_url):
     }
     result = None
     async with httpx.AsyncClient() as client:
+        async def write_progress(result,start_time):
+            right = result['progress'] * 100
+            state = result['state']
+            step = state['sampling_step']
+            steps = state['sampling_steps']
+            job = state['job']
+            elapsed_time = time.time() - start_time
+            sharp = '#' * int(right / 2) 
+            space = ' ' * (50 - len(sharp))
+            string = '\033[KCreate Image [{}{}] {:.1f}%  {} step ({:d}/{:d}) {:.2f} sec'.format(
+                sharp,space,right,job,step,steps,elapsed_time
+            )
+            print(string,end='\r')
+
         async def progress_get(progress_url):
-            right = 1.0
             start_time = time.time()
+            response = await client.get(progress_url)
+            result = response.json()
+            right = 1.0
+            await write_progress(result,start_time)
+            await asyncio.sleep(1.0) # initializing wait
             while right != 0.0:
-                await asyncio.sleep(1.5)
+                await asyncio.sleep(0.1)
                 response = await client.get(progress_url)
                 result = response.json()
-                right = result['progress'] * 100
-                state = result['state']
-                step = state['sampling_step']
-                steps = state['sampling_steps']
-                job = state['job']
-                elapsed_time = time.time() - start_time
-                sharp = '#' * int(right / 2) 
-                space = ' ' * (50 - len(sharp))
-                string = '\033[KCreate Image [{}{}] {:.1f}%  {} step ({:d}/{:d}) {:.2f} sec'.format(
-                    sharp,space,right,job,step,steps,elapsed_time
-                )
-                print(string,end='\r')
+                right = result['progress']
+                await write_progress(result,start_time)
         tasks = [
             client.post(url,data=data,headers=headers,timeout=(5,10000)),
             progress_get(progress_url)
@@ -103,6 +117,9 @@ def txt2img(output_text,base_url='http://127.0.0.1:8760',output_dir='./outputs')
         # Why is an error happening? json=payload or json=item
         payload = json.dumps(item)
         response = request_post_wrapper(url, data=payload, progress_url=progress)
+
+        if response is None:
+            exit(-1)
         
         if response.status_code != 200:
             print ('\033[KError!',response.status_code, response.text)
