@@ -2,6 +2,7 @@
 #!pip install pyyaml
 #!pip install Pillow
 #!pip install httpx
+#!pip install tqdm
 
 # version 0.4 (C) 2022 MITH@mmk
 import os
@@ -15,9 +16,7 @@ import copy
 
 import httpx
 import asyncio
-
-loop = asyncio.get_event_loop()
-loop1 = asyncio.get_event_loop()
+import time
 
 async def async_post(url,data):
     headers = {
@@ -26,21 +25,48 @@ async def async_post(url,data):
     async with httpx.AsyncClient() as client:
         return await client.post(url,data=data,headers=headers,timeout=(5,10000))
 
-async def progress_writer(url):
-    left = -1.0
-    while left != 0.0:
-        await asyncio.sleep(0.1)
-        response = httpx.get(url)
-        result = response.json()
-        left = result['progress']
-        print('\033[K{:.1f} %'.format(left),end='')
+loop = asyncio.get_event_loop()
 
-def request_post(url,data,progress_url=None):
+def post_wrapper(url,data):
     result = loop.run_until_complete(async_post(url,data))
-    return result
+    return result    
+
+async def progress_writer(url,data,progress_url):
+    headers = {
+        'Content-Type': 'application/json',
+    }
+    result = None
+    async with httpx.AsyncClient() as client:
+        async def progress_get(progress_url):
+            right = 1.0
+            start_time = time.time()
+            while right != 0.0:
+                await asyncio.sleep(1.5)
+                response = await client.get(progress_url)
+                result = response.json()
+                right = result['progress'] * 100
+                state = result['state']
+                step = state['sampling_step']
+                steps = state['sampling_steps']
+                job = state['job']
+                elapsed_time = time.time() - start_time
+                sharp = '#' * int(right / 2) 
+                space = ' ' * (50 - len(sharp))
+                string = '\033[KCreate Image [{}{}] {:.1f}%  {} step ({:d}/{:d}) {:.2f} sec'.format(
+                    sharp,space,right,job,step,steps,elapsed_time
+                )
+                print(string,end='\r')
+        tasks = [
+            client.post(url,data=data,headers=headers,timeout=(5,10000)),
+            progress_get(progress_url)
+        ]
+        result = await asyncio.gather(*tasks, return_exceptions=False)
+    return result[0]
+
 
 def request_post_wrapper(url,data,progress_url=None):
-    return request_post(url,data,progress_url)
+    result = asyncio.run(progress_writer(url,data,progress_url))
+    return result
 
 def txt2img(output_text,base_url='http://127.0.0.1:8760',output_dir='./outputs'):
     if base_url[-1] == '/':
@@ -53,8 +79,6 @@ def txt2img(output_text,base_url='http://127.0.0.1:8760',output_dir='./outputs')
     os.makedirs(dir,exist_ok=True)
     import io
     import base64
-    import requests
-#    import datetime
     import re
     from PIL import Image, PngImagePlugin
 #    dt = datetime.datetime.now().strftime('%y%m%d')
@@ -75,10 +99,9 @@ def txt2img(output_text,base_url='http://127.0.0.1:8760',output_dir='./outputs')
     flash = ''
     for (n,item) in enumerate(output_text):
         print(flash,end = '')
-        print('\033[K(%d/%d) call api .... wait.... long time' % (n+1,count))
+        print('\033[KBatch %d of %d' % (n+1,count))
         # Why is an error happening? json=payload or json=item
         payload = json.dumps(item)
-#        response = requests.post(url, data=payload)
         response = request_post_wrapper(url, data=payload, progress_url=progress)
         
         if response.status_code != 200:
