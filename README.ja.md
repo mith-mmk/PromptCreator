@@ -175,3 +175,4 @@ green
 # issue
 - img2img
 - Prompt上書きモード
+- バージョニング
