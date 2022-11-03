@@ -19,7 +19,7 @@ command:
     cfg_scale: 7.5
     steps: ${3,2}
 
-#    sd_model: None
+#    sd_model: None do not use
 #    outpath_samples: process_string_tag
 #    outpath_grids: process_string_tag
 #    prompt_for_display: process_string_tag
@@ -29,6 +29,7 @@ command:
 #    seed_resize_from_h: process_int_tag
 #    seed_resize_from_w: process_int_tag
 #    sampler_index: process_int_tag 
+    # scirpt is use int ex.) 1 but api use str ex.) Euler
     # 0 Euler a 1 Euler 2  3 LMS 4 DPM2 5 DPM2 a 6 DPM fast 7 DPM adaptive 8 LMS Karras
     # 9 DPM2 Karras 10 DPM2 a Karras 11 DDIM 12 Heun
 #    batch_size: process_int_tag
@@ -42,3 +43,12 @@ command:
 #    denoising_strength=denoising_strength: 0.3
 #    firstphase_width=firstphase_width: 512
 #    firstphase_height=firstphase_height: 512
+
+# txt2img api only? schema use DDIM
+# eta       Eta float
+# s_churn   S Churn  float
+# s_tmax    S Tmax  float
+# s_tmin    S Tmin  float
+# s_noise   S Noise  float
+## also custom setting
+# override_settings    Override Settings also {'key': 'settimg',...}

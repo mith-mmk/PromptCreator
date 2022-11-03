@@ -2,7 +2,7 @@
 #!pip install pyyaml
 #!pip install Pillow
 #!pip install requests
-#!pip install aiohttp[speedups]
+#!pip install httpx
 
 # version 0.4 (C) 2022 MITH@mmk
 import os
@@ -13,17 +13,31 @@ import re
 import random
 import json
 import copy
-import aiohttp
-import asyncio
 
-async def json_request_wrapper(url,payload):
-    header = {
+import httpx
+import asyncio
+import time
+
+async def async_post(url,data):
+    headers = {
         'Content-Type': 'application/json',
     }
-    data = json.dumps(payload)
-    async with aiohttp.ClientSession() as session:
-        async with session.post(url,data,header=header) as response:
-            return response
+    async with httpx.AsyncClient() as client:
+#        async with client.post(url,data=data,headers=headers) as response:
+#            return response
+        return await client.post(url,data=data,headers=headers,timeout=(5,10000))
+
+loop = asyncio.get_event_loop()
+
+def request_post_wrapper(url,data):
+    task = async_post(url,data)
+#    loop.create_task()
+    response = loop.run_until_complete(task)
+    while loop.is_running():
+        print('.',end='' )
+        time.sleep(0.1)
+    return response
+
 
 def txt2img(output_text,base_url='http://127.0.0.1:8760',output_dir='./outputs'):
     url = base_url + '/sdapi/v1/txt2img'
@@ -52,11 +66,15 @@ def txt2img(output_text,base_url='http://127.0.0.1:8760',output_dir='./outputs')
     count = len(output_text)
     print('API loop count is %d times' % (count))
     print('')
+    flash = ''
     for (n,item) in enumerate(output_text):
+        print(flash,end = '')
         print('\033[K(%d/%d) call api .... wait.... long time' % (n+1,count))
         # Why is an error happening? json=payload or json=item
         payload = json.dumps(item)
-        response = requests.post(url, data=payload)
+#        response = requests.post(url, data=payload)
+        response = request_post_wrapper(url, data=payload)
+        
         if response.status_code != 200:
             print ('\033[KError!',response.status_code, response.text)
             print('\033[%dA' % (2),end='')
@@ -81,7 +99,7 @@ def txt2img(output_text,base_url='http://127.0.0.1:8760',output_dir='./outputs')
             except BaseException as e:
                 print ('\033[Ksave error',e)
         prt_cnt = len(r['images']) + 2
-        print('\033[%dA' % (prt_cnt),end='')
+        flash = '\033[%dA' % (prt_cnt)
     print('')
 
 
