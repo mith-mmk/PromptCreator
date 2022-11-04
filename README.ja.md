@@ -1,11 +1,10 @@
 # Prompt Creator
-　呪文の組み合わせを書くのが面倒なので作成してみた。AUTOMATIC1111/stable-diffusion-webuiのprompts from fileにuploadするためのテキストファイルを生成するcreate_prompt.py。
+　I create automatic prompt creator for AUTOMATIC1111/stable-diffusion-webui.
 
-- 組み合わせ爆発に注意。
-- 後ろから順に出てくる仕様になっています
-- ~~リプレイス変数は、$1,$2,...$9の次は$a(10番目)...$zになる~~ 2022/11/01 廃止
-- \$\{n\}で括る \$\{1\},\$\{2\},...\$\{100\}
-- yamlモードに変数モードを追加 配列ではなくキーで指定。上から順番にリプレイスするので再帰する場合は、再帰する変数を後で指定すること。指定方法は\$\{変数名\}　ただし、\$\{semicolon\}などの予約語は使えません。
+- Beware of combination explosion
+- Replace variable is \$\{n\} ex. \$\{1\},\$\{2\},...\$\{100}\
+- If You use yaml mode,you can use \$\{name\} for variable (see below), but you cannot use reserved words ex. \$\{semicolon\}
+
 
 ```
 usage: create_prompts.py [-h] [--append-dir APPEND_DIR] [--output OUTPUT] [--json [JSON]] [--api-mode [API_MODE]] [--api-base API_BASE]
@@ -13,27 +12,39 @@ usage: create_prompts.py [-h] [--append-dir APPEND_DIR] [--output OUTPUT] [--jso
                          input
 ```
 
---json JSONで出力
---api-mode 実行結果をAPIで叩きに行きます。Web UIを--APIで起動している必要有り。
---api-base API_BASE APIを実行するホスト名(例:http://127.0.0.1:7860) 参考:　https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/API
---api-output-dir イメージを出力するフォルダを指定します(未指定の場合は、./outputs)
+  -h, --help            show this help message and exit
+
+  --append-dir APPEND_DIR
+                        direcory of input append prompt files
+
+  --output OUTPUT       direcory of output file of prompt list file
+
+  --json                output JSON
+
+  --api-mode            output api force set --json
+                        see https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/API
+
+  --api-base API_BASE  for call api from this script ex http://127.0.0.1:7860
+
+  --api-output-dir API_OUTPUT_DIR
+                        a directory of api output images 
 
 
-# 準備
- Python 3.10+(3.8でも恐らく動く)。以下のパッケージをインストール。
-
+# Setting
+ Python 3.10+(Also 3.8 and above) and use there packages.
+ 
 ```
 pip install pyyaml
 pip install Pillow
 pip install httpx
 ```
 
-# 使い方
-## Textモード
-　promptを書き散らしたTextファイルにリストを並べたappend_dirの下のファイルを読み込ませるスクリプト。置き換える順番は$1,$2,$3....になり、ソートされたファイル名の順に適用される。コマンドラインに--append-dirの設定が必要。改行は半角スペースに置き換わる。
+# Usage
+## Text Mode
+　Text mode is pre prompt for text file with list words file under append_dir.Replace order is \$\{1\},\$\{3\},\$\{3\}....,Files correspond in sorted order from 1 to n.If text mode must set --append-dir option. Prompt text's new lines are replace space.
 
 
-実行例：
+ex:
 ```
 ./create_promopts.py prompt.txt --append_dir ./append --output list.txt
 ```
@@ -51,15 +62,16 @@ low quality,(((bad hands)))"
 --seed 2027904422
 ```
 
-## yamlモード
-　拡張子がyamlもしくはymlの場合 yamlで読み込む
+## yaml mode
+　A file extention is yaml or yml,Script is read yaml.
 
-実行例：
+ex:
 ```
 ./create_promopts.py prompt.yml --output list.txt
 ```
 
-例：配列モード
+
+ex: array mode
 ```yaml
 appends:
     -
@@ -79,7 +91,8 @@ command:
     cfg_scale: 7.5
 ```
 
-例：変数モード
+ex:variable mode
+
 ```yaml
 appends:
     eye:
@@ -99,45 +112,66 @@ command:
     cfg_scale: 7.5
 ```
 
-### 乱数モード
+### mutiply mode
+  Prompts is made by a round robin.
 
-　呪文を自動生成します。
+
+### random mode
+ Prompts is made by random 
 
 ```yaml
 version: 0.2  #Version is Not implement 
 options:
 #    filename: list.txt  #Not implement
     method: random # default= multiple,random, ...
-    number: 200    # 出力する数 list limit, "multiple" is not use
-    weight: True   # Weight mode = Ture or False default:0.1
-    default_weight: 0.1 # None impl 現状、何を指定しても絶対に 0.1
+    number: 200    # list limit, "multiple" is not use
+    weight: True   # Weight mode = Ture or False, If False,script is note use weight
+    default_weight: 0.1 # Default weight
 append:
     - 0.2;blue      # weight 0.2
     - 0.3;yellow    # weight 0.3
     - white         # use default 0.1
 ```
 
-###　再帰置換について
-  仕様上、上から順番に置き換えていくので、\$\{1\}のリプレイスを\$\{2\} \$\{3\}にすることが出来ます。以下の様になります
+### about recursive replace
+ Replace order is yaml order.For this reason,a replace variable \$\{1\} uses \$\{2\}, \$\{3\} or after variables.
+
+ ex.
 
 ```yaml
 append:
     - # ${1}
         - ${2} eyes ${3} hair
-    -
+    - # ${2}
         - 0.3;blue
         - 0.1;red
         - 0.6;
-    -
+    - # ${3}
+        - 0.5;blonde
+        - 0.5;brown
+```
+
+for variable mode
+```yaml
+append:
+    style:
+        - ${eyecolor} eyes ${haircolor} hair
+    eyecolor:
+        - 0.3;blue
+        - 0.1;red
+        - 0.6;
+    haircolor:
         - 0.5;blonde
         - 0.5;brown
 ```
 
 
-### エスケープ
- エスケープは;の置き換えに\\;が利用できます。もしくは\$\{semicolon\}
+### escape
+If you want to use ;,you can instead of \\; or \$\{semicolon\}
 
-### 分割置換と 置換
+### splitting replacement
+
+Use \$\{name,num\}, num is replacement number(1..)
 
 例)
 ```yaml
@@ -152,8 +186,8 @@ append:
    negative_script: "${1,2}" # <- dog;cat, bird
 ```
 
-### filenameモード
-　テキストファイル名から読み込ませます。パスは実行パスからの相対パスになります。ファイルは;で区切ること。中身は変則的なcsv(セミコロン区切り)になります。#で始まる行はスキップします。
+### filename mode
+　Filename mode is replacement list reading from text file。Path is relative path of execution path.If # letter is comment.
 
 
 ```yaml
@@ -161,9 +195,9 @@ append:
             - color.txt
 ```
 
-例:color.txt
+ex:color.txt
 ```
-# Color リスト
+# Color list
 0.5;black
 white
 grey
@@ -174,6 +208,7 @@ green
 
 # issue
 - img2img
-- Prompt上書きモード
-- バージョニング
+- Overritde Prompt
+- versioning
 - extension mode
+- mix mode

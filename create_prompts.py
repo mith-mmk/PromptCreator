@@ -3,7 +3,7 @@
 #!pip install Pillow
 #!pip install httpx
 
-# version 0.4 (C) 2022 MITH@mmk
+# version 0.5 (C) 2022 MITH@mmk
 import os
 import yaml
 import argparse
@@ -180,7 +180,25 @@ def yaml_parse(filename, mode='text'):
             for item in items:
                 append.append(item_split(item))
         appends[key] = append
-#    print(appends)
+    if 'appends_multiple' in yml:
+        appends_multiple = {}
+        for n,items in enumerate(yml['appends_multiple']):
+            if type(yml['appends_multiple']) is dict:
+                key = items
+                items = yml['appends_multiple'][items]
+            else:
+                key = str(n+1)            
+
+            if type(items) is str:
+                # filemode
+                appends_multiple = read_file(items)
+            else:
+                # inline mode
+                append = []
+                for item in items:
+                    append.append(item_split(item))
+            appends_multiple[key] = append
+        yml['appends_multiple'] = appends_multiple
 
     prompts = ''
 
@@ -528,7 +546,20 @@ def main():
             if 'default_weight' in options:
                 default_weight = options['default_weight']
 
-        output_text = prompt_random(prompts,appends,console_mode,max_number,weight_mode = weight_mode,default_weight = default_weight,mode = mode)   
+        output_text = prompt_random(prompts,appends,console_mode,max_number,weight_mode = weight_mode,default_weight = default_weight,mode = mode)
+        if 'appends_multiple' in yml:
+            if type(output_text) is list:
+                multiple_text = []
+                for prompts in output_text:
+                    result = prompt_multiple(prompts,yml['appends_multiple'],console_mode,mode = mode)
+                    for item in result:
+                        multiple_text.append(item)
+            else:
+                multiple_text = ''
+                for prompts in output_text.split('\n'):
+                    multiple_text += prompt_multiple(prompts,yml['appends_multiple'],console_mode,mode = mode)             
+
+            output_text = multiple_text
     else:
         output_text = prompt_multiple(prompts,appends,console_mode,mode = mode)
 
