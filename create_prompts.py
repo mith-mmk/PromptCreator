@@ -84,9 +84,29 @@ async def progress_writer(url,data,progress_url):
         result = await asyncio.gather(*tasks, return_exceptions=False)
     return result[0]
 
+# force interrupt process
+async def progress_interrupt(url):
+    async with httpx.AsyncClient() as client:
+        try:
+            return await client.post(url)
+        except httpx.ReadTimeout:
+            print('Read timeout')
+            return None
+        except httpx.TimeoutException:
+            print('Connect Timeout')
+            return None
+        except BaseException as error:
+            print('Exception',error)
+            return None
 
-def request_post_wrapper(url,data,progress_url=None):
-    result = asyncio.run(progress_writer(url,data,progress_url))
+def request_post_wrapper(url,data,progress_url=None,base_url=None):
+    try:
+        result = asyncio.run(progress_writer(url,data,progress_url))
+    except KeyboardInterrupt:
+        if base_url:
+            asyncio.run(progress_interrupt(base_url + '/sdapi/v1/interrupt'))
+            print('enter Ctrl-c, Process stopping')
+            exit(2)
     return result
 
 def txt2img(output_text,base_url='http://127.0.0.1:8760',output_dir='./outputs'):
@@ -123,12 +143,11 @@ def txt2img(output_text,base_url='http://127.0.0.1:8760',output_dir='./outputs')
         print('\033[KBatch %d of %d' % (n+1,count))
         # Why is an error happening? json=payload or json=item
         payload = json.dumps(item)
-        response = request_post_wrapper(url, data=payload, progress_url=progress)
+        response = request_post_wrapper(url, data=payload, progress_url=progress,base_url=base_url)
 
         if response is None:
             print('http connection - happening error')
             exit(-1)
-        
         if response.status_code != 200:
             print ('\033[KError!',response.status_code, response.text)
             print('\033[%dA' % (2),end='')
@@ -150,6 +169,9 @@ def txt2img(output_text,base_url='http://127.0.0.1:8760',output_dir='./outputs')
                 filename = os.path.join(dir,filename)
                 num += 1
                 image.save(filename , pnginfo=pnginfo)
+            except KeyboardInterrupt:
+                print ('\033[KProcess stopped',e)
+                exit(2)
             except BaseException as e:
                 print ('\033[Ksave error',e)
         prt_cnt = len(r['images']) + 2
@@ -216,15 +238,19 @@ def read_file(filename):
     strs = []
     filenames = filename.split()
     for filename in filenames:
-        with open(filename,'r',encoding='utf_8') as f:
-            for i,item in enumerate(f.readlines()):
-                if re.match('^\s*#.+',item) or re.match('^\s*$',item):
-                    continue
-                item = re.sub('\s*#.+$','',item)
-                try:
-                    strs.append(item_split(item))
-                except:
-                    print('Errro happen line %s %d %s' % (filename, i, item))
+        try:
+            with open(filename,'r',encoding='utf_8') as f:
+                for i,item in enumerate(f.readlines()):
+                    if re.match('^\s*#.+',item) or re.match('^\s*$',item):
+                        continue
+                    item = re.sub('\s*#.+$','',item)
+                    try:
+                        strs.append(item_split(item))
+                    except:
+                        print('Errro happen line %s %d %s' % (filename, i, item))
+        except FileNotFoundError:
+            print('%s is not found' % (filename))
+            exit(-1)
     return strs
 
 def item_split(item):
