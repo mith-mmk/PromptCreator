@@ -524,7 +524,7 @@ def main():
 
     console_mode = False
     if output is None and args.api_mode == False:
-        if 'output' in options and options['output'] is not None:
+        if options is not None and 'output' in options and options['output'] is not None:
             output = options['output']
         else:
             console_mode = True
