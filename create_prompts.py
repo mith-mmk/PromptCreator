@@ -49,9 +49,18 @@ async def progress_writer(url,data,progress_url):
             elapsed_time = time.time() - start_time
             sharp = '#' * int(right / 2) 
             space = ' ' * (50 - len(sharp))
-            string = '\033[KCreate Image [{}{}] {:.1f}%  {} step ({:d}/{:d}) {:.2f} sec'.format(
-                sharp,space,right,job,step,steps,elapsed_time
-            )
+            if right >= 0.0:
+                string = '\033[KCreate Image [{}{}] {:.1f}%  {} step ({:d}/{:d}) {:.2f} sec'.format(
+                    sharp,space,right,job,step,steps,elapsed_time
+                )
+            else:
+                right = - right
+                sharp = '#' * int(right / 2) 
+                space = ' ' * (50 - len(sharp))
+                string = '\033[KWait Web UI is resource using [{}{}] {:.1f}%  {} step ({:d}/{:d}) {:.2f} sec'.format(
+                    sharp,space,right,job,step,steps,elapsed_time
+                )
+
             print(string,end='\r')
 
         async def progress_get(progress_url):
@@ -105,8 +114,8 @@ def request_post_wrapper(url,data,progress_url=None,base_url=None):
     except KeyboardInterrupt:
         if base_url:
             asyncio.run(progress_interrupt(base_url + '/sdapi/v1/interrupt'))
-            print('enter Ctrl-c, Process stopping')
-            exit(2)
+        print('enter Ctrl-c, Process stopping')
+        exit(2)
     return result
 
 def txt2img(output_text,base_url='http://127.0.0.1:8760',output_dir='./outputs'):
@@ -308,7 +317,7 @@ def prompt_replace(string,replace_texts,var):
                     string[key] = string[key].replace('${%s,%d}' % (var,k),rep)
     
     if type(string) is str:
-        string = re.sub(r'\${%s,.*?}' % (var) ,'',string)
+        string = re.sub(r'\$\{%s,\d*?\}' % (var) ,'',string)
         string = string.replace(r'\${%s}' % (var) ,'')
     return string
 
