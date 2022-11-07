@@ -13,6 +13,10 @@ import random
 import json
 import copy
 
+import io
+import base64
+from PIL import Image, PngImagePlugin
+
 import httpx
 import asyncio
 import time
@@ -110,27 +114,202 @@ async def progress_interrupt(url):
 
 def request_post_wrapper(url,data,progress_url=None,base_url=None):
     try:
-        result = asyncio.run(progress_writer(url,data,progress_url))
+        if progress_url is not None:
+            result = asyncio.run(progress_writer(url,data,progress_url))
+        else:
+            result = asyncio.run(async_post(url,data))
     except KeyboardInterrupt:
         if base_url:
             asyncio.run(progress_interrupt(base_url + '/sdapi/v1/interrupt'))
         print('enter Ctrl-c, Process stopping')
         exit(2)
+    except httpx.ConnectError:
+        print('All connection attempts failed,Is the server down?')
+        exit(2)
+    except httpx.ConnectTimeout:
+        print('Connection Time out,Is the server down or server address mistake?')
+        exit(2)
     return result
 
-def txt2img(output_text,base_url='http://127.0.0.1:8760',output_dir='./outputs'):
+def normalize_base_url(base_url):
     if base_url[-1] == '/':
         base_url = base_url[:-1]
+    return base_url
+
+def create_parameters(parameters_text):
+    para = parameters_text.split('\n')
+    parameters = {}
+    parameters['prompt'] = para[0]
+    parameters['negative_prompt'] = para[1].replace('Negative prompt: ','')
+    options = para[2].split(',')
+    for option in options:
+        keyvalue = option.split(': ')
+        if len(keyvalue) == 2:
+            key = keyvalue[0].strip().replace(' ','_').lower()
+            if key == 'size':
+                wh = keyvalue[1].split('x')
+                parameters['width'] = wh[0]
+                parameters['height'] = wh[1]
+            elif key == 'seed_resize_from':
+                wh = keyvalue[1].split('x')
+                parameters['seed_resize_from_w'] = wh[0]
+                parameters['seed_resize_from_h'] = wh[1]
+            elif key == 'sampler':
+                parameters['sampler_index'] = keyvalue[1]
+            elif key == 'batch_pos':
+                pass
+            elif key == 'clip_skip':
+                parameters['CLIP_stop_at_last_layers'] = keyvalue[1]
+            else:
+                parameters[key] = keyvalue[1]
+        else:
+            print('unknow', option)
+    return parameters
+
+def create_img2json(imagefile):
+    schema = [
+        'enable_hr',
+        'denoising_strength',
+        'firstphase_width',
+        'firstphase_height',
+        'prompt',
+        'styles',
+        'seed',
+        'subseed',
+        'subseed_strength',
+        'seed_resize_from_h',
+        'seed_resize_from_w',
+        'batch_size',
+        'n_iter',
+        'steps',
+        'cfg_scale',
+        'width',
+        'height',
+        'restore_faces',
+        'tiling',
+        'negative_prompt',
+        'eta',
+        's_churn',
+        's_tmax',
+        's_tmin',
+        's_noise',
+        'sampler_index'
+    ]
+
+    image = Image.open(imagefile)
+    image.load()
+    if image.info['parameters'] is not None:
+        parameter_text = image.info['parameters']
+        parameters = create_parameters(parameter_text)
+    else:
+        parameters = {}
+    buffer = io.BytesIO()
+    image.save(buffer, 'png')
+    init_image = base64.b64encode(buffer.getvalue()).decode("ascii")
+    json_raw = {}
+    json_raw['init_images'] = ['dummy;dummy,' + init_image] # 11/07/2022 version img2img api dummy string need,yet 
+    override_setting = {}
+    for key in parameters.keys():
+        if key in schema:
+            json_raw[key] = parameters[key]
+        else:
+            override_setting[key] = parameters[key]
+
+    json_raw['override_setting'] = override_setting
+    return json_raw
+
+def img2img(imagefiles,overrides=None,base_url='http://127.0.0.1:8760',output_dir='./outputs'):
+    base_url = normalize_base_url(base_url)
+    url = (base_url + '/sdapi/v1/img2img')
+    progress = base_url + '/sdapi/v1/progress?skip_current_image=false'
+    print ('Enter API, connect', url)
+    dir = output_dir
+    print('output dir',dir)
+    os.makedirs(dir,exist_ok=True)
+#    dt = datetime.datetime.now().strftime('%y%m%d')
+    count = len(imagefiles)
+    num = -1
+    files = os.listdir(dir)
+    for file in files:
+        if os.path.isfile(os.path.join(dir,file)):
+            name = file[0:5]
+            try:
+                num = max(num,int(name))
+            except:
+                pass
+    num += 1
+    print('API loop count is %d times' % (count))
+    print('')
+    flash = ''
+    for (n,imagefile) in enumerate(imagefiles):
+        item = create_img2json(imagefile)
+        if overrides is not None:
+            if type(overrides) is list:
+                override = overrides[n]
+            else:
+                override = overrides
+            for key,value in override.items():
+                item[key] = value
+
+        print(flash,end = '')
+        print('\033[KBatch %d of %d' % (n+1,count))
+        # Why is an error happening? json=payload or json=item
+        payload = json.dumps(item)
+        response = request_post_wrapper(url, data=payload, progress_url=progress,base_url=base_url)
+
+        if response is None:
+            print('http connection - happening error')
+            exit(-1)
+        if response.status_code != 200:
+            print ('\033[KError!',response.status_code, response.text)
+            print('\033[%dA' % (2),end='')
+            continue
+
+        r = response.json()
+        load_r = json.loads(r['info'])
+        meta = load_r["infotexts"][0]
+        print('\033[Kreturn %d images' % (len(r['images'])))
+        for i in r['images']:
+            try:
+#                image = Image.open(io.BytesIO(base64.b64decode(i.split(",",1)[1])))
+                image = Image.open(io.BytesIO(base64.b64decode(i)))
+                pnginfo = PngImagePlugin.PngInfo()
+                pnginfo.add_text("parameters", meta)
+                seed = re.findall('Seed: (\d+),', meta)
+                filename = str(num).zfill(5) +'-' +  str(seed[0]) + '.png'
+                print('\033[Ksave... ',filename)
+                filename = os.path.join(dir,filename)
+                num += 1
+                image.save(filename , pnginfo=pnginfo)
+            except KeyboardInterrupt:
+                print ('\033[KProcess stopped',e)
+                exit(2)
+            except BaseException as e:
+                print ('\033[Ksave error',e)
+        prt_cnt = len(r['images']) + 2
+        flash = '\033[%dA' % (prt_cnt)
+    print('')
+
+# 2022-11-07 cannot run yet
+def iterrogate(imagefile,base_url):
+    base_url = normalize_base_url(base_url)
+    url = (base_url + '/sdapi/v1/interrogate')
+    print ('Iterrogate mode, connect', url)
+    json_raw = create_img2json(imagefile)
+    payload = json.dumps({'image': json_raw['init_image']})
+    response = request_post_wrapper(url, data=payload, progress_url=None,base_url=base_url)
+    print(response)
+    return response
+
+
+def txt2img(output_text,base_url='http://127.0.0.1:8760',output_dir='./outputs'):
+    base_url = normalize_base_url(base_url)
     url = (base_url + '/sdapi/v1/txt2img')
     progress = base_url + '/sdapi/v1/progress?skip_current_image=false'
     print ('Enter API mode, connect', url)
     dir = output_dir
     print('output dir',dir)
     os.makedirs(dir,exist_ok=True)
-    import io
-    import base64
-    import re
-    from PIL import Image, PngImagePlugin
 #    dt = datetime.datetime.now().strftime('%y%m%d')
 
     num = -1
