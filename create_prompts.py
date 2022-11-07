@@ -664,46 +664,7 @@ def prompt_random(prompts,appends,console_mode,max_number,weight_mode = False,de
                 output_text.append(new_prompt)
     return output_text
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('input', type=str,
-                        default='./prompt.txt',
-                        help='input promptfile')
-    parser.add_argument('--append-dir', type=str,
-                        default='./appends',
-                        help='direcory of input append prompt files')
-    parser.add_argument('--output', type=str,
-                        default=None,
-                        help='direcory of output file of prompt list file')
-
-    parser.add_argument('--json', type=bool,nargs='?',
-                        const=True, default=False,
-                        help='output JSON')
-
-    parser.add_argument('--api-mode', type=bool,nargs='?',
-                        const=True, default=False,
-                        help='output api force set --json')
-
-    parser.add_argument('--api-base', type=str,
-                        default='http://127.0.0.1:7860',
-                        help='direct call api ex http://127.0.0.1:7860')
-
-    ## default from .env ?
-    #parser.add_argument('--api-input-dir', type=str,
-    #                    default='inputs',
-    #                    help='api input image directory for img2img')
-
-    parser.add_argument('--api-output-dir', type=str,
-                        default='outputs',
-                        help='api output image directory')
-
-    parser.add_argument('--max-number', type=int,
-                        default=-1,
-                        help='override option.number for yaml mode')
-
-
-    args = parser.parse_args()
-
+def main(args):
     if args.json or args.api_mode:
         mode = 'json'
     else:
@@ -790,4 +751,51 @@ def main():
         txt2img(output_text, base_url=args.api_base, output_dir=args.api_output_dir)
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('input', type=str,
+                        default='./prompt.txt',
+                        help='input promptfile')
+    parser.add_argument('--append-dir', type=str,
+                        default='./appends',
+                        help='direcory of input append prompt files')
+    parser.add_argument('--output', type=str,
+                        default=None,
+                        help='direcory of output file of prompt list file')
+
+    parser.add_argument('--json', type=bool,nargs='?',
+                        const=True, default=False,
+                        help='output JSON')
+
+    parser.add_argument('--api-mode', type=bool,nargs='?',
+                        const=True, default=False,
+                        help='output api force set --json')
+
+    parser.add_argument('--api-base', type=str,
+                        default='http://127.0.0.1:7860',
+                        help='direct call api ex http://127.0.0.1:7860')
+
+    ## 
+    #parser.add_argument('--api-name', type=str,
+    #                    default='txt2img',
+    #                    help='call api txt2img/img2img')
+
+    #parser.add_argument('--image-path', type=str,
+    #                    default='./inputs',
+    #                    help='img2img path')
+
+    #parser.add_argument('--mask-path', type=str,
+    #                    default='./inputs-mask',
+    #                    help='img2img mask path')
+
+
+    parser.add_argument('--api-output-dir', type=str,
+                        default='outputs',
+                        help='api output image directory')
+
+    parser.add_argument('--max-number', type=int,
+                        default=-1,
+                        help='override option.number for yaml mode')
+
+
+    args = parser.parse_args()
+    main(args)
