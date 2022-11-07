@@ -267,10 +267,12 @@ def img2img(imagefiles,overrides=None,base_url='http://127.0.0.1:8760',output_di
 
         r = response.json()
         load_r = json.loads(r['info'])
-        meta = load_r["infotexts"][0]
+#        meta = load_r["infotexts"][0]
         print('\033[Kreturn %d images' % (len(r['images'])))
         for i in r['images']:
             try:
+                meta = load_r["infotexts"][i]
+
 #                image = Image.open(io.BytesIO(base64.b64decode(i.split(",",1)[1])))
                 image = Image.open(io.BytesIO(base64.b64decode(i)))
                 pnginfo = PngImagePlugin.PngInfo()
