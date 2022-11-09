@@ -3,3 +3,4 @@ outputs
 prompts
 prompts*.*
 list*
+__pycache__
