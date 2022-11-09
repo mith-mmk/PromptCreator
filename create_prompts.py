@@ -61,7 +61,7 @@ async def progress_writer(url,data,progress_url):
                 right = - right
                 sharp = '#' * int(right / 2) 
                 space = ' ' * (50 - len(sharp))
-                string = '\033[KWait Web UI is resource using [{}{}] {:.1f}%  {} step ({:d}/{:d}) {:.2f} sec'.format(
+                string = '\033[KWeb UI interrupts using resource [{}{}] {:.1f}%  {} step ({:d}/{:d}) {:.2f} sec'.format(
                     sharp,space,right,job,step,steps,elapsed_time
                 )
 
@@ -98,19 +98,18 @@ async def progress_writer(url,data,progress_url):
     return result[0]
 
 # force interrupt process
-async def progress_interrupt(url):
-    async with httpx.AsyncClient() as client:
-        try:
-            return await client.post(url)
-        except httpx.ReadTimeout:
-            print('Read timeout')
-            return None
-        except httpx.TimeoutException:
-            print('Connect Timeout')
-            return None
-        except BaseException as error:
-            print('Exception',error)
-            return None
+def progress_interrupt(url):
+    try:
+        return httpx.post(url)
+    except httpx.ReadTimeout:
+        print('Read timeout')
+        return None
+    except httpx.TimeoutException:
+        print('Connect Timeout')
+        return None
+    except BaseException as error:
+        print('Exception',error)
+        return None
 
 def request_post_wrapper(url,data,progress_url=None,base_url=None):
     try:
@@ -120,7 +119,7 @@ def request_post_wrapper(url,data,progress_url=None,base_url=None):
             result = asyncio.run(async_post(url,data))
     except KeyboardInterrupt:
         if base_url:
-            asyncio.run(progress_interrupt(base_url + '/sdapi/v1/interrupt'))
+            progress_interrupt(base_url + '/sdapi/v1/interrupt')
         print('enter Ctrl-c, Process stopping')
         exit(2)
     except httpx.ConnectError:
@@ -140,8 +139,13 @@ def create_parameters(parameters_text):
     para = parameters_text.split('\n')
     parameters = {}
     parameters['prompt'] = para[0]
-    parameters['negative_prompt'] = para[1].replace('Negative prompt: ','')
-    options = para[2].split(',')
+    neg = 'Negative prompt: '
+    if para[1][:len(neg)] == neg:
+        parameters['negative_prompt'] = para[1].replace(neg,'')
+        options = para[2].split(',')
+    else:
+        options = para[1].split(',')
+
     for option in options:
         keyvalue = option.split(': ')
         if len(keyvalue) == 2:
@@ -207,7 +211,9 @@ def create_img2json(imagefile):
     image.save(buffer, 'png')
     init_image = base64.b64encode(buffer.getvalue()).decode("ascii")
     json_raw = {}
-    json_raw['init_images'] = ['dummy;dummy,' + init_image] # 11/07/2022 version img2img api dummy string need,yet 
+    json_raw['init_images'] = ['data:image/png;base64,' + init_image] 
+        # 11/07/2022 version img2img api dummy string need,yet,because gradio uses URL Data instead of base64
+
     override_setting = {}
     for key in parameters.keys():
         if key in schema:
@@ -296,11 +302,13 @@ def img2img(imagefiles,overrides=None,base_url='http://127.0.0.1:8760',output_di
 def iterrogate(imagefile,base_url):
     base_url = normalize_base_url(base_url)
     url = (base_url + '/sdapi/v1/interrogate')
-    print ('Iterrogate mode, connect', url)
-    json_raw = create_img2json(imagefile)
-    payload = json.dumps({'image': json_raw['init_image']})
+    image = Image.open(imagefile)
+    image.load()
+    buffer = io.BytesIO()
+    image.save(buffer, 'png')
+    image = base64.b64encode(buffer.getvalue()).decode("ascii")
+    payload = json.dumps({'image': 'data:image/png;base64,' + image})
     response = request_post_wrapper(url, data=payload, progress_url=None,base_url=base_url)
-    print(response)
     return response
 
 
@@ -368,21 +376,14 @@ def txt2img(output_text,base_url='http://127.0.0.1:8760',output_dir='./outputs')
         flash = '\033[%dA' % (prt_cnt)
     print('')
 
-
-def yaml_parse(filename, mode='text'):
-    with open(filename, encoding='utf-8') as f:
-        yml = yaml.safe_load(f)
-    command = yml['command']
-    appends = {}
-
-    for n,items in enumerate(yml['appends']):
-        if type(yml['appends']) is dict:
+def get_appends(appends):
+    appends_result = {}
+    for n,items in enumerate(appends):
+        if type(appends) is dict:
             key = items
-            items = yml['appends'][items]
-
+            items = appends[items]
         else:
             key = str(n+1)            
-
         if type(items) is str:
             # filemode
             append = read_file(items)
@@ -391,26 +392,22 @@ def yaml_parse(filename, mode='text'):
             append = []
             for item in items:
                 append.append(item_split(item))
-        appends[key] = append
-    if 'appends_multiple' in yml:
-        appends_multiple = {}
-        for n,items in enumerate(yml['appends_multiple']):
-            if type(yml['appends_multiple']) is dict:
-                key = items
-                items = yml['appends_multiple'][items]
-            else:
-                key = str(n+1)            
+        appends_result[key] = append
+    return appends_result
 
-            if type(items) is str:
-                # filemode
-                appends_multiple = read_file(items)
-            else:
-                # inline mode
-                append = []
-                for item in items:
-                    append.append(item_split(item))
-            appends_multiple[key] = append
-        yml['appends_multiple'] = appends_multiple
+
+
+def yaml_parse(filename, mode='text'):
+    with open(filename, encoding='utf-8') as f:
+        yml = yaml.safe_load(f)
+    command = yml['command']
+
+    if 'before_multiple' in yml:
+        yml['before_multiple'] = get_appends(yml['before_multiple'])
+    if 'appends' in yml:
+        appends = get_appends(yml['appends'])
+    if 'appends_multiple' in yml:
+        yml['appends_multiple'] = get_appends(yml['appends_multiple'])
 
     prompts = ''
 
@@ -723,7 +720,25 @@ def main(args):
             if 'default_weight' in options:
                 default_weight = options['default_weight']
 
-        output_text = prompt_random(prompts,appends,console_mode,max_number,weight_mode = weight_mode,default_weight = default_weight,mode = mode)
+        if 'before_multiple' in yml:
+            output_text = prompt_multiple(prompts,yml['before_multiple'],console_mode = False,mode = mode)
+            if type(output_text) is list:
+                multiple_text = []
+                for prompts in output_text:
+                    result = prompt_random(prompts,appends,console_mode,max_number,weight_mode = weight_mode,default_weight = default_weight,mode = mode)
+                    for item in result:
+                        multiple_text.append(item)
+            else:
+                multiple_text = ''
+                for prompts in output_text.split('\n'):
+                    multiple_text += prompt_random(prompts,appends,console_mode,max_number,weight_mode = weight_mode,default_weight = default_weight,mode = mode) 
+            output_text = multiple_text
+        else:
+            if 'appends_multiple' in yml:
+                output_text = prompt_random(prompts,appends,False,max_number,weight_mode = weight_mode,default_weight = default_weight,mode = mode)
+            else:
+                output_text = prompt_random(prompts,appends,console_mode,max_number,weight_mode = weight_mode,default_weight = default_weight,mode = mode)
+
         if 'appends_multiple' in yml:
             if type(output_text) is list:
                 multiple_text = []

@@ -2,6 +2,10 @@
 from create_prompts import img2img
 import sys
 
+if len(sys.argv) <=2:
+    print ('img2img.py [filename] ([base_url defualt:http://127.0.0.1:7860])')
+    exit(1)
+
 filename = sys.argv[1]
 if len(sys.argv) >= 3:
     base_url = sys.argv[2]
