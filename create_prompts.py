@@ -3,23 +3,23 @@
 #!pip install Pillow
 #!pip install httpx
 
+import argparse
+import asyncio
+import base64
+import copy
+import io
+import itertools as it
+import json
 # version 0.5 (C) 2022 MITH@mmk
 import os
-import yaml
-import argparse
-import itertools as it
-import re
 import random
-import json
-import copy
-
-import io
-import base64
-from PIL import Image, PngImagePlugin
+import re
+import time
 
 import httpx
-import asyncio
-import time
+import yaml
+from PIL import Image, PngImagePlugin
+
 
 async def async_post(url,data):
     headers = {
@@ -704,7 +704,7 @@ def main(args):
             console_mode = True
         
 
-    if options is not None and 'method' in options and options['method'] == 'random':
+    if args.api_input_json == None and options is not None and 'method' in options and options['method'] == 'random':
         max_number = 100
         default_weight = 0.1
         weight_mode = False
@@ -761,6 +761,10 @@ def main(args):
                 fw.write(output_text)
             else:
                 json.dump(output_text,fp=fw,indent=2)
+    
+    if args.api_input_json:
+        with open(args.api_input_json,'r',encoding='utf-8') as f:
+            output_text = f.read()
 
     if args.api_mode:
         txt2img(output_text, base_url=args.api_base, output_dir=args.api_output_dir)
@@ -805,7 +809,11 @@ if __name__ == "__main__":
 
     parser.add_argument('--api-output-dir', type=str,
                         default='outputs',
-                        help='api output image directory')
+                        help='api output images directory')
+
+    parser.add_argument('--api-input-json', type=str,
+                        default=None,
+                        help='api direct inputs from a json file')
 
     parser.add_argument('--max-number', type=int,
                         default=-1,

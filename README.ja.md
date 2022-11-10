@@ -1,58 +1,24 @@
 # Prompt Creator
-　I create automatic prompt creator for AUTOMATIC1111/stable-diffusion-webui.
+　呪文の組み合わせを書くのが面倒なので作成してみた。AUTOMATIC1111/stable-diffusion-webuiのprompts from fileにuploadするためのテキストファイルを生成するcreate_prompt.py。
 
-- Beware of combination explosion
-- Replace variable is \$\{n\} ex. \$\{1\},\$\{2\},...\$\{100}\
-- If You use yaml mode,you can use \$\{name\} for variable (see below), but you cannot use reserved words ex. \$\{semicolon\}
-
+- 組み合わせ爆発に注意。
+- 後ろから順に出てくる仕様になっています
+- リプレイス変数は、$1,$2,...$9の次は$a(10番目)...$zになる
+- $\{n\}で括る方法 コチラの方が安全 $\{1\},$\{2\},...$\{100\}
+- 変数モードを追加 配列ではなくキーで指定。上から順番にリプレイスするので再帰する場合は、再帰する変数を後で指定すること。指定方法は$\{変数名\}　ただし、$\{semicolon\}などの予約語は使えません。
 
 ```
-usage: create_prompts.py [-h] [--append-dir APPEND_DIR] [--output OUTPUT] [--json [JSON]] [--api-mode [API_MODE]] [--api-base API_BASE]
-                         [--api-output-dir API_OUTPUT_DIR]
-                         input
+usage: create_prompts.py [-h] [--append-dir APPEND_DIR] [--output OUTPUT] input
 ```
 
-  -h, --help            show this help message and exit
+## Textモード
+　promptを書き散らしたTextファイルにリストを並べたappend_dirの下のファイルを読み込ませるスクリプト。置き換える順番は$1,$2,$3....になり、ソートされたファイル名の順に適用される。--append-dirの設定が必要。改行は半角スペースに置き換わる。
 
-  --append-dir APPEND_DIR
-                        direcory of input append prompt files
-
-  --output OUTPUT       direcory of output file of prompt list file
-
-  --json                output JSON
-
-  --api-mode            output api force set --json
-                        see https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/API
-
-  --api-base API_BASE  for call api from this script ex http://127.0.0.1:7860
-
-  --api-output-dir API_OUTPUT_DIR
-                        a directory of api output images 
-
-
-# Setting
- Python 3.10+(Also 3.8 and above) and use there packages.
- 
-```
-pip install pyyaml
-pip install Pillow
-pip install httpx
-```
-
-# Usage
-## Text Mode
-　Text mode is pre prompt for text file with list words file under append_dir.Replace order is \$\{1\},\$\{3\},\$\{3\}....,Files correspond in sorted order from 1 to n.If text mode must set --append-dir option. Prompt text's new lines are replace space.
-
-
-ex:
-```
-./create_promopts.py prompt.txt --append_dir ./append --output list.txt
-```
-
+例：
 ```txt
 --prompt
 "((masterpiece)), (((best quality))), ((ultra-detailed)), ((illustration)), ((disheveled hair)),
-,a ${1},${2},girl wearing school uniform in falling cherry blossoms,wind,
+,a $1,$2,girl wearing school uniform in falling cherry blossoms,wind,
 1girl, solo"
 --negative_prompt
 "longbody, lowres, bad anatomy, bad hands, missing fingers,
@@ -62,16 +28,10 @@ low quality,(((bad hands)))"
 --seed 2027904422
 ```
 
-## yaml mode
-　A file extention is yaml or yml,Script is read yaml.
+## yamlモード
+　拡張子がyamlもしくはymlの場合 yamlで読み込む
 
-ex:
-```
-./create_promopts.py prompt.yml --output list.txt
-```
-
-
-ex: array mode
+例：配列モード
 ```yaml
 appends:
     -
@@ -83,7 +43,7 @@ appends:
        - brown 
        - pink twin-tail
 command:
-    prompt: "((masterpiece)), (((best quality))), ((ultra-detailed)), ((illustration)), ((disheveled hair)),a ${1} ${2} girl wearing school uniform in falling cherry blossoms,wind1girl, solo"
+    prompt: "((masterpiece)), (((best quality))), ((ultra-detailed)), ((illustration)), ((disheveled hair)),a $1 $2 girl wearing school uniform in falling cherry blossoms,wind1girl, solo"
     negative_prompt: "longbody, lowres, bad anatomy, bad hands, missing fingers,text, error,heart_mark,signature, watermark, username, blurry, artist namepubic hair,extra digit, fewer digits, cropped, worst quality,low quality,{{{bad hands}}}"
     seed: -1
     width: 640
@@ -91,8 +51,7 @@ command:
     cfg_scale: 7.5
 ```
 
-ex:variable mode
-
+例：変数モード
 ```yaml
 appends:
     eye:
@@ -112,66 +71,48 @@ command:
     cfg_scale: 7.5
 ```
 
-### mutiply mode
-  Prompts is made by a round robin.
+### 乱数モード
 
-
-### random mode
- Prompts is made by random 
+　呪文を自動生成します。
 
 ```yaml
-version: 0.2  #Version is Not implement 
+version: 0.2  #None impl
 options:
-#    filename: list.txt  #Not implement
+#    filename: list.txt  #None impl
     method: random # default= multiple,random, ...
-    number: 200    # list limit, "multiple" is not use
-    weight: True   # Weight mode = Ture or False, If False,script is note use weight
-    default_weight: 0.1 # Default weight
+    number: 200    # 出力する数 list limit, "multiple" is not use
+    weight: True   # Weight mode = Ture or False default:0.1
+    default_weight: 0.1 # None impl 現状、何を指定しても絶対に 0.1
 append:
     - 0.2;blue      # weight 0.2
     - 0.3;yellow    # weight 0.3
     - white         # use default 0.1
 ```
 
-### about recursive replace
- Replace order is yaml order.For this reason,a replace variable \$\{1\} uses \$\{2\}, \$\{3\} or after variables.
-
- ex.
+###　再帰置換について
+  仕様上、$1から順番に置き換えていくので、$1のリプレイスを$2 $3にすることが出来ます。以下の様になります
 
 ```yaml
 append:
-    - # ${1}
-        - ${2} eyes ${3} hair
-    - # ${2}
+    - 
+        - $2 eyes $3 hair
+    -
         - 0.3;blue
         - 0.1;red
         - 0.6;
-    - # ${3}
-        - 0.5;blonde
-        - 0.5;brown
-```
-
-for variable mode
-```yaml
-append:
-    style:
-        - ${eyecolor} eyes ${haircolor} hair
-    eyecolor:
-        - 0.3;blue
-        - 0.1;red
-        - 0.6;
-    haircolor:
+    -
         - 0.5;blonde
         - 0.5;brown
 ```
 
 
-### escape
-If you want to use ;,you can instead of \\; or \$\{semicolon\}
+### 分割置換
+　;で区切ることで一つの変数で複数の値を指定出来ます。このモードは最初にweightが必要になります。
+ -  1番目 ${var,1} 
+ -  2番目 ${var,2}
+ -  以下略
 
-### splitting replacement
-
-Use \$\{name,num\}, num is replacement number(1..)
+　空白は見ていません。構文解析を実装する局面まで設計しない（関数実装する時になろうかと）
 
 例)
 ```yaml
@@ -186,28 +127,64 @@ Use \$\{name,num\}, num is replacement number(1..)
    negative_script: "${1,2}" # <- dog;cat, bird
 ```
 
-### filename mode
-　Filename mode is replacement list reading from text file。Path is relative path of execution path.If # letter is comment.
+## filenameモード
+　変数リストは、yaml内ではなくファイル名で指定可能です。リストを使い回しするときに便利。
 
-
-```yaml
+```
      append:
             - color.txt
 ```
 
-ex:color.txt
+- color.txt
+
+\#はコメント
 ```
-# Color list
-0.5;black
+# Color リスト
+black
 white
 grey
 red
 blue
 green
 ```
+ スペースで区切ることで複数のファイルを結合できます。
 
-# issue
-- img2img
+```
+     append:
+            - color.txt color2.txt
+```
+
+- color2.txt
+```
+purple
+yellow
+cyan
+```
+### escape
+　;は\;もしくは\$\{semicolon\}でエスケープ可能です。
+
+### 書きかけ
+- before_multiple:
+- append_multiple:
+
+# APIモード
+  --api-mode            output api force set --json
+                        see https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/API
+
+　――を指定すると出力をAPIを実行します。出力は強制的にJSONに変わる。
+
+　APIとFile Prompts from file scriptでは使えるオプションが異なるので注意(例えば、sampler indexはscriptでは数字指定なのに対し、APIは名称指定)
+
+
+
+
+
+# Issues
+
+- async exceptions traps
+- img2img.py  テスト実装の試験中 pngのコメントにpromptが入って居ないとエラー。jpegはexif内に収めるらしいが未実施。
+- interrogate.py 実装は終了したが、本体のAPIがバグっている。issue書かないと。BLIPは重いので、Deep Danbooruを呼び出したい。このモードはimg2imgのプロンプトを自動生成したり自動的に弾くのに使える。
+- 分割変数のデフォルト値設定
 - Overritde Prompt
 - versioning
 - extension mode

@@ -206,7 +206,8 @@ blue
 green
 ```
 
-# issue
+# issues
+- async exceptions traps
 - img2img
 - Overritde Prompt
 - versioning
