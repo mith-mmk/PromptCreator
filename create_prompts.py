@@ -224,16 +224,8 @@ def create_img2json(imagefile):
     json_raw['override_setting'] = override_setting
     return json_raw
 
-def img2img(imagefiles,overrides=None,base_url='http://127.0.0.1:8760',output_dir='./outputs'):
-    base_url = normalize_base_url(base_url)
-    url = (base_url + '/sdapi/v1/img2img')
-    progress = base_url + '/sdapi/v1/progress?skip_current_image=false'
-    print ('Enter API, connect', url)
-    dir = output_dir
-    print('output dir',dir)
-    os.makedirs(dir,exist_ok=True)
-#    dt = datetime.datetime.now().strftime('%y%m%d')
-    count = len(imagefiles)
+def save_img(r,opt={}):
+    dir = opt['dir']
     num = -1
     files = os.listdir(dir)
     for file in files:
@@ -244,6 +236,42 @@ def img2img(imagefiles,overrides=None,base_url='http://127.0.0.1:8760',output_di
             except:
                 pass
     num += 1
+
+    info = json.loads(r['info'])
+    print('\033[Kreturn %d images' % (len(r['images'])))
+
+    seeds = info['all_seeds']
+    for n, i in enumerate(r['images']):
+        try:
+#               image = Image.open(io.BytesIO(base64.b64decode(i.split(",",1)[1])))
+            image = Image.open(io.BytesIO(base64.b64decode(i)))
+            pnginfo = PngImagePlugin.PngInfo()
+            seed = seeds[n]
+            filename = str(num).zfill(5) +'-' +  str(seed) + '.png'
+            print('\033[Ksave... ',filename)
+            filename = os.path.join(dir,filename)
+            num += 1
+            image.save(filename , pnginfo=pnginfo)
+        except KeyboardInterrupt:
+            print ('\033[KProcess stopped',e)
+            exit(2)
+#        except BaseException as e:
+#            print ('\033[Ksave error',e)
+    prt_cnt = len(r['images']) + 2
+    return prt_cnt
+
+
+def img2img(imagefiles,overrides=None,base_url='http://127.0.0.1:8760',output_dir='./outputs'):
+    base_url = normalize_base_url(base_url)
+    url = (base_url + '/sdapi/v1/img2img')
+    progress = base_url + '/sdapi/v1/progress?skip_current_image=false'
+    print ('Enter API, connect', url)
+    dir = output_dir
+    print('output dir',dir)
+    os.makedirs(dir,exist_ok=True)
+#    dt = datetime.datetime.now().strftime('%y%m%d')
+    count = len(imagefiles)
+
     print('API loop count is %d times' % (count))
     print('')
     flash = ''
@@ -272,29 +300,7 @@ def img2img(imagefiles,overrides=None,base_url='http://127.0.0.1:8760',output_di
             continue
 
         r = response.json()
-        load_r = json.loads(r['info'])
-#        meta = load_r["infotexts"][0]
-        print('\033[Kreturn %d images' % (len(r['images'])))
-        for i in r['images']:
-            try:
-                meta = load_r["infotexts"][i]
-
-#                image = Image.open(io.BytesIO(base64.b64decode(i.split(",",1)[1])))
-                image = Image.open(io.BytesIO(base64.b64decode(i)))
-                pnginfo = PngImagePlugin.PngInfo()
-                pnginfo.add_text("parameters", meta)
-                seed = re.findall('Seed: (\d+),', meta)
-                filename = str(num).zfill(5) +'-' +  str(seed[0]) + '.png'
-                print('\033[Ksave... ',filename)
-                filename = os.path.join(dir,filename)
-                num += 1
-                image.save(filename , pnginfo=pnginfo)
-            except KeyboardInterrupt:
-                print ('\033[KProcess stopped',e)
-                exit(2)
-            except BaseException as e:
-                print ('\033[Ksave error',e)
-        prt_cnt = len(r['images']) + 2
+        prt_cnt = save_img(r,opt = {'dir': dir})
         flash = '\033[%dA' % (prt_cnt)
     print('')
 
@@ -321,17 +327,6 @@ def txt2img(output_text,base_url='http://127.0.0.1:8760',output_dir='./outputs')
     print('output dir',dir)
     os.makedirs(dir,exist_ok=True)
 #    dt = datetime.datetime.now().strftime('%y%m%d')
-
-    num = -1
-    files = os.listdir(dir)
-    for file in files:
-        if os.path.isfile(os.path.join(dir,file)):
-            name = file[0:5]
-            try:
-                num = max(num,int(name))
-            except:
-                pass
-    num += 1
     count = len(output_text)
     print('API loop count is %d times' % (count))
     print('')
@@ -352,27 +347,7 @@ def txt2img(output_text,base_url='http://127.0.0.1:8760',output_dir='./outputs')
             continue
 
         r = response.json()
-        load_r = json.loads(r['info'])
-        meta = load_r["infotexts"][0]
-        print('\033[Kreturn %d images' % (len(r['images'])))
-        for i in r['images']:
-            try:
-#                image = Image.open(io.BytesIO(base64.b64decode(i.split(",",1)[1])))
-                image = Image.open(io.BytesIO(base64.b64decode(i)))
-                pnginfo = PngImagePlugin.PngInfo()
-                pnginfo.add_text("parameters", meta)
-                seed = re.findall('Seed: (\d+),', meta)
-                filename = str(num).zfill(5) +'-' +  str(seed[0]) + '.png'
-                print('\033[Ksave... ',filename)
-                filename = os.path.join(dir,filename)
-                num += 1
-                image.save(filename , pnginfo=pnginfo)
-            except KeyboardInterrupt:
-                print ('\033[KProcess stopped',e)
-                exit(2)
-            except BaseException as e:
-                print ('\033[Ksave error',e)
-        prt_cnt = len(r['images']) + 2
+        prt_cnt = save_img(r,opt = {'dir': dir})
         flash = '\033[%dA' % (prt_cnt)
     print('')
 
