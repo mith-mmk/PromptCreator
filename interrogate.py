@@ -15,8 +15,8 @@ if len(sys.argv) >= 3:
 else:
     base_url ='http://127.0.0.1:7860'
 
-# need set webui --deepdanbooru option
-result = iterrogate(filename,base_url=base_url,model = 'deepdanbooru')
+# model = 'deepdanbooru' need set webui --deepdanbooru option
+result = iterrogate(filename,base_url=base_url,model = 'deepdanbooru') # 'clip' or 'deepdanbooru'
 if result.status_code == 200:
     print (result.json()['caption'])
 else:

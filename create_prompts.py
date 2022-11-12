@@ -240,15 +240,42 @@ def save_img(r,opt={'dir': './outputs'}):
     
     need_names = re.findall('\[.+?\]',nameseed)
     need_names = [n[1:-1] for n in need_names]
-    count = 0
+    before_counter = re.sub('\[name\].*','',nameseed)
+    before_counter = re.sub('\[.*?\]','',before_counter)
+    count = len(before_counter)
     for name in need_names:
         if name == 'num':
             break
+        if name == 'shortdate':
+            count += 6
+        elif name == 'date':
+            count += 8
+        elif name == 'shortyear':
+            count += 2
+        elif name == 'year':
+            count += 4
+        elif name == 'month':
+            count += 2
+        elif name == 'day':
+            count += 2
+        elif name == 'time':
+            count += 6
+        elif name == 'hour':
+            count += 2
+        elif name == 'min':
+            count += 2
+        elif name == 'sec':
+            count += 2
+        else:
+            print('[%s] is setting before [name]' % (name),file=sys.stderr)
+            exit(-1)
+
+    print('count', count)
 
     num = -1
     files = os.listdir(dir)
-    num_start = count
-    num_end = 5
+    num_start = 0 + count
+    num_end = 5 + count
 
     for file in files:
         if os.path.isfile(os.path.join(dir,file)):
@@ -296,6 +323,22 @@ def save_img(r,opt={'dir': './outputs'}):
                     replacer = filename_pattern['job_timestamp'][:8]
                 elif seeds == 'shortdate' and 'job_timestamp' in filename_pattern:
                     replacer = filename_pattern['job_timestamp'][2:8]
+                elif seeds == 'year' and 'job_timestamp' in filename_pattern:
+                    replacer = filename_pattern['job_timestamp'][:4]
+                elif seeds == 'shortyear' and 'job_timestamp' in filename_pattern:
+                    replacer = filename_pattern['job_timestamp'][2:4]
+                elif seeds == 'month' and 'job_timestamp' in filename_pattern:
+                    replacer = filename_pattern['job_timestamp'][4:6]
+                elif seeds == 'day' and 'job_timestamp' in filename_pattern:
+                    replacer = filename_pattern['job_timestamp'][6:8]
+                elif seeds == 'time' and 'job_timestamp' in filename_pattern:
+                    replacer = filename_pattern['job_timestamp'][8:]
+                elif seeds == 'hour' and 'job_timestamp' in filename_pattern:
+                    replacer = filename_pattern['job_timestamp'][8:10]
+                elif seeds == 'min' and 'job_timestamp' in filename_pattern:
+                    replacer = filename_pattern['job_timestamp'][10:12]
+                elif seeds == 'sec' and 'job_timestamp' in filename_pattern:
+                    replacer = filename_pattern['job_timestamp'][12:14]
                 elif type(filename_pattern[seeds]) is list and seeds in filename_pattern:
                     replacer = filename_pattern[seeds][n]
                 else:
