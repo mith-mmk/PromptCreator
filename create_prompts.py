@@ -234,17 +234,25 @@ def create_img2json(imagefile):
 def save_img(r,opt={'dir': './outputs'}):
     dir = opt['dir']
     if 'filename_pattern' in opt:
-        nameseed = opt['nameseed']
+        nameseed = opt['filename_pattern']
     else:
         nameseed = '[num]-[seed]'
     
     need_names = re.findall('\[.+?\]',nameseed)
     need_names = [n[1:-1] for n in need_names]
+    count = 0
+    for name in need_names:
+        if name == 'num':
+            break
+
     num = -1
     files = os.listdir(dir)
+    num_start = count
+    num_end = 5
+
     for file in files:
         if os.path.isfile(os.path.join(dir,file)):
-            name = file[0:5]
+            name = file[num_start:num_end]
             try:
                 num = max(num,int(name))
             except:
@@ -284,11 +292,16 @@ def save_img(r,opt={'dir': './outputs'}):
                     replacer = filename_pattern['all_subseeds'] [n]
                 elif seeds == 'styles' and seeds in filename_pattern:
                     replacer = filename_pattern[seeds].join(' ')
+                elif seeds == 'date' and 'job_timestamp' in filename_pattern:
+                    replacer = filename_pattern['job_timestamp'][:8]
+                elif seeds == 'shortdate' and 'job_timestamp' in filename_pattern:
+                    replacer = filename_pattern['job_timestamp'][2:8]
                 elif type(filename_pattern[seeds]) is list and seeds in filename_pattern:
                     replacer = filename_pattern[seeds][n]
                 else:
                     replacer = filename_pattern[seeds]
-                filename = filename.replace('[' + seeds + ']',str(replacer))
+                replacer = re.sub('[\<\>\:\"/\\|?\*\n\s]+','_',str(replacer))[:127]
+                filename = filename.replace('[' + seeds + ']',replacer)
             
 #            seed = filename_pattern['all_seeds'] [n]
 #            filename = str(num).zfill(5) +'-' +  str(seed) + '.png'
@@ -300,7 +313,7 @@ def save_img(r,opt={'dir': './outputs'}):
             print ('\033[KProcess stopped Ctrl+C break',file=sys.stderr)
             exit(2)
         except BaseException as e:
-            print ('\033[Ksave error',file=sys.stderr)
+            print ('\033[Ksave error',e,filename,file=sys.stderr)
             exit(2)
     prt_cnt = len(r['images']) + 2
     return prt_cnt
@@ -312,6 +325,7 @@ def img2img(imagefiles,overrides=None,base_url='http://127.0.0.1:8760',output_di
     progress = base_url + '/sdapi/v1/progress?skip_current_image=false'
     print ('Enter API, connect', url)
     dir = output_dir
+    opt['dir'] = output_dir
     print('output dir',dir)
     os.makedirs(dir,exist_ok=True)
 #    dt = datetime.datetime.now().strftime('%y%m%d')
@@ -369,6 +383,7 @@ def txt2img(output_text,base_url='http://127.0.0.1:8760',output_dir='./outputs',
     progress = base_url + '/sdapi/v1/progress?skip_current_image=false'
     print ('Enter API mode, connect', url)
     dir = output_dir
+    opt['dir'] = output_dir
     print('output dir',dir)
     os.makedirs(dir,exist_ok=True)
 #    dt = datetime.datetime.now().strftime('%y%m%d')
@@ -392,7 +407,7 @@ def txt2img(output_text,base_url='http://127.0.0.1:8760',output_dir='./outputs',
             continue
 
         r = response.json()
-        prt_cnt = save_img(r,opt = {'dir': dir})
+        prt_cnt = save_img(r,opt = opt)
         flash = '\033[%dA' % (prt_cnt)
     print('')
 
@@ -689,7 +704,7 @@ def main(args):
 
     current = args.append_dir
     prompt_file = args.input
-    output = args.output        
+    output = args.output
 
     ext = os.path.splitext(prompt_file)[-1:][0]
     yml = None
@@ -785,9 +800,14 @@ def main(args):
     if args.api_input_json:
         with open(args.api_input_json,'r',encoding='utf-8') as f:
             output_text = f.read()
-
+    
+    if options is not None and 'filename_pattern' in options:
+        args.api_filename_pattern = args.api_filname_pattern or options['filename_pattern']
+    opt = {}
+    if args.api_filename_pattern is not None:
+        opt = {'filename_pattern': args.api_filename_pattern}
     if args.api_mode:
-        txt2img(output_text, base_url=args.api_base, output_dir=args.api_output_dir)
+        txt2img(output_text, base_url=args.api_base, output_dir=args.api_output_dir,opt=opt)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -835,9 +855,9 @@ if __name__ == "__main__":
                         default=None,
                         help='api direct inputs from a json file')
 
-#    parser.add_argument('--api-filename-pattern', type=str,
-#                        default='[num]-[seed]',
-#                        help='api outputs filename pattern')
+    parser.add_argument('--api-filename-pattern', type=str,
+                        default=None,
+                        help='api outputs filename pattern default: [num]-[seed]')
 
     parser.add_argument('--max-number', type=int,
                         default=-1,
