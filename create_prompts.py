@@ -138,6 +138,8 @@ def normalize_base_url(base_url):
 
 def create_parameters(parameters_text):
     para = parameters_text.split('\n')
+    if len(para) == 1:
+        para.append('')
     parameters = {}
     parameters['prompt'] = para[0]
     neg = 'Negative prompt: '

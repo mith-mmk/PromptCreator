@@ -2,25 +2,38 @@
 # iterrogate api call has bug call self.__base64_to_image() but its function is not implementent
 # workaround call decode_base64_to_image()
 from create_prompts import iterrogate
-import sys
 
-if len(sys.argv) <=2:
-    print ('itterrogate.py [filename] ([base_url defualt:http://127.0.0.1:7860])')
-    exit(1)
+import argparse
 
+parser = argparse.ArgumentParser()
 
-filename = sys.argv[1]
-if len(sys.argv) >= 3:
-    base_url = sys.argv[2]
+parser.add_argument('--output', type=str,
+                    default=None,
+                    help='direcory of output file of prompt list file')
+parser.add_argument('--api-base', type=str,
+                    default='http://127.0.0.1:7860',
+                    help='api base url')
+parser.add_argument('--model', type=str,
+                    default='clip',
+                    help='set clip or deepdanbooru')
+parser.add_argument('input', nargs='+',
+                    help='input files or dirs')
+parser.parse_args()
+args = parser.parse_args()
+
+base_url =args.api_base
+if type(args.input) is str:
+    filenames = [args.input]
 else:
-    base_url ='http://127.0.0.1:7860'
+    filenames = args.input
 
 # model = 'deepdanbooru' need set webui --deepdanbooru option
-result = iterrogate(filename,base_url=base_url,model = 'deepdanbooru') # 'clip' or 'deepdanbooru'
-if result.status_code == 200:
-    print (result.json()['caption'])
-else:
-    print(result.text)
-    print('iterrogate api has bug call self.__base64_to_image() but this function is not implementent')
-    print('workaround it is replace decode_base64_to_image()')
+for filename in filenames:
+    result = iterrogate(filename,base_url=base_url,model = args.model) # 'clip' or 'deepdanbooru'
+    if result.status_code == 200:
+        print(filename)
+        print (result.json()['caption'])
+    else:
+        print(result.text)
+        print('Is Web UI replace newest version?')
 
