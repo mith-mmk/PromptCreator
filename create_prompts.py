@@ -9,6 +9,7 @@ import base64
 import copy
 import io
 import itertools as it
+import sys
 import json
 # version 0.5 (C) 2022 MITH@mmk
 import os
@@ -197,7 +198,7 @@ def create_img2json(imagefile):
         's_tmax',
         's_tmin',
         's_noise',
-        'sampler_index'
+        'sampler',
     ]
 
     image = Image.open(imagefile)
@@ -212,14 +213,19 @@ def create_img2json(imagefile):
     init_image = base64.b64encode(buffer.getvalue()).decode("ascii")
     json_raw = {}
     json_raw['init_images'] = ['data:image/png;base64,' + init_image] 
-        # 11/07/2022 version img2img api dummy string need,yet,because gradio uses URL Data instead of base64
 
     override_setting = {}
-    for key in parameters.keys():
+    for key,value in parameters.items():
         if key in schema:
-            json_raw[key] = parameters[key]
+            json_raw[key] = value
+        elif key == 'sampler_index':
+            sampler_index = value
+            pass
         else:
-            override_setting[key] = parameters[key]
+            override_setting[key] = value
+
+    if ['sampler'] not in parameters and ['sampler_index'] in parameters:
+        json_raw['sampler_index'] = sampler_index
 
     json_raw['override_setting'] = override_setting
     return json_raw
@@ -237,18 +243,34 @@ def save_img(r,opt={}):
                 pass
     num += 1
 
-    info = json.loads(r['info'])
+    if type(r['info']) is str:
+        info = json.loads(r['info'])
+    else:
+        info = r['info']
+
+
     print('\033[Kreturn %d images' % (len(r['images'])))
 
-    seeds = info['all_seeds']
-    meta = json.dumps(r['parameters'])
+    fileseed = {}
+    for key,value in info.items():
+        fileseed[key] = value
+
     for n, i in enumerate(r['images']):
         try:
+            meta = info['infotexts'][n]
 #               image = Image.open(io.BytesIO(base64.b64decode(i.split(",",1)[1])))
             image = Image.open(io.BytesIO(base64.b64decode(i)))
             pnginfo = PngImagePlugin.PngInfo()
-            pnginfo.add_text("parameters", meta)
-            seed = seeds[n]
+            pnginfo.add_text('parameters', meta)
+
+            # if seeds == 'seed:
+            #    seed = fileseed['all_seeds'] [n]
+            # elif seeds == 'subseed:
+            #    sub_seed = fileseed['all_subseeds'] [n]
+            # elif type(fileseed[seeds]) is list:
+            #   string = fileseed[seeds].join(' ')
+
+            seed = fileseed['all_seeds'] [n]
             filename = str(num).zfill(5) +'-' +  str(seed) + '.png'
             print('\033[Ksave... ',filename)
             filename = os.path.join(dir,filename)
@@ -258,8 +280,8 @@ def save_img(r,opt={}):
             print ('\033[KProcess stopped',e)
             exit(2)
         except BaseException as e:
-            print ('\033[Ksave error',e,meta)
-            exit(1)
+            print ('\033[Ksave error',e)
+            exit(2)
     prt_cnt = len(r['images']) + 2
     return prt_cnt
 
