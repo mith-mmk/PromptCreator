@@ -241,11 +241,13 @@ def save_img(r,opt={}):
     print('\033[Kreturn %d images' % (len(r['images'])))
 
     seeds = info['all_seeds']
+    meta = r['parameters']
     for n, i in enumerate(r['images']):
         try:
 #               image = Image.open(io.BytesIO(base64.b64decode(i.split(",",1)[1])))
             image = Image.open(io.BytesIO(base64.b64decode(i)))
             pnginfo = PngImagePlugin.PngInfo()
+            pnginfo.add_text("parameters", meta)
             seed = seeds[n]
             filename = str(num).zfill(5) +'-' +  str(seed) + '.png'
             print('\033[Ksave... ',filename)
