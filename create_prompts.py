@@ -574,7 +574,7 @@ def prompt_replace(string,replace_texts,var):
                     string[key] = string[key].replace('${%s,%d}' % (var,k),rep)
     
     if type(string) is str:
-        string = re.sub(r'\$\{%s,\d*?\}' % (var) ,'',string)
+        string = re.sub(r'\$\{%s\,\d*?\}' % (var) ,'',string)
         string = string.replace(r'\${%s}' % (var) ,'')
     return string
 
