@@ -242,7 +242,7 @@ def save_img(r,opt={'dir': './outputs'}):
     
     need_names = re.findall('\[.+?\]',nameseed)
     need_names = [n[1:-1] for n in need_names]
-    before_counter = re.sub('\[name\].*','',nameseed)
+    before_counter = re.sub('\[num\].*','',nameseed)
     before_counter = re.sub('\[.*?\]','',before_counter)
     count = len(before_counter)
     for name in need_names:
@@ -272,8 +272,6 @@ def save_img(r,opt={'dir': './outputs'}):
             print('[%s] is setting before [name]' % (name),file=sys.stderr)
             exit(-1)
 
-    print('count', count)
-
     num = -1
     files = os.listdir(dir)
     num_start = 0 + count
@@ -285,6 +283,7 @@ def save_img(r,opt={'dir': './outputs'}):
             try:
                 num = max(num,int(name))
             except:
+
                 pass
     num += 1
 
