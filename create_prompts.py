@@ -241,7 +241,7 @@ def save_img(r,opt={}):
     print('\033[Kreturn %d images' % (len(r['images'])))
 
     seeds = info['all_seeds']
-    meta = r['parameters']
+    meta = json.dumps(r['parameters'])
     for n, i in enumerate(r['images']):
         try:
 #               image = Image.open(io.BytesIO(base64.b64decode(i.split(",",1)[1])))
@@ -257,8 +257,9 @@ def save_img(r,opt={}):
         except KeyboardInterrupt:
             print ('\033[KProcess stopped',e)
             exit(2)
-#        except BaseException as e:
-#            print ('\033[Ksave error',e)
+        except BaseException as e:
+            print ('\033[Ksave error',e,meta)
+            exit(1)
     prt_cnt = len(r['images']) + 2
     return prt_cnt
 
