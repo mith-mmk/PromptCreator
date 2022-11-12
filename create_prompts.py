@@ -9,12 +9,12 @@ import base64
 import copy
 import io
 import itertools as it
-import sys
 import json
 # version 0.5 (C) 2022 MITH@mmk
 import os
 import random
 import re
+import sys
 import time
 
 import httpx
@@ -30,13 +30,13 @@ async def async_post(url,data):
         try:
             return await client.post(url,data=data,headers=headers,timeout=(5,10000))
         except httpx.ReadTimeout:
-            print('Read timeout')
+            print('Read timeout',file=sys.stderr)
             return None
         except httpx.TimeoutException:
-            print('Connect Timeout')
+            print('Connect Timeout',file=sys.stderr)
             return None
         except BaseException as error:
-            print('Exception',error)
+            print('Exception',error,file=sys.stderr)
             return None
 
 async def progress_writer(url,data,progress_url):
@@ -88,7 +88,7 @@ async def progress_writer(url,data,progress_url):
                     except:
                         retry += 1
                         if retry >= 10:
-                            print('Progress is unknown')
+                            print('Progress is unknown',file=sys.stderr)
                             return
 
         tasks = [
@@ -103,13 +103,13 @@ def progress_interrupt(url):
     try:
         return httpx.post(url)
     except httpx.ReadTimeout:
-        print('Read timeout')
+        print('Read timeout',file=sys.stderr)
         return None
     except httpx.TimeoutException:
-        print('Connect Timeout')
+        print('Connect Timeout',file=sys.stderr)
         return None
     except BaseException as error:
-        print('Exception',error)
+        print(str(error),file=sys.stderr)
         return None
 
 def request_post_wrapper(url,data,progress_url=None,base_url=None):
@@ -121,13 +121,13 @@ def request_post_wrapper(url,data,progress_url=None,base_url=None):
     except KeyboardInterrupt:
         if base_url:
             progress_interrupt(base_url + '/sdapi/v1/interrupt')
-        print('enter Ctrl-c, Process stopping')
+        print('enter Ctrl-c, Process stopping',file=sys.stderr)
         exit(2)
     except httpx.ConnectError:
-        print('All connection attempts failed,Is the server down?')
+        print('All connection attempts failed,Is the server down?',file=sys.stderr)
         exit(2)
     except httpx.ConnectTimeout:
-        print('Connection Time out,Is the server down or server address mistake?')
+        print('Connection Time out,Is the server down or server address mistake?',file=sys.stderr)
         exit(2)
     return result
 
@@ -231,8 +231,15 @@ def create_img2json(imagefile):
     json_raw['override_setting'] = override_setting
     return json_raw
 
-def save_img(r,opt={}):
+def save_img(r,opt={'dir': './outputs'}):
     dir = opt['dir']
+    if 'filename_pattern' in opt:
+        nameseed = opt['nameseed']
+    else:
+        nameseed = '[num]-[seed]'
+    
+    need_names = re.findall('\[.+?\]',nameseed)
+    need_names = [n[1:-1] for n in need_names]
     num = -1
     files = os.listdir(dir)
     for file in files:
@@ -252,9 +259,10 @@ def save_img(r,opt={}):
 
     print('\033[Kreturn %d images' % (len(r['images'])))
 
-    fileseed = {}
+    filename_pattern = {}
+
     for key,value in info.items():
-        fileseed[key] = value
+        filename_pattern[key] = value
 
     for n, i in enumerate(r['images']):
         try:
@@ -264,30 +272,41 @@ def save_img(r,opt={}):
             pnginfo = PngImagePlugin.PngInfo()
             pnginfo.add_text('parameters', meta)
 
-            # if seeds == 'seed:
-            #    seed = fileseed['all_seeds'] [n]
-            # elif seeds == 'subseed:
-            #    sub_seed = fileseed['all_subseeds'] [n]
-            # elif type(fileseed[seeds]) is list:
-            #   string = fileseed[seeds].join(' ')
+            filename = nameseed + '.png'
 
-            seed = fileseed['all_seeds'] [n]
-            filename = str(num).zfill(5) +'-' +  str(seed) + '.png'
+            for seeds in need_names:
+                replacer = ''
+                if seeds == 'num':
+                    replacer = str(num).zfill(5)
+                elif seeds == 'seed' and 'all_seeds' in filename_pattern:                  
+                    replacer = filename_pattern['all_seeds'][n]
+                elif seeds == 'subseed' and 'all_subseeds' in filename_pattern:
+                    replacer = filename_pattern['all_subseeds'] [n]
+                elif seeds == 'styles' and seeds in filename_pattern:
+                    replacer = filename_pattern[seeds].join(' ')
+                elif type(filename_pattern[seeds]) is list and seeds in filename_pattern:
+                    replacer = filename_pattern[seeds][n]
+                else:
+                    replacer = filename_pattern[seeds]
+                filename = filename.replace('[' + seeds + ']',str(replacer))
+            
+#            seed = filename_pattern['all_seeds'] [n]
+#            filename = str(num).zfill(5) +'-' +  str(seed) + '.png'
             print('\033[Ksave... ',filename)
             filename = os.path.join(dir,filename)
             num += 1
             image.save(filename , pnginfo=pnginfo)
         except KeyboardInterrupt:
-            print ('\033[KProcess stopped',e)
+            print ('\033[KProcess stopped Ctrl+C break',file=sys.stderr)
             exit(2)
         except BaseException as e:
-            print ('\033[Ksave error',e)
+            print ('\033[Ksave error',file=sys.stderr)
             exit(2)
     prt_cnt = len(r['images']) + 2
     return prt_cnt
 
 
-def img2img(imagefiles,overrides=None,base_url='http://127.0.0.1:8760',output_dir='./outputs'):
+def img2img(imagefiles,overrides=None,base_url='http://127.0.0.1:8760',output_dir='./outputs',opt = {}):
     base_url = normalize_base_url(base_url)
     url = (base_url + '/sdapi/v1/img2img')
     progress = base_url + '/sdapi/v1/progress?skip_current_image=false'
@@ -330,8 +349,8 @@ def img2img(imagefiles,overrides=None,base_url='http://127.0.0.1:8760',output_di
         flash = '\033[%dA' % (prt_cnt)
     print('')
 
-# 2022-11-07 cannot run yet
-def iterrogate(imagefile,base_url):
+# 2022-11-07 cannot run yet 2022-11-12 running?
+def iterrogate(imagefile,base_url,model = 'clip'):
     base_url = normalize_base_url(base_url)
     url = (base_url + '/sdapi/v1/interrogate')
     image = Image.open(imagefile)
@@ -339,12 +358,12 @@ def iterrogate(imagefile,base_url):
     buffer = io.BytesIO()
     image.save(buffer, 'png')
     image = base64.b64encode(buffer.getvalue()).decode("ascii")
-    payload = json.dumps({'image': 'data:image/png;base64,' + image})
+    payload = json.dumps({'image': 'data:image/png;base64,' + image,'model': model})
     response = request_post_wrapper(url, data=payload, progress_url=None,base_url=base_url)
     return response
 
 
-def txt2img(output_text,base_url='http://127.0.0.1:8760',output_dir='./outputs'):
+def txt2img(output_text,base_url='http://127.0.0.1:8760',output_dir='./outputs',opt = {}):
     base_url = normalize_base_url(base_url)
     url = (base_url + '/sdapi/v1/txt2img')
     progress = base_url + '/sdapi/v1/progress?skip_current_image=false'
@@ -815,6 +834,10 @@ if __name__ == "__main__":
     parser.add_argument('--api-input-json', type=str,
                         default=None,
                         help='api direct inputs from a json file')
+
+#    parser.add_argument('--api-filename-pattern', type=str,
+#                        default='[num]-[seed]',
+#                        help='api outputs filename pattern')
 
     parser.add_argument('--max-number', type=int,
                         default=-1,

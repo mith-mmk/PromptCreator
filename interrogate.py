@@ -1,7 +1,7 @@
 # sample of iterrogate api
 # iterrogate api call has bug call self.__base64_to_image() but its function is not implementent
 # workaround call decode_base64_to_image()
-from create_prompts import c
+from create_prompts import iterrogate
 import sys
 
 if len(sys.argv) <=2:
@@ -15,7 +15,8 @@ if len(sys.argv) >= 3:
 else:
     base_url ='http://127.0.0.1:7860'
 
-result = iterrogate(filename,base_url=base_url)
+# need set webui --deepdanbooru option
+result = iterrogate(filename,base_url=base_url,model = 'deepdanbooru')
 if result.status_code == 200:
     print (result.json()['caption'])
 else:
