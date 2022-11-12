@@ -215,6 +215,7 @@ def create_img2json(imagefile):
     json_raw['init_images'] = ['data:image/png;base64,' + init_image] 
 
     override_setting = {}
+    sampler_index = None
     for key,value in parameters.items():
         if key in schema:
             json_raw[key] = value
@@ -224,7 +225,7 @@ def create_img2json(imagefile):
         else:
             override_setting[key] = value
 
-    if ['sampler'] not in parameters and ['sampler_index'] in parameters:
+    if ( 'sampler' not in json_raw) and sampler_index is not None:
         json_raw['sampler_index'] = sampler_index
 
     json_raw['override_setting'] = override_setting
