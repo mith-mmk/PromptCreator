@@ -1,6 +1,6 @@
 # img2img api test inpritation,function specifications are change after commit
 from create_prompts import img2img
-import sys
+import os
 
 import argparse
 
@@ -25,7 +25,21 @@ base_url = args.api_base
 output_dir = args.output or './outputs'
 
 overrides = [{'denoising_strength' : 0.75, 'seed': -1}]
-result = img2img(filenames,base_url=base_url,overrides=overrides,output_dir=output_dir)
+
+input_files = []
+for filename in filenames:
+    if os.path.isdir(filename):
+        path = filename
+        files = os.listdir(path)
+        for file in files:
+            file = os.path.join(path, file)
+            if os.path.isfile(file):
+                input_files.append(file)
+    else:
+        input_files.append(filename)
+
+
+result = img2img(input_files,base_url=base_url,overrides=overrides,output_dir=output_dir)
 # - multiple images impl
 # - overrides maker from yaml
 # - image mask impl
