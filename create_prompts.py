@@ -205,7 +205,7 @@ def create_img2json(imagefile):
 
     image = Image.open(imagefile)
     image.load()
-    if image.info['parameters'] is not None:
+    if 'parameters' in image.info and image.info['parameters'] is not None:
         parameter_text = image.info['parameters']
         parameters = create_parameters(parameter_text)
     else:

@@ -24,7 +24,7 @@ else:
 base_url = args.api_base
 output_dir = args.output or './outputs'
 
-overrides = [{'denoising_strength' : 0.75, 'seed': -1}]
+overrides = {'denoising_strength' : 0.70, 'seed': -1}
 
 input_files = []
 for filename in filenames:
