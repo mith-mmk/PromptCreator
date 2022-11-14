@@ -239,7 +239,7 @@ def save_img(r,opt={'dir': './outputs'}):
         nameseed = opt['filename_pattern']
     else:
         nameseed = '[num]-[seed]'
-    
+
     need_names = re.findall('\[.+?\]',nameseed)
     need_names = [n[1:-1] for n in need_names]
     before_counter = re.sub('\[num\].*','',nameseed)
@@ -272,20 +272,23 @@ def save_img(r,opt={'dir': './outputs'}):
             print('[%s] is setting before [name]' % (name),file=sys.stderr)
             exit(-1)
 
-    num = -1
-    files = os.listdir(dir)
-    num_start = 0 + count
-    num_end = 5 + count
+    if 'startnum' in opt:
+        num = opt['startnum']
+    else:
+        num = -1
+        files = os.listdir(dir)
+        num_start = 0 + count
+        num_end = 5 + count
 
-    for file in files:
-        if os.path.isfile(os.path.join(dir,file)):
-            name = file[num_start:num_end]
-            try:
-                num = max(num,int(name))
-            except:
-
-                pass
-    num += 1
+        for file in files:
+            if os.path.isfile(os.path.join(dir,file)):
+                name = file[num_start:num_end]
+                try:
+                    num = max(num,int(name))
+                except:
+                    pass
+        num += 1
+        opt['startnum'] = num
 
     if type(r['info']) is str:
         info = json.loads(r['info'])
@@ -360,6 +363,7 @@ def save_img(r,opt={'dir': './outputs'}):
             print ('\033[Ksave error',e,filename,file=sys.stderr)
             exit(2)
     prt_cnt = len(r['images']) + 2
+    opt['startnum'] = num
     return prt_cnt
 
 
@@ -378,6 +382,7 @@ def img2img(imagefiles,overrides=None,base_url='http://127.0.0.1:8760',output_di
     print('API loop count is %d times' % (count))
     print('')
     flash = ''
+    opt = {'dir': dir}
     for (n,imagefile) in enumerate(imagefiles):
         item = create_img2json(imagefile)
         if overrides is not None:
@@ -403,7 +408,7 @@ def img2img(imagefiles,overrides=None,base_url='http://127.0.0.1:8760',output_di
             continue
 
         r = response.json()
-        prt_cnt = save_img(r,opt = {'dir': dir})
+        prt_cnt = save_img(r,opt = opt)
         flash = '\033[%dA' % (prt_cnt)
     print('')
 
