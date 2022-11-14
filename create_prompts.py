@@ -639,7 +639,7 @@ def prompt_multiple(prompts,appends,console_mode,mode='text'):
 
 
 
-def weight_calc(append,num,default_weight = 0.1):
+def weight_calc(append,num,default_weight = 0.1,weight_mode = True):
     weight_append = []
     max_value = 0.0
     for i,item in enumerate(append):
@@ -648,7 +648,10 @@ def weight_calc(append,num,default_weight = 0.1):
             text = item[0]
         else:
             try:
-                weight = max_value + float(item[0])
+                if weight_mode:
+                    weight = max_value + float(item[0])
+                else:
+                    weight = max_value + default_weight
             except:
                 print('float convert error append %d line %d %s use default' % (num + 1,i,item[0]))
                 weight = max_value + default_weight
@@ -671,78 +674,63 @@ def prompt_random(prompts,appends,console_mode,max_number,weight_mode = False,de
 
     keys = list(appends.keys())
     appends = list(appends.values())
-    if weight_mode == False:
-        for _ in range(0,max_number):
-            new_prompt = copy.deepcopy(prompts)
-            for i in range(0,len(appends)):
-                n = random.randint(0,len(appends[i])-1)
-                re_str = appends[i][n]
-                var = keys[i]
-                new_prompt = prompt_replace(new_prompt, re_str, var)
-            if console_mode:
-                print(new_prompt)
-            else:
-                if mode == 'text':
-                    output_text = output_text + new_prompt + '\n'
-                elif mode == 'json':
-                    output_text.append(new_prompt)
-    else:   # weighted
-        weight_appends = []
-        for num,append in enumerate(appends):
-            weighted = weight_calc(append, num, default_weight)
-#            print(weighted)
-            weight_appends.append(weighted)
-
-        for _ in range(0,max_number):
-            new_prompt = copy.deepcopy(prompts)
-            for i,weighted in enumerate(weight_appends):
-                append, max_weight = weighted
-                n = max_weight
-                while n >= max_weight:
-                    n = random.uniform(0.0,max_weight)
-
-                pos = int(len(append) / 2)
-                cnt = int((len(append) + 1) / 2)
-                while True:
-                    w = append[pos]['weight']
-#                    print (cnt,pos,n,w)
-                    if n < w:
-                        if pos == 0:
-                            break
-                        if n >= append[pos - 1]['weight']:
-#                            print ('break')
-                            break
-                        pos = pos - cnt
-                        cnt = int((cnt + 1) / 2)
-                        if pos < 0:
-                            pos = 0
-                        if cnt == 0:
-                            break
-                    elif n == w:
+    weight_appends = []
+    for num,append in enumerate(appends):
+        weighted = weight_calc(append, num, default_weight,weight_mode=weight_mode)
+#           print(weighted)
+        weight_appends.append(weighted)
+    for _ in range(0,max_number):
+        new_prompt = copy.deepcopy(prompts)
+#        opt = {}
+        for i,weighted in enumerate(weight_appends):
+            append, max_weight = weighted
+            n = max_weight
+            while n >= max_weight:
+                n = random.uniform(0.0,max_weight)
+            pos = int(len(append) / 2)
+            cnt = int((len(append) + 1) / 2)
+            while True:
+                w = append[pos]['weight']
+#                   print (cnt,pos,n,w)
+                if n < w:
+                    if pos == 0:
                         break
-                    else:
-                        if pos == len(append) - 1:
-                            break
-                        if n < w:
-                            if n >= append[pos - 1]['weight']:
-                                break                           
-                        pos = pos + cnt
-                        cnt = int((cnt + 1) / 2)
-                        if pos >= len(append):
-                            pos = len(append) - 1
-                        if cnt == 0:
-                            break
-#                print (n,pos)
-                var = keys[i]
-                re_str = append[pos]['text']
-#                print(var, re_str)
-                new_prompt = prompt_replace(new_prompt, re_str, var)
-            if console_mode:
-                print(new_prompt)
-            if mode == 'text':
-                output_text = output_text + new_prompt + '\n'
-            elif mode == 'json':
-                output_text.append(new_prompt)
+                    if n >= append[pos - 1]['weight']:
+#                           print ('break')
+                        break
+                    pos = pos - cnt
+                    cnt = int((cnt + 1) / 2)
+                    if pos < 0:
+                        pos = 0
+                    if cnt == 0:
+                        break
+                elif n == w:
+                    break
+                else:
+                    if pos == len(append) - 1:
+                        break
+                    if n < w:
+                        if n >= append[pos - 1]['weight']:
+                            break                           
+                    pos = pos + cnt
+                    cnt = int((cnt + 1) / 2)
+                    if pos >= len(append):
+                        pos = len(append) - 1
+                    if cnt == 0:
+                        break
+#               print (n,pos)
+            var = keys[i]
+            re_str = append[pos]['text']
+#               print(var, re_str)
+            new_prompt = prompt_replace(new_prompt, re_str, var)
+#            opt[var] = re_str              
+        if console_mode:
+            print(new_prompt)
+        if mode == 'text':
+            output_text = output_text + new_prompt + '\n'
+        elif mode == 'json':
+#            new_prompt['var_opt'] = opt                
+            output_text.append(new_prompt)
     return output_text
 
 def main(args):
