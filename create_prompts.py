@@ -587,7 +587,13 @@ def prompt_replace(string,replace_texts,var):
     
     if type(string) is str:
         string = re.sub('\$\{%s,\d+\}' % (var) ,'',string)
-        string = string.replace(r'\${%s}' % (var) ,'')
+        string = string.replace('${%s}' % (var) ,'')
+    else:
+        for key in string:
+            if type(string[key]) is str:
+                string[key] = re.sub('\$\{%s,\d+\}' % (var) ,'',string[key])
+                string[key] = string[key].replace('${%s}' % (var) ,'')
+
     return string
 
 def prompt_multiple(prompts,appends,console_mode,mode='text',variables_mode = False):
