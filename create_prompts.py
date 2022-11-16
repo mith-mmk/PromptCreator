@@ -347,7 +347,7 @@ def save_img(r,opt={'dir': './outputs'}):
                     replacer = filename_pattern[seeds][n]
                 else:
                     replacer = filename_pattern[seeds]
-                replacer = re.sub('[\<\>\:\"/\\|?\*\n\s]+','_',str(replacer))[:127]
+                replacer = re.sub('[\<\>\:\"\/\\\\|?\*\n\s]+','_',str(replacer))[:127]
                 filename = filename.replace('[' + seeds + ']',replacer)
             
 #            seed = filename_pattern['all_seeds'] [n]
@@ -512,9 +512,9 @@ def read_file(filename):
         try:
             with open(filename,'r',encoding='utf_8') as f:
                 for i,item in enumerate(f.readlines()):
-                    if re.match('^\s*#.+',item) or re.match('^\s*$',item):
+                    if re.match('^\s*#.*',item) or re.match('^\s*$',item):
                         continue
-                    item = re.sub('\s*#.+$','',item)
+                    item = re.sub('\s*#.*$','',item)
                     try:
                         strs.append(item_split(item))
                     except:
