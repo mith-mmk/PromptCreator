@@ -305,7 +305,6 @@ def save_img(r,opt={'dir': './outputs'}):
         filename_pattern[key] = value
 
     if 'variables' in opt:
-        print(opt['variables'])
         for key,value in opt['variables'].items():
             filename_pattern['var:' + key] = value
 
