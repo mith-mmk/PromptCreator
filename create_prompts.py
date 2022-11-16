@@ -245,6 +245,7 @@ def save_img(r,opt={'dir': './outputs'}):
     before_counter = re.sub('\[num\].*','',nameseed)
     before_counter = re.sub('\[.*?\]','',before_counter)
     count = len(before_counter)
+
     for name in need_names:
         if name == 'num':
             break
@@ -302,6 +303,11 @@ def save_img(r,opt={'dir': './outputs'}):
 
     for key,value in info.items():
         filename_pattern[key] = value
+
+    if 'variables' in opt:
+        print(opt['variables'])
+        for key,value in opt['variables'].items():
+            filename_pattern['var:' + key] = value
 
     for n, i in enumerate(r['images']):
         try:
@@ -444,6 +450,8 @@ def txt2img(output_text,base_url='http://127.0.0.1:8760',output_dir='./outputs',
         print(flash,end = '')
         print('\033[KBatch %d of %d' % (n+1,count))
         # Why is an error happening? json=payload or json=item
+        if 'variables' in item:
+            opt['variables'] = item.pop('variables')
         payload = json.dumps(item)
         response = request_post_wrapper(url, data=payload, progress_url=progress,base_url=base_url)
 
@@ -583,7 +591,7 @@ def prompt_replace(string,replace_texts,var):
         string = string.replace(r'\${%s}' % (var) ,'')
     return string
 
-def prompt_multiple(prompts,appends,console_mode,mode='text'):
+def prompt_multiple(prompts,appends,console_mode,mode='text',variables_mode = False):
     if mode =='text':
         output_text = ''
     elif mode == 'json':
@@ -618,9 +626,14 @@ def prompt_multiple(prompts,appends,console_mode,mode='text'):
                 else:
                     j = [a[0],a[1],b]                    
                 j.extend(j2)
+        variables = {}
         for n,_ in enumerate(j):
             re_str = appends[keys[n]][j[n]]
             var = keys[n]
+            if type(re_str) is list:
+                variables[var] = re_str[0]
+            else:
+                variables[var] = re_str
             if len(re_str) == 1:
                 new_prompt = prompt_replace(new_prompt, re_str, var)
             else:
@@ -634,7 +647,13 @@ def prompt_multiple(prompts,appends,console_mode,mode='text'):
         if mode == 'text':
             output_text = output_text + new_prompt + '\n'
         elif mode == 'json':
-            output_text.append(new_prompt)
+            if variables_mode:
+                if 'variables' in new_prompt:
+                    new_prompt['variables'].update(variables)
+                else:
+                    new_prompt['variables'] = variables
+            if variables_mode:
+                output_text.append(new_prompt)
     return output_text
 
 
@@ -666,7 +685,7 @@ def weight_calc(append,num,default_weight = 0.1,weight_mode = True):
 
 
    
-def prompt_random(prompts,appends,console_mode,max_number,weight_mode = False,default_weight = 0.1,mode = 'text'):
+def prompt_random(prompts,appends,console_mode,max_number,weight_mode = False,default_weight = 0.1,mode = 'text',variables_mode = True):
     if mode =='text':
         output_text = ''
     elif mode == 'json':
@@ -681,7 +700,7 @@ def prompt_random(prompts,appends,console_mode,max_number,weight_mode = False,de
         weight_appends.append(weighted)
     for _ in range(0,max_number):
         new_prompt = copy.deepcopy(prompts)
-#        opt = {}
+        variables = {}
         for i,weighted in enumerate(weight_appends):
             append, max_weight = weighted
             n = max_weight
@@ -723,13 +742,20 @@ def prompt_random(prompts,appends,console_mode,max_number,weight_mode = False,de
             re_str = append[pos]['text']
 #               print(var, re_str)
             new_prompt = prompt_replace(new_prompt, re_str, var)
-#            opt[var] = re_str              
+            if type(re_str) is list:
+                variables[var] = re_str[0]
+            else:
+                variables[var] = re_str          
         if console_mode:
             print(new_prompt)
         if mode == 'text':
             output_text = output_text + new_prompt + '\n'
         elif mode == 'json':
-#            new_prompt['var_opt'] = opt                
+            if variables_mode:
+                if 'variables' in new_prompt:
+                    new_prompt['variables'].update(variables)
+                else:
+                    new_prompt['variables'] = variables
             output_text.append(new_prompt)
     return output_text
 
@@ -793,36 +819,41 @@ def main(args):
                 default_weight = options['default_weight']
 
         if 'before_multiple' in yml:
-            output_text = prompt_multiple(prompts,yml['before_multiple'],console_mode = False,mode = mode)
+            output_text = prompt_multiple(prompts,yml['before_multiple'],console_mode = False,mode = mode
+                ,variables_mode= args.api_filename_variables)
             if type(output_text) is list:
                 multiple_text = []
                 for prompts in output_text:
-                    result = prompt_random(prompts,appends,console_mode,max_number,weight_mode = weight_mode,default_weight = default_weight,mode = mode)
+                    result = prompt_random(prompts,appends,console_mode,max_number,weight_mode = weight_mode,default_weight = default_weight,mode = mode
+                                    ,variables_mode= args.api_filename_variables)
                     for item in result:
                         multiple_text.append(item)
             else:
                 multiple_text = ''
                 for prompts in output_text.split('\n'):
-                    multiple_text += prompt_random(prompts,appends,console_mode,max_number,weight_mode = weight_mode,default_weight = default_weight,mode = mode) 
+                    multiple_text += prompt_random(prompts,appends,console_mode,max_number,weight_mode = weight_mode,default_weight = default_weight,mode = mode
+                                                        ,variables_mode= args.api_filename_variables)
             output_text = multiple_text
         else:
             if 'appends_multiple' in yml:
-                output_text = prompt_random(prompts,appends,False,max_number,weight_mode = weight_mode,default_weight = default_weight,mode = mode)
+                output_text = prompt_random(prompts,appends,False,max_number,weight_mode = weight_mode,default_weight = default_weight,mode = mode
+                                                    ,variables_mode= args.api_filename_variables)
             else:
-                output_text = prompt_random(prompts,appends,console_mode,max_number,weight_mode = weight_mode,default_weight = default_weight,mode = mode)
-
+                output_text = prompt_random(prompts,appends,console_mode,max_number,weight_mode = weight_mode,default_weight = default_weight,mode = mode
+                                                    ,variables_mode= args.api_filename_variables)
         if 'appends_multiple' in yml:
             if type(output_text) is list:
                 multiple_text = []
                 for prompts in output_text:
-                    result = prompt_multiple(prompts,yml['appends_multiple'],console_mode,mode = mode)
+                    result = prompt_multiple(prompts,yml['appends_multiple'],console_mode,mode = mode
+                                                        ,variables_mode= args.api_filename_variables)
                     for item in result:
                         multiple_text.append(item)
             else:
                 multiple_text = ''
                 for prompts in output_text.split('\n'):
-                    multiple_text += prompt_multiple(prompts,yml['appends_multiple'],console_mode,mode = mode)             
-
+                    multiple_text += prompt_multiple(prompts,yml['appends_multiple'],console_mode,mode = mode
+                                                        ,variables_mode= args.api_filename_variables)
             output_text = multiple_text
     else:
         output_text = prompt_multiple(prompts,appends,console_mode,mode = mode)
@@ -843,7 +874,7 @@ def main(args):
     opt = {}
     if args.api_filename_pattern is not None:
         opt = {'filename_pattern': args.api_filename_pattern}
-    if args.api_mode:
+    if args.api_mode:  
         txt2img(output_text, base_url=args.api_base, output_dir=args.api_output_dir,opt=opt)
 
 if __name__ == "__main__":
@@ -900,6 +931,9 @@ if __name__ == "__main__":
                         default=-1,
                         help='override option.number for yaml mode')
 
+    parser.add_argument('--api-filename-variables', type=bool,nargs='?',
+                        const=True, default=False,
+                        help='replace variables use filename')
 
     args = parser.parse_args()
     main(args)
