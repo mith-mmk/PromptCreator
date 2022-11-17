@@ -635,10 +635,10 @@ def prompt_multiple(prompts,appends,console_mode,mode='text',variables_mode = Fa
         for n,_ in enumerate(j):
             re_str = appends[keys[n]][j[n]]
             var = keys[n]
-            if type(re_str) is list:
-                variables[var] = re_str[1]
+            if len(re_str) == 1:
+                variables[var] = re_str[0]
             else:
-                variables[var] = re_str
+                variables[var] = re_str[1]
             if len(re_str) == 1:
                 new_prompt = prompt_replace(new_prompt, re_str, var)
             else:
