@@ -636,7 +636,7 @@ def prompt_multiple(prompts,appends,console_mode,mode='text',variables_mode = Fa
             re_str = appends[keys[n]][j[n]]
             var = keys[n]
             if type(re_str) is list:
-                variables[var] = re_str[0]
+                variables[var] = re_str[1]
             else:
                 variables[var] = re_str
             if len(re_str) == 1:
@@ -657,8 +657,7 @@ def prompt_multiple(prompts,appends,console_mode,mode='text',variables_mode = Fa
                     new_prompt['variables'].update(variables)
                 else:
                     new_prompt['variables'] = variables
-            if variables_mode:
-                output_text.append(new_prompt)
+            output_text.append(new_prompt)
     return output_text
 
 
