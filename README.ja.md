@@ -1,3 +1,5 @@
+# 前提条件
+- python 3.10以降
 # Prompt Creator
 　呪文の組み合わせを書くのが面倒なので作成してみた。AUTOMATIC1111/stable-diffusion-webuiのprompts from fileにuploadするためのテキストファイルを生成するcreate_prompt.py。
 

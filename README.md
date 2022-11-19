@@ -1,3 +1,6 @@
+# enviroment
+- python 3.10 and later
+
 # Prompt Creator
 　I create automatic prompt creator for AUTOMATIC1111/stable-diffusion-webui.
 

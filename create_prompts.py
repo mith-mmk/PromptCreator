@@ -21,6 +21,15 @@ import httpx
 import yaml
 from PIL import Image, PngImagePlugin
 
+share = {}
+
+
+def init():
+    loop = asyncio.new_event_loop()
+    share['loop'] = loop
+
+def shutdown():
+    pass
 
 async def async_post(url,data):
     headers = {
@@ -76,7 +85,7 @@ async def progress_writer(url,data,progress_url):
                 result = response.json()
                 right = 1.0
                 await write_progress(result,start_time)
-                await asyncio.sleep(1.0) # initializing wait
+                await asyncio.sleep(0.5) # initializing wait
                 while right != 0.0:
                     await asyncio.sleep(0.1)
                     try: 
@@ -233,6 +242,22 @@ def create_img2json(imagefile):
     json_raw['override_setting'] = override_setting
     return json_raw
 
+def save_images(r,opt={'dir': './outputs'}):
+    return asyncio.run(save_img_wrapper(r,opt))
+
+async def save_img_wrapper(r,opt):
+    loop = share.get('loop')
+    if loop == None:
+        loop = asyncio.new_event_loop()
+        share['loop'] = loop
+
+    if loop:
+        loop.run_in_executor(None,save_img(r,opt=opt))
+        return len(r['images']) + 2
+    else:
+        save_img(r,opt=opt)
+        return len(r['images']) + 2
+
 def save_img(r,opt={'dir': './outputs'}):
     dir = opt['dir']
     if 'filename_pattern' in opt:
@@ -367,9 +392,8 @@ def save_img(r,opt={'dir': './outputs'}):
         except BaseException as e:
             print ('\033[Ksave error',e,filename,file=sys.stderr)
             exit(2)
-    prt_cnt = len(r['images']) + 2
     opt['startnum'] = num
-    return prt_cnt
+    return 'finished'
 
 
 def img2img(imagefiles,overrides=None,base_url='http://127.0.0.1:8760',output_dir='./outputs',opt = {}):
@@ -463,7 +487,7 @@ def txt2img(output_text,base_url='http://127.0.0.1:8760',output_dir='./outputs',
             continue
 
         r = response.json()
-        prt_cnt = save_img(r,opt = opt)
+        prt_cnt = save_images(r,opt = opt)
         flash = '\033[%dA' % (prt_cnt)
     print('')
 
@@ -878,8 +902,10 @@ def main(args):
     opt = {}
     if args.api_filename_pattern is not None:
         opt = {'filename_pattern': args.api_filename_pattern}
-    if args.api_mode:  
+    if args.api_mode:
+        init()
         txt2img(output_text, base_url=args.api_base, output_dir=args.api_output_dir,opt=opt)
+        shutdown()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
