@@ -932,8 +932,8 @@ def main(args):
         opt = {'filename_pattern': args.api_filename_pattern}
     if args.api_mode:
         sd_model = options.get('sd_model') or args.api_set_sd_model
-        if sd_model:
-            set_sd_model(base_url=args.api_base,sd_model=args.api_set_sd_model)
+        if sd_model is not None:
+            set_sd_model(base_url=args.api_base,sd_model=sd_model)
         init()
         txt2img(output_text, base_url=args.api_base, output_dir=args.api_output_dir,opt=opt)
         shutdown()
