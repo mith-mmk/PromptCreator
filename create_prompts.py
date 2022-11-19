@@ -183,6 +183,7 @@ def create_parameters(parameters_text):
     return parameters
 
 def set_sd_model(sd_model, base_url='http://127.0.0.1:7860'):
+    print('Try change sd model to %s' % (sd_model))
     base_url = normalize_base_url(base_url)
     url = (base_url + '/sdapi/v1/options')
     headers = {
@@ -193,9 +194,8 @@ def set_sd_model(sd_model, base_url='http://127.0.0.1:7860'):
     try:
         res = httpx.post(url,data=data,headers=headers,timeout=(5,1000))
         # Version Return null only
-        print(res.status_code)
         if res.status_code == 200:
-            print('change sd_model')
+            print('change success sd_model')
         else:
             print('change failed')
 
@@ -848,17 +848,17 @@ def main(args):
     if yml is not None and 'options' in yml and yml['options'] is not None:
         options = yml['options']
     else:
-        options = None
+        options = {}
 
     console_mode = False
     if output is None and args.api_mode == False:
-        if options is not None and 'output' in options and options['output'] is not None:
+        if options.get('output'):
             output = options['output']
         else:
             console_mode = True
         
 
-    if args.api_input_json == None and options is not None and 'method' in options and options['method'] == 'random':
+    if args.api_input_json == None and options.get('method') == 'random':
         max_number = 100
         default_weight = 0.1
         weight_mode = False
@@ -925,13 +925,14 @@ def main(args):
         with open(args.api_input_json,'r',encoding='utf-8') as f:
             output_text = f.read()
     
-    if options is not None and 'filename_pattern' in options:
+    if options.get('filename_pattern'):
         args.api_filename_pattern = args.api_filname_pattern or options['filename_pattern']
     opt = {}
     if args.api_filename_pattern is not None:
         opt = {'filename_pattern': args.api_filename_pattern}
     if args.api_mode:
-        if args.api_set_sd_model:
+        sd_model = options.get('sd_model') or args.api_set_sd_model
+        if sd_model:
             set_sd_model(base_url=args.api_base,sd_model=args.api_set_sd_model)
         init()
         txt2img(output_text, base_url=args.api_base, output_dir=args.api_output_dir,opt=opt)
