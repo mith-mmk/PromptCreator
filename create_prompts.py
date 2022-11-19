@@ -182,7 +182,7 @@ def create_parameters(parameters_text):
             print('unknow', option)
     return parameters
 
-def create_img2json(imagefile):
+def create_img2json(imagefile,alt_image_dir = None):
     schema = [
         'enable_hr',
         'denoising_strength',
@@ -219,6 +219,12 @@ def create_img2json(imagefile):
         parameters = create_parameters(parameter_text)
     else:
         parameters = {}
+    if alt_image_dir is not None:
+        basename = os.path.basename(imagefile)
+        alt_imagefile = os.path.join(alt_image_dir, basename)
+        if os.path.isfile(alt_imagefile):
+            image = Image.open(alt_imagefile)
+            image.load
     buffer = io.BytesIO()
     image.save(buffer, 'png')
     init_image = base64.b64encode(buffer.getvalue()).decode("ascii")
@@ -411,9 +417,10 @@ def img2img(imagefiles,overrides=None,base_url='http://127.0.0.1:8760',output_di
     print('API loop count is %d times' % (count))
     print('')
     flash = ''
-    opt = {'dir': dir}
+    alt_image_dir = opt.get('alt_image_dir')
+
     for (n,imagefile) in enumerate(imagefiles):
-        item = create_img2json(imagefile)
+        item = create_img2json(imagefile,alt_image_dir)
         if overrides is not None:
             if type(overrides) is list:
                 override = overrides[n]
