@@ -960,7 +960,7 @@ if __name__ == "__main__":
 
     parser.add_argument('--api-base', type=str,
                         default='http://127.0.0.1:7860',
-                        help='direct call api ex http://127.0.0.1:7860')
+                        help='direct call api e.g http://127.0.0.1:7860')
 
     ## 
     #parser.add_argument('--api-name', type=str,
@@ -998,7 +998,7 @@ if __name__ == "__main__":
 
     parser.add_argument('--api-set-sd-model', type=str,
                         default=None,
-                        help='Change sd model "Filename.ckpt [hash]" ')
+                        help='Change sd model "Filename.ckpt [hash]" e.g. "wd-v1-3.ckpt [84692140]"')
 
     args = parser.parse_args()
     main(args)

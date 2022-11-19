@@ -13,14 +13,46 @@
 usage: create_prompts.py [-h] [--append-dir APPEND_DIR] [--output OUTPUT] input
 ```
 
+  -h, --help            ヘルプを見る
+  
+  --append-dir APPEND_DIR    textモード時のappend_dir
+
+  --output OUTPUT       プロンプトファイルの出力先
+  
+  --json                JSONで出力
+
+  --api-mode            APIの実行(API MODE) --jsonが強制指定される
+                        see https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/API
+
+  --api-base API_BASE  API MODE設定時のBASEURL 例 http://127.0.0.1:7860
+
+  --api-output-dir API_OUTPUT_DIR API MODEの画像出力先
+
+  --api-input-json API_INPUT_JSON API MODE時にjsonファイルから画像を生成する
+
+  --api-filename-pattern API MODE時のファイル出力パターン　デフォルト [num]-[seed] [num]-[seed]-[prompt]でWeb UIと同じになる。
+  　numはシーケンシャル値。
+  --max-number MAX_NUMBER Yaml Modeの option.numberを上書きする
+
+  --api-filename-variables Yaml Modeの変数をファイル名に使える様にする（エラーが出やすいので注意）
+　　例：
+```yaml
+appends:
+    country: append/landscape/c01-countries.txt
+```
+　の時、[var:country] で国名が追加される e.g. [num]-[seed]-[var:country]
+
+  --api-set-sd-model API_SET_SD_MODEL SD MODELを変更する　例 e.g. --api-set-sd-model "wd-v1-3.ckpt [84692140]"
+
+  　ハッシュからの変更はまだ実装してない。
 ## Textモード
-　promptを書き散らしたTextファイルにリストを並べたappend_dirの下のファイルを読み込ませるスクリプト。置き換える順番は$1,$2,$3....になり、ソートされたファイル名の順に適用される。--append-dirの設定が必要。改行は半角スペースに置き換わる。
+　promptを書き散らしたTextファイルにリストを並べたappend_dirの下のファイルを読み込ませるスクリプト。置き換える順番は\${1},\${2},\${3}....になり、ソートされたファイル名の順に適用される。--append-dirの設定が必要。改行は半角スペースに置き換わる。
 
 例：
 ```txt
 --prompt
 "((masterpiece)), (((best quality))), ((ultra-detailed)), ((illustration)), ((disheveled hair)),
-,a $1,$2,girl wearing school uniform in falling cherry blossoms,wind,
+,a ${1},${2},girl wearing school uniform in falling cherry blossoms,wind,
 1girl, solo"
 --negative_prompt
 "longbody, lowres, bad anatomy, bad hands, missing fingers,
@@ -45,7 +77,7 @@ appends:
        - brown 
        - pink twin-tail
 command:
-    prompt: "((masterpiece)), (((best quality))), ((ultra-detailed)), ((illustration)), ((disheveled hair)),a $1 $2 girl wearing school uniform in falling cherry blossoms,wind1girl, solo"
+    prompt: "((masterpiece)), (((best quality))), ((ultra-detailed)), ((illustration)), ((disheveled hair)),a ${1} ${2} girl wearing school uniform in falling cherry blossoms,wind1girl, solo"
     negative_prompt: "longbody, lowres, bad anatomy, bad hands, missing fingers,text, error,heart_mark,signature, watermark, username, blurry, artist namepubic hair,extra digit, fewer digits, cropped, worst quality,low quality,{{{bad hands}}}"
     seed: -1
     width: 640
@@ -92,7 +124,7 @@ append:
 ```
 
 ###　再帰置換について
-  仕様上、$1から順番に置き換えていくので、$1のリプレイスを$2 $3にすることが出来ます。以下の様になります。
+  仕様上、${1}から順番に置き換えていくので、\${1}のリプレイスを\${2} \${3}にすることが出来ます。以下の様になります。
 
 ```yaml
 append:
@@ -181,15 +213,11 @@ cyan
 
 　APIとFile Prompts from file scriptでは使えるオプションが異なるので注意(例えば、sampler indexはscriptでは数字指定なのに対し、APIは名称指定)
 
-
-
-
-
 # Issues
 
 - async exceptions traps
 - img2img.py  テスト実装の試験中 pngのコメントにpromptが入って居ないとエラー。jpegはexif内に収めるらしいが未実施。
-- interrogate.py 実装は終了したが、本体のAPIがバグっている。issue書かないと。BLIPは重いので、Deep Danbooruを呼び出したい。このモードはimg2imgのプロンプトを自動生成したり自動的に弾くのに使える。
+- interrogate.py 実装は終了。
 - 分割変数のデフォルト値設定
 - Overritde Prompt
 - versioning

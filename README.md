@@ -27,12 +27,20 @@ usage: create_prompts.py [-h] [--append-dir APPEND_DIR] [--output OUTPUT] [--jso
   --api-mode            output api force set --json
                         see https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/API
 
-  --api-base API_BASE  for call api from this script ex http://127.0.0.1:7860
+  --api-base API_BASE  for call api from this script e.g. http://127.0.0.1:7860
 
   --api-output-dir API_OUTPUT_DIR
-                        a directory of api output images 
-
-
+                        api output images directory
+  --api-input-json API_INPUT_JSON
+                        api direct inputs from a json file
+  --api-filename-pattern API_FILENAME_PATTERN
+                        api outputs filename pattern default: [num]-[seed]
+  --max-number MAX_NUMBER
+                        override option.number for yaml mode
+  --api-filename-variables [API_FILENAME_VARIABLES]
+                        replace variables use filename
+  --api-set-sd-model API_SET_SD_MODEL
+                        Change sd model "Filename.ckpt [hash]" e.g. "wd-v1-3.ckpt [84692140]"
 # Setting
  Python 3.10+(Also 3.8 and above) and use there packages.
  
