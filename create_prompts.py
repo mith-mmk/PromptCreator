@@ -258,6 +258,7 @@ def create_img2json(imagefile,alt_image_dir = None):
         basename = os.path.basename(imagefile)
         alt_imagefile = os.path.join(alt_image_dir, basename)
         if os.path.isfile(alt_imagefile):
+            print ('base image use alternative %s' % (alt_imagefile))
             image = Image.open(alt_imagefile)
             image.load
     buffer = io.BytesIO()
@@ -439,7 +440,7 @@ def save_img(r,opt={'dir': './outputs'}):
             print ('\033[Ksave error',e,filename,file=sys.stderr)
             exit(2)
     opt['startnum'] = num
-    return 'finished'
+    return len(r['images']) + 2
 
 
 def img2img(imagefiles,overrides=None,base_url='http://127.0.0.1:8760',output_dir='./outputs',opt = {}):

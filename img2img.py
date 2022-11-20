@@ -12,37 +12,39 @@ parser.add_argument('--output', type=str,
 parser.add_argument('--api-base', type=str,
                     default='http://127.0.0.1:7860',
                     help='api base url')
-parser.add_argument('seed', type=int,
+parser.add_argument('--seed', type=int,
                     default=None,
                     help='override seed')
 
-parser.add_argument('steps', type=int,
+parser.add_argument('--steps', type=int,
                     default=None,
                     help='override steps')
-parser.add_argument('cfg_scale', type=int,
+parser.add_argument('--cfg_scale', type=int,
                     default=None,
                     help='override cfg_scale')
 
-parser.add_argument('width', type=int,
+parser.add_argument('--width', type=int,
                     default=None,
                     help='override width')
-parser.add_argument('height', type=int,
+parser.add_argument('--height', type=int,
                     default=None,
                     help='override height')
 
-
-
-parser.add_argument('n_iter', type=int,
+parser.add_argument('--n_iter', type=int,
                     default=None,
                     help='override n_iter')
-parser.add_argument('batch_size', type=int,
+parser.add_argument('--batch_size', type=int,
                     default=None,
                     help='override batch_size')
-parser.add_argument('denoising_strength', type=float,
+parser.add_argument('--denoising_strength', type=float,
                     default=None,
                     help='override denoising_strength')
 
-parser.add_argument('input', nargs='+',
+parser.add_argument('--alt-image-dir', type=str,
+                    default=None,
+                    help='Alternative input image files diretory')
+
+parser.add_argument('input', type=str,nargs='+',
                     help='input files or dirs')
 
 
@@ -62,9 +64,11 @@ items = ['denoising_strength','seed','subseed','subseed_strength','batch_size',
 
 overrides = {}
 
+dicted_args = vars(args)
 for item in items:
-    if item in args and args[item]:
-        overrides[item] = args[item]
+    if dicted_args.get(item):
+        overrides[item] = dicted_args[item]
+
 
 input_files = []
 for filename in filenames:
@@ -75,11 +79,17 @@ for filename in filenames:
             file = os.path.join(path, file)
             if os.path.isfile(file):
                 input_files.append(file)
-    else:
+    elif os.path.isfile(filename):
         input_files.append(filename)
+if len(input_files) == 0:
+    print('no exit files')
+    exit(0)
 
+opt = {}
+if dicted_args.get('alt_image_dir') is not None:
+    opt['alt_image_dir'] = dicted_args.get('alt_image_dir')
 
-result = img2img(input_files,base_url=base_url,overrides=overrides,output_dir=output_dir)
+result = img2img(input_files,base_url=base_url,overrides=overrides,output_dir=output_dir,opt = opt)
 # - multiple images impl
 # - overrides maker from yaml
 # - image mask impl
