@@ -3,6 +3,8 @@
 #!pip install Pillow
 #!pip install httpx
 
+# version 0.6 (C) 2022 MITH@mmk  MIT License 
+
 import argparse
 import asyncio
 import base64
@@ -10,7 +12,6 @@ import copy
 import io
 import itertools as it
 import json
-# version 0.5 (C) 2022 MITH@mmk
 import os
 import random
 import re
@@ -184,14 +185,27 @@ def create_parameters(parameters_text):
 
 def set_sd_model(sd_model, base_url='http://127.0.0.1:7860'):
     print('Try change sd model to %s' % (sd_model))
-    base_url = normalize_base_url(base_url)
-    url = (base_url + '/sdapi/v1/options')
     headers = {
         'Content-Type': 'application/json',
     }
-    payload = {"sd_model_checkpoint": sd_model}
-    data = json.dumps(payload)
+    base_url = normalize_base_url(base_url)
+    model_url = (base_url + '/sdapi/v1/sd-models')
+
+    url = (base_url + '/sdapi/v1/options')
     try:
+        res = httpx.get(model_url,headers=headers,timeout=(5))
+        load_model = None
+        for model in res.json():
+            if model['model_name'] == sd_model or model['hash'] == sd_model or model['title'] == sd_model:
+                load_model = model['title']
+                break
+        if load_model is None:
+            print('%s model is not found' % (sd_model))
+            exit()
+        sd_model = load_model   
+        print("%s model loading..." % (sd_model))
+        payload = {"sd_model_checkpoint": sd_model}
+        data = json.dumps(payload)
         res = httpx.post(url,data=data,headers=headers,timeout=(5,1000))
         # Version Return null only
         if res.status_code == 200:
