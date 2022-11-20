@@ -297,6 +297,11 @@ def save_img(r,opt={'dir': './outputs'}):
     before_counter = re.sub('\[num\].*','',nameseed)
     before_counter = re.sub('\[.*?\]','',before_counter)
     count = len(before_counter)
+    use_num = False
+    for name in need_names:
+        if name == 'num':
+            use_num = True
+            break
 
     for name in need_names:
         if name == 'num':
@@ -321,8 +326,8 @@ def save_img(r,opt={'dir': './outputs'}):
             count += 2
         elif name == 'sec':
             count += 2
-        else:
-            print('[%s] is setting before [name]' % (name),file=sys.stderr)
+        elif use_num:
+            print('[%s] is setting before [num]' % (name),file=sys.stderr)
             exit(-1)
 
     if 'startnum' in opt:
