@@ -40,6 +40,11 @@ parser.add_argument('--denoising_strength', type=float,
                     default=None,
                     help='override denoising_strength')
 
+parser.add_argument('--interrogate', type=str,
+                    default=None,
+                    help='If an image does not have prompt, it uses alternative interrogate API.')
+
+
 parser.add_argument('--alt-image-dir', type=str,
                     default=None,
                     help='Alternative input image files diretory')

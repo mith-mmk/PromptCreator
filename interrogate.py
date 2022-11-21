@@ -1,7 +1,7 @@
 # sample of iterrogate api
 # iterrogate api call has bug call self.__base64_to_image() but its function is not implementent
 # workaround call decode_base64_to_image()
-from create_prompts import iterrogate
+from create_prompts import interrogate
 
 import argparse
 
@@ -29,7 +29,7 @@ else:
 
 # model = 'deepdanbooru' need set webui --deepdanbooru option
 for filename in filenames:
-    result = iterrogate(filename,base_url=base_url,model = args.model) # 'clip' or 'deepdanbooru'
+    result = interrogate(filename,base_url=base_url,model = args.model) # 'clip' or 'deepdanbooru'
     if result.status_code == 200:
         print(filename)
         print (result.json()['caption'])

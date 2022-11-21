@@ -462,6 +462,10 @@ def img2img(imagefiles,overrides=None,base_url='http://127.0.0.1:8760',output_di
 
     for (n,imagefile) in enumerate(imagefiles):
         item = create_img2json(imagefile,alt_image_dir)
+        if item.get('prompt') is None and opt.get('interrogate') is not None:
+            result = interrogate(imagefile, base_url, clip = opt.get('interrogate'))
+            if result.status_code == 200:
+                item['prompt'] = result.json()['caption']
         if overrides is not None:
             if type(overrides) is list:
                 override = overrides[n]
@@ -490,7 +494,7 @@ def img2img(imagefiles,overrides=None,base_url='http://127.0.0.1:8760',output_di
     print('')
 
 # 2022-11-07 cannot run yet 2022-11-12 running?
-def iterrogate(imagefile,base_url,model = 'clip'):
+def interrogate(imagefile,base_url,model = 'clip'):
     base_url = normalize_base_url(base_url)
     url = (base_url + '/sdapi/v1/interrogate')
     image = Image.open(imagefile)
