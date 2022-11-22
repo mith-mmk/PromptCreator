@@ -227,3 +227,4 @@ cyan
 - extension mode
 - mix mode
 - ネームシードのディレクトリサポート
+- API for user authencation

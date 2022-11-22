@@ -1,4 +1,5 @@
 # enviroment
+- automatic1111/stable-diffusion-web-ui (newest commit) enable remote access 
 - python 3.10 and later
 
 # Prompt Creator
@@ -233,3 +234,4 @@ green
 - extension mode
 - mix mode
 - nameseed, directry support
+- API for user authencation
