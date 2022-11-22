@@ -5,9 +5,9 @@
 
 - 組み合わせ爆発に注意。
 - 後ろから順に出てくる仕様になっています
-- リプレイス変数は、$1,$2,...$9の次は$a(10番目)...$zになる
-- $\{n\}で括る方法 コチラの方が安全 $\{1\},$\{2\},...$\{100\}
-- 変数モードを追加 配列ではなくキーで指定。上から順番にリプレイスするので再帰する場合は、再帰する変数を後で指定すること。指定方法は$\{変数名\}　ただし、$\{semicolon\}などの予約語は使えません。
+- \${n}で括る方法  \${1},\${2},...\${100}
+- 変数モードを追加 配列ではなくキーで指定。上から順番にリプレイスするので再帰する場合は、再帰する変数を後で指定すること。指定方法は\${変数名}　ただし、\${semicolon}などの予約語は使えません。
+- 乱数モードとAPIを利用してループさせると永遠に画像を生成しつづけます
 
 ```
 usage: create_prompts.py [-h] [--append-dir APPEND_DIR] [--output OUTPUT] input
@@ -32,9 +32,11 @@ usage: create_prompts.py [-h] [--append-dir APPEND_DIR] [--output OUTPUT] input
 
   --api-filename-pattern API MODE時のファイル出力パターン　デフォルト [num]-[seed] [num]-[seed]-[prompt]でWeb UIと同じになる。
   　numはシーケンシャル値。
+
   --max-number MAX_NUMBER Yaml Modeの option.numberを上書きする
 
   --api-filename-variables Yaml Modeの変数をファイル名に使える様にする（エラーが出やすいので注意）
+
 　　例：
 ```yaml
 appends:
@@ -45,6 +47,7 @@ appends:
   --api-set-sd-model API_SET_SD_MODEL SD MODELを変更する　例 e.g. --api-set-sd-model "wd-v1-3.ckpt [84692140]"
 
   　ハッシュからの変更はまだ実装してない。
+
 ## Textモード
 　promptを書き散らしたTextファイルにリストを並べたappend_dirの下のファイルを読み込ませるスクリプト。置き換える順番は\${1},\${2},\${3}....になり、ソートされたファイル名の順に適用される。--append-dirの設定が必要。改行は半角スペースに置き換わる。
 
@@ -223,3 +226,4 @@ cyan
 - versioning
 - extension mode
 - mix mode
+- ネームシードのディレクトリサポート

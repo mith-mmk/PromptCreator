@@ -5,8 +5,8 @@
 　I create automatic prompt creator for AUTOMATIC1111/stable-diffusion-webui.
 
 - Beware of combination explosion
-- Replace variable is \$\{n\} ex. \$\{1\},\$\{2\},...\$\{100}\
-- If You use yaml mode,you can use \$\{name\} for variable (see below), but you cannot use reserved words ex. \$\{semicolon\}
+- Replace variable is \${n} ex. \${1},\${2},...\${100}
+- If You use yaml mode,you can use \${name} for variable (see below), but you cannot use reserved words ex. \${semicolon}
 
 
 ```
@@ -31,16 +31,23 @@ usage: create_prompts.py [-h] [--append-dir APPEND_DIR] [--output OUTPUT] [--jso
 
   --api-output-dir API_OUTPUT_DIR
                         api output images directory
+
   --api-input-json API_INPUT_JSON
                         api direct inputs from a json file
+
   --api-filename-pattern API_FILENAME_PATTERN
                         api outputs filename pattern default: [num]-[seed]
+
   --max-number MAX_NUMBER
                         override option.number for yaml mode
+
   --api-filename-variables [API_FILENAME_VARIABLES]
                         replace variables use filename
+
   --api-set-sd-model API_SET_SD_MODEL
-                        Change sd model "Filename.ckpt [hash]" e.g. "wd-v1-3.ckpt [84692140]"
+                        Change sd model "Filename.ckpt [hash]" e.g. "wd-v1-3.ckpt [84692140]" or 84692140
+
+
 # Setting
  Python 3.10+(Also 3.8 and above) and use there packages.
  
@@ -224,3 +231,4 @@ green
 - versioning
 - extension mode
 - mix mode
+- nameseed, directry support
