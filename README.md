@@ -5,7 +5,7 @@
 　I create automatic prompt creator for AUTOMATIC1111/stable-diffusion-webui.
 
 - Beware of combination explosion
-- Replace variable is \${n} ex. \${1},\${2},...\${100}
+- Replace variable is ```\${n}``` ex. ```\${1},\${2},...\${100}```
 - If You use yaml mode,you can use \${name} for variable (see below), but you cannot use reserved words ex. \${semicolon}
 
 
@@ -59,7 +59,7 @@ pip install httpx
 
 # Usage
 ## Text Mode
-　Text mode is pre prompt for text file with list words file under append_dir.Replace order is \$\{1\},\$\{3\},\$\{3\}....,Files correspond in sorted order from 1 to n.If text mode must set --append-dir option. Prompt text's new lines are replace space.
+　Text mode is pre prompt for text file with list words file under append_dir.Replace order is ```${1},${2},${3}...```,Files correspond in sorted order from 1 to n.If text mode must set --append-dir option. Prompt text's new lines are replace space.
 
 
 ex:
@@ -152,7 +152,8 @@ append:
 ```
 
 ### about recursive replace
- Replace order is yaml order.For this reason,a replace variable \$\{1\} uses \$\{2\}, \$\{3\} or after variables.
+
+ Replace order is yaml order.For this reason, a replace variable ``` ${1}``` uses ```${2}, ${3} ``` or after variables.
 
  ex.
 
@@ -185,11 +186,11 @@ append:
 
 
 ### escape
-If you want to use ;,you can instead of \\; or \$\{semicolon\}
+If you want to use ;,you can instead of \\; or \${semicolon}
 
 ### splitting replacement
 
-Use \$\{name,num\}, num is replacement number(1..)
+Use \${name,num}, num is replacement number(1..)
 
 例)
 ```yaml
