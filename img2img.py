@@ -92,9 +92,9 @@ for filename in filenames:
         input_files.append(filename)
 if len(input_files) == 0:
     print('no exit files')
-    exit(0)
+    exit(1)
 
-if args.get('sd_model') is not None: set_sd_model(args.get('sd_model'), base_url= base_url)
+if dicted_args.get('sd_model') is not None: set_sd_model(dicted_args.get('sd_model'), base_url= base_url)
 
 opt = {}
 if dicted_args.get('alt_image_dir') is not None:
@@ -103,7 +103,11 @@ if dicted_args.get('alt_image_dir') is not None:
 if dicted_args.get('interrogate') is not None:
     opt['interrogate'] = dicted_args.get('interrogate')
 
-result = img2img(input_files,base_url=base_url,overrides=overrides,output_dir=output_dir,opt = opt)
+try:
+    result = img2img(input_files,base_url=base_url,overrides=overrides,output_dir=output_dir,opt = opt)
+except:
+    exit(-1)
+
 # - multiple images impl
 # - overrides maker from yaml
 # - image mask impl
