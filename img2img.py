@@ -1,5 +1,5 @@
 # img2img api test inpritation,function specifications are change after commit
-from create_prompts import img2img
+from create_prompts import img2img, set_sd_model
 import os
 
 import argparse
@@ -42,7 +42,11 @@ parser.add_argument('--denoising_strength', type=float,
 
 parser.add_argument('--interrogate', type=str,
                     default=None,
-                    help='If an image does not have prompt, it uses alternative interrogate API.')
+                    help='If an image does not have prompt, it uses alternative interrogate API. model "clip" or "deepdanbooru"')
+
+parser.add_argument('--sd-model', type=str,
+                    default=None,
+                    help='Initalize change sd model')
 
 
 parser.add_argument('--alt-image-dir', type=str,
@@ -90,9 +94,14 @@ if len(input_files) == 0:
     print('no exit files')
     exit(0)
 
+if args.get('sd_model') is not None: set_sd_model(args.get('sd_model'), base_url= base_url)
+
 opt = {}
 if dicted_args.get('alt_image_dir') is not None:
     opt['alt_image_dir'] = dicted_args.get('alt_image_dir')
+
+if dicted_args.get('interrogate') is not None:
+    opt['interrogate'] = dicted_args.get('interrogate')
 
 result = img2img(input_files,base_url=base_url,overrides=overrides,output_dir=output_dir,opt = opt)
 # - multiple images impl

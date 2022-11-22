@@ -463,9 +463,11 @@ def img2img(imagefiles,overrides=None,base_url='http://127.0.0.1:8760',output_di
     for (n,imagefile) in enumerate(imagefiles):
         item = create_img2json(imagefile,alt_image_dir)
         if item.get('prompt') is None and opt.get('interrogate') is not None:
+            print('Interrogate from an image....')
             result = interrogate(imagefile, base_url, clip = opt.get('interrogate'))
             if result.status_code == 200:
                 item['prompt'] = result.json()['caption']
+                print('Get prompt %s' % (item['prompt']))
         if overrides is not None:
             if type(overrides) is list:
                 override = overrides[n]
