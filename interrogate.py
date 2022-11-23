@@ -30,6 +30,7 @@ else:
 # model = 'deepdanbooru' need set webui --deepdanbooru option
 for filename in filenames:
     result = interrogate(filename,base_url=base_url,model = args.model) # 'clip' or 'deepdanbooru'
+    print(result)
     if result.status_code == 200:
         print(filename)
         print (result.json()['caption'])

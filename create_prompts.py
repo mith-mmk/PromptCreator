@@ -46,7 +46,7 @@ async def async_post(url,data):
             print('Connect Timeout',file=sys.stderr)
             return None
         except BaseException as error:
-            print('Exception',error,file=sys.stderr)
+            print('Exception: ',error,file=sys.stderr)
             return None
 
 async def progress_writer(url,data,progress_url):
@@ -253,19 +253,20 @@ def create_img2json(imagefile,alt_image_dir = None):
         parameter_text = image.info['parameters']
         parameters = create_parameters(parameter_text)
     else:
-        parameters = {}
+        parameters = {'width': image.width,'heght': image.height}
+
+    load_image = imagefile
     if alt_image_dir is not None:
         basename = os.path.basename(imagefile)
         alt_imagefile = os.path.join(alt_image_dir, basename)
         if os.path.isfile(alt_imagefile):
-            print ('base image use alternative %s' % (alt_imagefile))
-            image = Image.open(alt_imagefile)
-            image.load
-    buffer = io.BytesIO()
-    image.save(buffer, 'png')
-    init_image = base64.b64encode(buffer.getvalue()).decode("ascii")
+            print ('\033[Kbase image use alternative %s' % (alt_imagefile))
+            if 'line_count' in share: share['line_count'] += 1
+            load_image = alt_imagefile
+    with open(load_image,'rb') as f:
+        init_image = base64.b64encode(f.read()).decode("ascii")
     json_raw = {}
-    json_raw['init_images'] = ['data:image/png;base64,' + init_image] 
+    json_raw['init_images'] = ['data:image/png;base64,' + init_image]
 
     override_setting = {}
     sampler_index = None
@@ -461,13 +462,18 @@ def img2img(imagefiles,overrides=None,base_url='http://127.0.0.1:8760',output_di
     alt_image_dir = opt.get('alt_image_dir')
 
     for (n,imagefile) in enumerate(imagefiles):
+        share['line_count'] = 0
+        print('\033[KBatch %d of %d' % (n+1,count))
         item = create_img2json(imagefile,alt_image_dir)
-        if item.get('prompt') is None and opt.get('interrogate') is not None:
-            print('Interrogate from an image....')
-            result = interrogate(imagefile, base_url, clip = opt.get('interrogate'))
-            if result.status_code == 200:
-                item['prompt'] = result.json()['caption']
-                print('Get prompt %s' % (item['prompt']))
+        if opt.get('interrogate') is not None and (item.get('prompt') is None or opt.get('force_interrogate')):
+            print('\033[KInterrogate from an image....')
+            share['line_count'] += 1
+            try:
+                result = interrogate(imagefile, base_url, model = opt.get('interrogate'))
+                if result.status_code == 200:
+                    item['prompt'] = result.json()['caption']
+            except BaseException as e:
+                print ('itterogate failed',e)
         if overrides is not None:
             if type(overrides) is list:
                 override = overrides[n]
@@ -477,7 +483,7 @@ def img2img(imagefiles,overrides=None,base_url='http://127.0.0.1:8760',output_di
                 item[key] = value
 
         print(flash,end = '')
-        print('\033[KBatch %d of %d' % (n+1,count))
+
         # Why is an error happening? json=payload or json=item
         payload = json.dumps(item)
         response = request_post_wrapper(url, data=payload, progress_url=progress,base_url=base_url)
@@ -492,6 +498,9 @@ def img2img(imagefiles,overrides=None,base_url='http://127.0.0.1:8760',output_di
 
         r = response.json()
         prt_cnt = save_img(r,opt = opt)
+        if 'line_count' in share:
+            prt_cnt += share['line_count']
+            share['line_count'] = 0
         flash = '\033[%dA' % (prt_cnt)
     print('')
 
@@ -499,11 +508,8 @@ def img2img(imagefiles,overrides=None,base_url='http://127.0.0.1:8760',output_di
 def interrogate(imagefile,base_url,model = 'clip'):
     base_url = normalize_base_url(base_url)
     url = (base_url + '/sdapi/v1/interrogate')
-    image = Image.open(imagefile)
-    image.load()
-    buffer = io.BytesIO()
-    image.save(buffer, 'png')
-    image = base64.b64encode(buffer.getvalue()).decode("ascii")
+    with open(imagefile,'rb') as f:
+        image = base64.b64encode(f.read()).decode("ascii")
     payload = json.dumps({'image': 'data:image/png;base64,' + image,'model': model})
     response = request_post_wrapper(url, data=payload, progress_url=None,base_url=base_url)
     return response
@@ -524,6 +530,7 @@ def txt2img(output_text,base_url='http://127.0.0.1:8760',output_dir='./outputs',
     print('')
     flash = ''
     for (n,item) in enumerate(output_text):
+        share['line_count'] = 0
         print(flash,end = '')
         print('\033[KBatch %d of %d' % (n+1,count))
         # Why is an error happening? json=payload or json=item
@@ -542,6 +549,9 @@ def txt2img(output_text,base_url='http://127.0.0.1:8760',output_dir='./outputs',
 
         r = response.json()
         prt_cnt = save_images(r,opt = opt)
+        if 'line_count' in share:
+            prt_cnt += share['line_count']
+            share['line_count'] = 0
         flash = '\033[%dA' % (prt_cnt)
     print('')
 
