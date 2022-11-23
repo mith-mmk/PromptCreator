@@ -463,6 +463,7 @@ def img2img(imagefiles,overrides=None,base_url='http://127.0.0.1:8760',output_di
 
     for (n,imagefile) in enumerate(imagefiles):
         share['line_count'] = 0
+        print(flash,end = '')
         print('\033[KBatch %d of %d' % (n+1,count))
         item = create_img2json(imagefile,alt_image_dir)
         if opt.get('interrogate') is not None and (item.get('prompt') is None or opt.get('force_interrogate')):
@@ -482,7 +483,6 @@ def img2img(imagefiles,overrides=None,base_url='http://127.0.0.1:8760',output_di
             for key,value in override.items():
                 item[key] = value
 
-        print(flash,end = '')
 
         # Why is an error happening? json=payload or json=item
         payload = json.dumps(item)
