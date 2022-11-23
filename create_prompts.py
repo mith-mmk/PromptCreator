@@ -253,7 +253,7 @@ def create_img2json(imagefile,alt_image_dir = None):
         parameter_text = image.info['parameters']
         parameters = create_parameters(parameter_text)
     else:
-        parameters = {'width': image.width,'heght': image.height}
+        parameters = {'width': image.width,'height': image.height}
 
     load_image = imagefile
     if alt_image_dir is not None:
