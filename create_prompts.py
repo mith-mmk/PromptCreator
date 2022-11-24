@@ -347,6 +347,8 @@ def save_img(r,opt={'dir': './outputs'}):
             exit(-1)
 
     num_length = 5
+    if 'num_length' in opt:
+        num = opt['num_length']
     if 'startnum' in opt:
         num = opt['startnum']
     else:
@@ -967,9 +969,15 @@ def main(args):
     
     if options.get('filename_pattern'):
         args.api_filename_pattern = args.api_filname_pattern or options['filename_pattern']
+
     opt = {}
     if args.api_filename_pattern is not None:
         opt = {'filename_pattern': args.api_filename_pattern}
+
+    if args.num_length is not None:
+        opt = {'num_length':  args.num_length}
+
+
     if args.api_mode:
         sd_model = options.get('sd_model') or args.api_set_sd_model
         if sd_model is not None:
@@ -1031,6 +1039,11 @@ if __name__ == "__main__":
     parser.add_argument('--max-number', type=int,
                         default=-1,
                         help='override option.number for yaml mode')
+
+    parser.add_argument('--num-length', type=int,
+                        default=None,
+                        help='override seaquintial number length for filename : default 5')
+
 
     parser.add_argument('--api-filename-variables', type=bool,nargs='?',
                         const=True, default=False,
