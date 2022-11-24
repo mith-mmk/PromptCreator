@@ -57,8 +57,14 @@ parser.add_argument('--filename-pattern', type=str,
                     default=None,
                     help='Filename Patter default [num]-[seed]')
 
+
+parser.add_argument('--api-filename-variables', type=bool,nargs='?',
+                    const=True, default=False,
+                    help='replace variables use filename')
+
 parser.add_argument('input', type=str,nargs='+',
                     help='input files or dirs')
+
 
 
 parser.parse_args()
@@ -102,7 +108,7 @@ if dicted_args.get('sd_model') is not None: set_sd_model(dicted_args.get('sd_mod
 
 opt = {}
 
-opt_keys = ['alt_image_dir', 'interrogate', 'filename_pattern']
+opt_keys = ['alt_image_dir', 'interrogate', 'filename_pattern', 'api_filename_variables']
 for key in opt_keys:
     if dicted_args.get(key) is not None:
         opt[key] = dicted_args.get(key)
