@@ -430,8 +430,11 @@ def save_img(r,opt={'dir': './outputs'}):
             
 #            seed = filename_pattern['all_seeds'] [n]
 #            filename = str(num).zfill(5) +'-' +  str(seed) + '.png'
+            filename = re.sub('\[.+?\:.+?\]','', filename)
             print('\033[Ksave... ',filename)
             filename = os.path.join(dir,filename)
+            dirname = os.path.dirname(filename)
+            if dirname != dir: os.makedirs(dirname,exist_ok=True)
             num += 1
             image.save(filename , pnginfo=pnginfo)
         except KeyboardInterrupt:

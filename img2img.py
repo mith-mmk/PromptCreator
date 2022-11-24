@@ -53,6 +53,10 @@ parser.add_argument('--alt-image-dir', type=str,
                     default=None,
                     help='Alternative input image files diretory')
 
+parser.add_argument('--filename-pattern', type=str,
+                    default=None,
+                    help='Filename Patter default [num]-[seed]')
+
 parser.add_argument('input', type=str,nargs='+',
                     help='input files or dirs')
 
@@ -97,11 +101,11 @@ if len(input_files) == 0:
 if dicted_args.get('sd_model') is not None: set_sd_model(dicted_args.get('sd_model'), base_url= base_url)
 
 opt = {}
-if dicted_args.get('alt_image_dir') is not None:
-    opt['alt_image_dir'] = dicted_args.get('alt_image_dir')
 
-if dicted_args.get('interrogate') is not None:
-    opt['interrogate'] = dicted_args.get('interrogate')
+opt_keys = ['alt_image_dir', 'interrogate', 'filename_pattern']
+for key in opt_keys:
+    if dicted_args.get(key) is not None:
+        opt[key] = dicted_args.get(key)
 
 try:
     result = img2img(input_files,base_url=base_url,overrides=overrides,output_dir=output_dir,opt = opt)
