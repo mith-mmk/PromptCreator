@@ -346,13 +346,14 @@ def save_img(r,opt={'dir': './outputs'}):
             print('[%s] is setting before [num]' % (name),file=sys.stderr)
             exit(-1)
 
+    num_length = 5
     if 'startnum' in opt:
         num = opt['startnum']
     else:
         num = -1
         files = os.listdir(dir)
         num_start = 0 + count
-        num_end = 5 + count
+        num_end = num_length + count
 
         for file in files:
             if os.path.isfile(os.path.join(dir,file)):
@@ -362,7 +363,7 @@ def save_img(r,opt={'dir': './outputs'}):
                 except:
                     pass
         num += 1
-        opt['startnum'] = num
+        # opt['startnum'] = num
 
     if type(r['info']) is str:
         info = json.loads(r['info'])
