@@ -217,7 +217,7 @@ def set_sd_model(sd_model, base_url='http://127.0.0.1:7860'):
         print('Change SD Model Error')
         exit()
 
-def create_img2json(imagefile,alt_image_dir = None):
+def create_img2json(imagefile,alt_image_dir = None,mask_image_dir = None):
     schema = [
         'enable_hr',
         'denoising_strength',
@@ -245,6 +245,12 @@ def create_img2json(imagefile,alt_image_dir = None):
         's_tmin',
         's_noise',
         'sampler',
+        # img2img inpainting onky
+        'mask_blur',
+        'inpainting_fill',
+        'inpaint_full_res',
+        'inpaint_full_res_padding',
+        'inpainting_mask_invert'
     ]
 
     image = Image.open(imagefile)
@@ -267,6 +273,19 @@ def create_img2json(imagefile,alt_image_dir = None):
         init_image = base64.b64encode(f.read()).decode("ascii")
     json_raw = {}
     json_raw['init_images'] = ['data:image/png;base64,' + init_image]
+
+    if mask_image_dir is not None:
+        basename = os.path.basename(imagefile)
+        mask_imagefile = os.path.join(mask_image_dir, basename)
+        if os.path.isfile(mask_imagefile):
+            with open(mask_imagefile,'rb') as f:
+                mask_image = base64.b64encode(f.read()).decode("ascii")
+                json_raw['mask'] = ['data:image/png;base64,' + mask_image]
+                json_raw['mask_blur'] = 4
+                json_raw['inpainting_fill'] = 0
+                json_raw['inpaint_full_res'] = True
+                json_raw['inpaint_full_res_padding'] = 0
+                json_raw['inpainting_mask_invert'] = 0
 
     override_setting = {}
     sampler_index = None
@@ -466,12 +485,13 @@ def img2img(imagefiles,overrides=None,base_url='http://127.0.0.1:8760',output_di
     print('')
     flash = ''
     alt_image_dir = opt.get('alt_image_dir')
+    mask_image_dir = opt.get('mask_dir')
 
     for (n,imagefile) in enumerate(imagefiles):
         share['line_count'] = 0
         print(flash,end = '')
         print('\033[KBatch %d of %d' % (n+1,count))
-        item = create_img2json(imagefile,alt_image_dir)
+        item = create_img2json(imagefile,alt_image_dir,mask_image_dir)
         if opt.get('interrogate') is not None and (item.get('prompt') is None or opt.get('force_interrogate')):
             print('\033[KInterrogate from an image....')
             share['line_count'] += 1
