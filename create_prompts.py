@@ -446,7 +446,7 @@ def save_img(r,opt={'dir': './outputs'}):
         except BaseException as e:
             print ('\033[Ksave error',e,filename,file=sys.stderr)
             exit(2)
-    opt['startnum'] = num
+#    opt['startnum'] = num
     return len(r['images']) + 2
 
 
