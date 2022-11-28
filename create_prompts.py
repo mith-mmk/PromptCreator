@@ -22,7 +22,10 @@ import httpx
 import yaml
 from PIL import Image, PngImagePlugin
 
-share = {}
+share = {
+    'timeout': 5,
+    'max_timeout': 1000
+}
 
 
 def init():
@@ -38,7 +41,7 @@ async def async_post(url,data):
     }
     async with httpx.AsyncClient() as client:
         try:
-            return await client.post(url,data=data,headers=headers,timeout=(5,10000))
+            return await client.post(url,data=data,headers=headers,timeout=(share.get('timeout'),share.get('max_timeout')))
         except httpx.ReadTimeout:
             print('Read timeout',file=sys.stderr)
             return None
@@ -77,6 +80,7 @@ async def progress_writer(url,data,progress_url):
                 )
 
             print(string,end='\r')
+            return elapsed_time
 
         async def progress_get(progress_url):
             async with httpx.AsyncClient() as client:
@@ -85,16 +89,17 @@ async def progress_writer(url,data,progress_url):
                 response = await client.get(progress_url)
                 result = response.json()
                 right = 1.0
-                await write_progress(result,start_time)
+
+                elapsed_time =await write_progress(result,start_time)
                 await asyncio.sleep(0.5) # initializing wait
-                while right != 0.0:
+                while right != 0.0 and elapsed_time <= share.get('max_timeout'):
                     await asyncio.sleep(0.1)
                     try: 
                         response = await client.get(progress_url)
                         retry = 0
                         result = response.json()
                         right = result['progress']
-                        await write_progress(result,start_time)
+                        elapsed_time = await write_progress(result,start_time)
                     except:
                         retry += 1
                         if retry >= 10:
@@ -102,7 +107,7 @@ async def progress_writer(url,data,progress_url):
                             return
 
         tasks = [
-            client.post(url,data=data,headers=headers,timeout=(5,10000)),
+            client.post(url,data=data,headers=headers,timeout=(share.get('timeout'),share.get('max_timeout'))),
             progress_get(progress_url)
         ]
         result = await asyncio.gather(*tasks, return_exceptions=False)
@@ -193,7 +198,7 @@ def set_sd_model(sd_model, base_url='http://127.0.0.1:7860'):
 
     url = (base_url + '/sdapi/v1/options')
     try:
-        res = httpx.get(model_url,headers=headers,timeout=(5))
+        res = httpx.get(model_url,headers=headers,timeout=(share.get('timeout')))
         load_model = None
         for model in res.json():
             if model['model_name'] == sd_model or model['hash'] == sd_model or model['title'] == sd_model:
@@ -206,7 +211,7 @@ def set_sd_model(sd_model, base_url='http://127.0.0.1:7860'):
         print("%s model loading..." % (sd_model))
         payload = {"sd_model_checkpoint": sd_model}
         data = json.dumps(payload)
-        res = httpx.post(url,data=data,headers=headers,timeout=(5,1000))
+        res = httpx.post(url,data=data,headers=headers,timeout=(share.get('timeout'),share.get('max_timeout')))
         # Version Return null only
         if res.status_code == 200:
             print('change success sd_model')
