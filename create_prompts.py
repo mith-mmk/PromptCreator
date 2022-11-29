@@ -87,11 +87,14 @@ async def progress_writer(url,data,progress_url,userpass=None):
             print(string,end='\r')
             return elapsed_time
 
-        async def progress_get(progress_url):
+        async def progress_get(progress_url,userpass=None):
+            headers = {}
+            if userpass:
+                headers['Authorization'] = 'Basic ' + base64.b64encode(userpass.encode())
             async with httpx.AsyncClient() as client:
                 retry = 0
                 start_time = time.time()
-                response = await client.get(progress_url)
+                response = await client.get(progress_url,headers = headers)
                 result = response.json()
                 right = 1.0
 
@@ -113,7 +116,7 @@ async def progress_writer(url,data,progress_url,userpass=None):
 
         tasks = [
             client.post(url,data=data,headers=headers,timeout=(share.get('timeout'),share.get('max_timeout'))),
-            progress_get(progress_url)
+            progress_get(progress_url,userpass)
         ]
         result = await asyncio.gather(*tasks, return_exceptions=False)
     return result[0]
@@ -121,10 +124,10 @@ async def progress_writer(url,data,progress_url,userpass=None):
 # force interrupt process
 def progress_interrupt(url,userpass):
     try:
+        headers = {}
         if userpass: 
             headers = {'Authorization': 'Basic ' + base64.b64encode(userpass.encode())}
-            return httpx.post(url,headers=headers)
-        return httpx.post(url)
+        return httpx.post(url,headers=headers)
     except httpx.ReadTimeout:
         print('Read timeout',file=sys.stderr)
         return None
