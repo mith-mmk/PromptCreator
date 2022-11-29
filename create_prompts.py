@@ -35,10 +35,13 @@ def init():
 def shutdown():
     pass
 
-async def async_post(url,data):
+async def async_post(url,data,userpass = None):
     headers = {
         'Content-Type': 'application/json',
     }
+    if userpass:
+        headers['Authorization'] = 'Basic ' + base64.b64encode(userpass.encode())
+
     async with httpx.AsyncClient() as client:
         try:
             return await client.post(url,data=data,headers=headers,timeout=(share.get('timeout'),share.get('max_timeout')))
@@ -52,10 +55,12 @@ async def async_post(url,data):
             print('Exception: ',error,file=sys.stderr)
             return None
 
-async def progress_writer(url,data,progress_url):
+async def progress_writer(url,data,progress_url,userpass=None):
     headers = {
         'Content-Type': 'application/json',
     }
+    if userpass:
+        headers['Authorization'] = 'Basic ' + base64.b64encode(userpass.encode())
     result = None
     async with httpx.AsyncClient() as client:
         async def write_progress(result,start_time):
@@ -114,8 +119,11 @@ async def progress_writer(url,data,progress_url):
     return result[0]
 
 # force interrupt process
-def progress_interrupt(url):
+def progress_interrupt(url,userpass):
     try:
+        if userpass: 
+            headers = {'Authorization': 'Basic ' + base64.b64encode(userpass.encode())}
+            return httpx.post(url,headers=headers)
         return httpx.post(url)
     except httpx.ReadTimeout:
         print('Read timeout',file=sys.stderr)
@@ -127,12 +135,12 @@ def progress_interrupt(url):
         print(str(error),file=sys.stderr)
         return None
 
-def request_post_wrapper(url,data,progress_url=None,base_url=None):
+def request_post_wrapper(url,data,progress_url=None,base_url=None,userpass=None):
     try:
         if progress_url is not None:
-            result = asyncio.run(progress_writer(url,data,progress_url))
+            result = asyncio.run(progress_writer(url,data,progress_url,userpass))
         else:
-            result = asyncio.run(async_post(url,data))
+            result = asyncio.run(async_post(url,data,userpass))
     except KeyboardInterrupt:
         if base_url:
             progress_interrupt(base_url + '/sdapi/v1/interrupt')
@@ -492,6 +500,10 @@ def img2img(imagefiles,overrides=None,base_url='http://127.0.0.1:8760',output_di
     alt_image_dir = opt.get('alt_image_dir')
     mask_image_dir = opt.get('mask_dir')
 
+    if opt.get('userpass'): userpass = opt.get('userpass')
+    else: userpass = None
+
+
     for (n,imagefile) in enumerate(imagefiles):
         share['line_count'] = 0
         print(flash,end = '')
@@ -517,7 +529,7 @@ def img2img(imagefiles,overrides=None,base_url='http://127.0.0.1:8760',output_di
 
         # Why is an error happening? json=payload or json=item
         payload = json.dumps(item)
-        response = request_post_wrapper(url, data=payload, progress_url=progress,base_url=base_url)
+        response = request_post_wrapper(url, data=payload, progress_url=progress,base_url=base_url,userpass=userpass)
 
         if response is None:
             print('http connection - happening error')
@@ -536,13 +548,13 @@ def img2img(imagefiles,overrides=None,base_url='http://127.0.0.1:8760',output_di
     print('')
 
 # 2022-11-07 cannot run yet 2022-11-12 running?
-def interrogate(imagefile,base_url,model = 'clip'):
+def interrogate(imagefile,base_url,model = 'clip',userpass=None):
     base_url = normalize_base_url(base_url)
     url = (base_url + '/sdapi/v1/interrogate')
     with open(imagefile,'rb') as f:
         image = base64.b64encode(f.read()).decode("ascii")
     payload = json.dumps({'image': 'data:image/png;base64,' + image,'model': model})
-    response = request_post_wrapper(url, data=payload, progress_url=None,base_url=base_url)
+    response = request_post_wrapper(url, data=payload, progress_url=None,base_url=base_url,userpass=userpass)
     return response
 
 
@@ -560,6 +572,10 @@ def txt2img(output_text,base_url='http://127.0.0.1:8760',output_dir='./outputs',
     print('API loop count is %d times' % (count))
     print('')
     flash = ''
+
+    if opt.get('userpass'): userpass = opt.get('userpass')
+    else: userpass = None
+
     for (n,item) in enumerate(output_text):
         share['line_count'] = 0
         print(flash,end = '')
@@ -568,7 +584,7 @@ def txt2img(output_text,base_url='http://127.0.0.1:8760',output_dir='./outputs',
         if 'variables' in item:
             opt['variables'] = item.pop('variables')
         payload = json.dumps(item)
-        response = request_post_wrapper(url, data=payload, progress_url=progress,base_url=base_url)
+        response = request_post_wrapper(url, data=payload, progress_url=progress,base_url=base_url,userpass=userpass)
 
         if response is None:
             print('http connection - happening error')
@@ -1002,6 +1018,9 @@ def main(args):
     if args.num_length is not None:
         opt = {'num_length':  args.num_length}
 
+    if args.api_userpass is not None:
+        opt = {'userpass':  args.api_userpass}
+
 
     if args.api_mode:
         sd_model = options.get('sd_model') or args.api_set_sd_model
@@ -1034,6 +1053,11 @@ if __name__ == "__main__":
     parser.add_argument('--api-base', type=str,
                         default='http://127.0.0.1:7860',
                         help='direct call api e.g http://127.0.0.1:7860')
+
+
+    parser.add_argument('--api-userpass', type=str,
+                        default=None,
+                        help='API username:password')
 
     ## 
     #parser.add_argument('--api-name', type=str,
@@ -1068,7 +1092,6 @@ if __name__ == "__main__":
     parser.add_argument('--num-length', type=int,
                         default=None,
                         help='override seaquintial number length for filename : default 5')
-
 
     parser.add_argument('--api-filename-variables', type=bool,nargs='?',
                         const=True, default=False,
