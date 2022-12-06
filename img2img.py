@@ -44,6 +44,10 @@ parser.add_argument('--interrogate', type=str,
                     default=None,
                     help='If an image does not have prompt, it uses alternative interrogate API. model "clip" or "deepdanbooru"')
 
+parser.add_argument('--sampler_index', type=str,
+                    default=None,
+                    help='sampler')
+
 parser.add_argument('--sd-model', type=str,
                     default=None,
                     help='Initalize change sd model')
@@ -51,7 +55,6 @@ parser.add_argument('--sd-model', type=str,
 parser.add_argument('--alt-image-dir', type=str,
                     default=None,
                     help='Alternative input image files diretory')
-
 
 parser.add_argument('--mask-dirs', type=str,
                     default=None,
