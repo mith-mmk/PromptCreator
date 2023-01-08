@@ -237,8 +237,8 @@ def create_img2json(imagefile,alt_image_dir = None,mask_image_dir = None):
     schema = [
         'enable_hr',
         'denoising_strength',
-        'firstphase_width',
-        'firstphase_height',
+        'firstphase_width', # obusolete
+        'firstphase_height', # obusolete
         'prompt',
         'styles',
         'seed',
@@ -276,6 +276,10 @@ def create_img2json(imagefile,alt_image_dir = None,mask_image_dir = None):
         parameters = create_parameters(parameter_text)
     else:
         parameters = {'width': image.width,'height': image.height}
+
+    # workaround for hires.fix spec change 
+    parameters['width'] = image.width
+    parameters['height'] = image.height
 
     load_image = imagefile
     if alt_image_dir is not None:
