@@ -23,7 +23,7 @@ import yaml
 from PIL import Image, PngImagePlugin
 
 share = {
-    'timeout': 5,
+    'timeout': 10,
     'max_timeout': 1000
 }
 
@@ -101,7 +101,7 @@ async def progress_writer(url,data,progress_url,userpass=None):
                 elapsed_time =await write_progress(result,start_time)
                 await asyncio.sleep(0.5) # initializing wait
                 while right != 0.0 and elapsed_time <= share.get('max_timeout'):
-                    await asyncio.sleep(0.1)
+                    await asyncio.sleep(0.2)
                     try: 
                         response = await client.get(progress_url)
                         retry = 0
@@ -494,7 +494,7 @@ def save_img(r,opt={'dir': './outputs'}):
 def img2img(imagefiles,overrides=None,base_url='http://127.0.0.1:8760',output_dir='./outputs',opt = {}):
     base_url = normalize_base_url(base_url)
     url = (base_url + '/sdapi/v1/img2img')
-    progress = base_url + '/sdapi/v1/progress?skip_current_image=false'
+    progress = base_url + '/sdapi/v1/progress?skip_current_image=true'
     print ('Enter API, connect', url)
     dir = output_dir
     opt['dir'] = output_dir
