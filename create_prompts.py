@@ -23,7 +23,7 @@ import yaml
 from PIL import Image, PngImagePlugin
 
 share = {
-    'timeout': 10,
+    'timeout': 5,
     'max_timeout': 1000
 }
 
@@ -570,7 +570,7 @@ def interrogate(imagefile,base_url,model = 'clip',userpass=None):
 def txt2img(output_text,base_url='http://127.0.0.1:8760',output_dir='./outputs',opt = {}):
     base_url = normalize_base_url(base_url)
     url = (base_url + '/sdapi/v1/txt2img')
-    progress = base_url + '/sdapi/v1/progress?skip_current_image=false'
+    progress = base_url + '/sdapi/v1/progress?skip_current_image=true'
     print ('Enter API mode, connect', url)
     dir = output_dir
     opt['dir'] = output_dir
