@@ -1035,7 +1035,7 @@ def main(args):
         opt['num_once'] = args.num_once
 
     if args.api_mode:
-        sd_model = options.get('sd_model') or args.api_set_sd_model
+        sd_model = args.api_set_sd_model or options.get('sd_model')
         if sd_model is not None:
             set_sd_model(base_url=args.api_base,sd_model=sd_model)
         init()
