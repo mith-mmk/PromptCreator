@@ -406,8 +406,6 @@ def save_img(r,opt={'dir': './outputs'}):
                 except:
                     pass
         num += 1
-        if 'num_once' in opt:
-            opt['startnum'] = num
 
     if type(r['info']) is str:
         info = json.loads(r['info'])
@@ -481,6 +479,8 @@ def save_img(r,opt={'dir': './outputs'}):
             dirname = os.path.dirname(filename)
             if dirname != dir: os.makedirs(dirname,exist_ok=True)
             num += 1
+            if 'num_once' in opt:
+                opt['startnum'] = num
             image.save(filename , pnginfo=pnginfo)
         except KeyboardInterrupt:
             print ('\033[KProcess stopped Ctrl+C break',file=sys.stderr)
