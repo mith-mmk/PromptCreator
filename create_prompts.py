@@ -348,7 +348,6 @@ def save_img(r,opt={'dir': './outputs'}):
         nameseed = opt['filename_pattern']
     else:
         nameseed = '[num]-[seed]'
-    print(nameseed)
 
     need_names = re.findall('\[.+?\]',nameseed)
     need_names = [n[1:-1] for n in need_names]
