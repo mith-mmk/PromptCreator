@@ -348,6 +348,7 @@ def save_img(r,opt={'dir': './outputs'}):
         nameseed = opt['filename_pattern']
     else:
         nameseed = '[num]-[seed]'
+    print(nameseed)
 
     need_names = re.findall('\[.+?\]',nameseed)
     need_names = [n[1:-1] for n in need_names]
@@ -969,40 +970,40 @@ def main(args):
 
         if 'before_multiple' in yml:
             output_text = prompt_multiple(prompts,yml['before_multiple'],console_mode = False,mode = mode
-                ,variables_mode= args.api_filename_variables)
+                ,variables_mode= args.api_filename_variable)
             if type(output_text) is list:
                 multiple_text = []
                 for prompts in output_text:
                     result = prompt_random(prompts,appends,console_mode,max_number,weight_mode = weight_mode,default_weight = default_weight,mode = mode
-                                    ,variables_mode= args.api_filename_variables)
+                                    ,variables_mode= args.api_filename_variable)
                     for item in result:
                         multiple_text.append(item)
             else:
                 multiple_text = ''
                 for prompts in output_text.split('\n'):
                     multiple_text += prompt_random(prompts,appends,console_mode,max_number,weight_mode = weight_mode,default_weight = default_weight,mode = mode
-                                                        ,variables_mode= args.api_filename_variables)
+                                                        ,variables_mode= args.api_filename_variable)
             output_text = multiple_text
         else:
             if 'appends_multiple' in yml:
                 output_text = prompt_random(prompts,appends,False,max_number,weight_mode = weight_mode,default_weight = default_weight,mode = mode
-                                                    ,variables_mode= args.api_filename_variables)
+                                                    ,variables_mode= args.api_filename_variable)
             else:
                 output_text = prompt_random(prompts,appends,console_mode,max_number,weight_mode = weight_mode,default_weight = default_weight,mode = mode
-                                                    ,variables_mode= args.api_filename_variables)
+                                                    ,variables_mode= args.api_filename_variable)
         if 'appends_multiple' in yml:
             if type(output_text) is list:
                 multiple_text = []
                 for prompts in output_text:
                     result = prompt_multiple(prompts,yml['appends_multiple'],console_mode,mode = mode
-                                                        ,variables_mode= args.api_filename_variables)
+                                                        ,variables_mode= args.api_filename_variable)
                     for item in result:
                         multiple_text.append(item)
             else:
                 multiple_text = ''
                 for prompts in output_text.split('\n'):
                     multiple_text += prompt_multiple(prompts,yml['appends_multiple'],console_mode,mode = mode
-                                                        ,variables_mode= args.api_filename_variables)
+                                                        ,variables_mode= args.api_filename_variable)
             output_text = multiple_text
     else:
         output_text = prompt_multiple(prompts,appends,console_mode,mode = mode)
@@ -1023,16 +1024,16 @@ def main(args):
 
     opt = {}
     if args.api_filename_pattern is not None:
-        opt = {'filename_pattern': args.api_filename_pattern}
+        opt['filename_pattern'] = args.api_filename_pattern
 
     if args.num_length is not None:
-        opt = {'num_length':  args.num_length}
+        opt['num_length'] = args.num_length
 
     if args.api_userpass is not None:
-        opt = {'userpass':  args.api_userpass}
+        opt['userpass'] = args.api_userpass
 
     if args.num_once is not None:
-        opt = {'num_once':  args.num_once}
+        opt['num_once'] = args.num_once
 
     if args.api_mode:
         sd_model = options.get('sd_model') or args.api_set_sd_model
@@ -1105,7 +1106,7 @@ if __name__ == "__main__":
                         default=None,
                         help='override seaquintial number length for filename : default 5')
 
-    parser.add_argument('--api-filename-variables', type=bool,nargs='?',
+    parser.add_argument('--api-filename-variable', type=bool,nargs='?',
                         const=True, default=False,
                         help='replace variables use filename')
 
@@ -1114,7 +1115,7 @@ if __name__ == "__main__":
                         help='Search once file number')
     parser.add_argument('--api-set-sd-model', type=str,
                         default=None,
-                        help='Change sd model "Filename.ckpt [hash]" e.g. "wd-v1-3.ckpt [84692140]"')
+                        help='Change sd model "[Filename]" e.g. wd-v1-3 for "wd-v1-3.ckpt [84692140]"')
 
     args = parser.parse_args()
     main(args)
