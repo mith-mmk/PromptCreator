@@ -406,7 +406,8 @@ def save_img(r,opt={'dir': './outputs'}):
                 except:
                     pass
         num += 1
-        # opt['startnum'] = num
+        if 'num_once' in opt:
+            opt['startnum'] = num
 
     if type(r['info']) is str:
         info = json.loads(r['info'])
@@ -1030,6 +1031,8 @@ def main(args):
     if args.api_userpass is not None:
         opt = {'userpass':  args.api_userpass}
 
+    if args.num_once is not None:
+        opt = {'num_once':  args.num_once}
 
     if args.api_mode:
         sd_model = options.get('sd_model') or args.api_set_sd_model
@@ -1106,6 +1109,9 @@ if __name__ == "__main__":
                         const=True, default=False,
                         help='replace variables use filename')
 
+    parser.add_argument('--num-once', type=bool,nargs='?',
+                        const=True, default=False,
+                        help='Search once file number')
     parser.add_argument('--api-set-sd-model', type=str,
                         default=None,
                         help='Change sd model "Filename.ckpt [hash]" e.g. "wd-v1-3.ckpt [84692140]"')
