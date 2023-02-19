@@ -52,6 +52,11 @@ parser.add_argument('--sd-model', type=str,
                     default=None,
                     help='Initalize change sd model')
 
+parser.add_argument('--sd-vae', type=str,
+                    default='automatic',
+                    help='Initalize change sd model vae ex) Anything-V3.0.vae.pt')
+
+
 parser.add_argument('--alt-image-dir', type=str,
                     default=None,
                     help='Alternative input image files diretory')
@@ -135,7 +140,7 @@ if len(input_files) == 0:
     print('no exit files')
     exit(1)
 
-if dicted_args.get('sd_model') is not None: set_sd_model(dicted_args.get('sd_model'), base_url= base_url)
+if dicted_args.get('sd_model') is not None: set_sd_model(dicted_args.get('sd_model'), base_url= base_url,sd_vae = dicted_args.get('sd_vae'))
 
 opt = {}
 

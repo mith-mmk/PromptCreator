@@ -199,7 +199,7 @@ def create_parameters(parameters_text):
             print('unknow', option)
     return parameters
 
-def set_sd_model(sd_model, base_url='http://127.0.0.1:7860'):
+def set_sd_model(sd_model, base_url='http://127.0.0.1:7860',sd_vae='Automatic'):
     print('Try change sd model to %s' % (sd_model))
     headers = {
         'Content-Type': 'application/json',
@@ -220,7 +220,7 @@ def set_sd_model(sd_model, base_url='http://127.0.0.1:7860'):
             exit()
         sd_model = load_model   
         print("%s model loading..." % (sd_model))
-        payload = {"sd_model_checkpoint": sd_model}
+        payload = {"sd_model_checkpoint": sd_model,"sd_vae": sd_vae}
         data = json.dumps(payload)
         res = httpx.post(url,data=data,headers=headers,timeout=(share.get('timeout'),share.get('max_timeout')))
         # Version Return null only
@@ -1036,8 +1036,9 @@ def main(args):
 
     if args.api_mode:
         sd_model = args.api_set_sd_model or options.get('sd_model')
+        sd_vae = args.api_set_sd_vae or options.get('sd_vae')
         if sd_model is not None:
-            set_sd_model(base_url=args.api_base,sd_model=sd_model)
+            set_sd_model(base_url=args.api_base,sd_model=sd_model,sd_vae=sd_vae)
         init()
         txt2img(output_text, base_url=args.api_base, output_dir=args.api_output_dir,opt=opt)
         shutdown()
@@ -1114,7 +1115,11 @@ if __name__ == "__main__":
                         help='Search once file number')
     parser.add_argument('--api-set-sd-model', type=str,
                         default=None,
-                        help='Change sd model "[Filename]" e.g. wd-v1-3 for "wd-v1-3.ckpt [84692140]"')
+                        help='Change sd model "[Filename]" e.g. wd-v1-3 for "wd-v1-3.ckpt"')
+
+    parser.add_argument('--api-set-sd-vae', type=str,
+                        default='Automatic',
+                        help='Change sd vae "[Filename]" e.g. "Anything-V3.0.vae.pt", None is not using VAE')
 
     args = parser.parse_args()
     main(args)
