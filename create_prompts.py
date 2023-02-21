@@ -122,7 +122,7 @@ async def progress_writer(url,data,progress_url,userpass=None):
     return result[0]
 
 # force interrupt process
-def progress_interrupt(url,userpass):
+def progress_interrupt(url,userpass=None):
     try:
         headers = {}
         if userpass: 
@@ -146,7 +146,7 @@ def request_post_wrapper(url,data,progress_url=None,base_url=None,userpass=None)
             result = asyncio.run(async_post(url,data,userpass))
     except KeyboardInterrupt:
         if base_url:
-            progress_interrupt(base_url + '/sdapi/v1/interrupt')
+            progress_interrupt(base_url + '/sdapi/v1/skip') # chage api?
         print('enter Ctrl-c, Process stopping',file=sys.stderr)
         exit(2)
     except httpx.ConnectError:
