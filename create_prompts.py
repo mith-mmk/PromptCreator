@@ -1,4 +1,4 @@
-#!/bin/python3
+#!/usr/bin/env python3
 #!pip install pyyaml
 #!pip install Pillow
 #!pip install httpx
