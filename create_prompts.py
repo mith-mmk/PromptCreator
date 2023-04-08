@@ -239,6 +239,7 @@ def create_img2json(imagefile,alt_image_dir = None,mask_image_dir = None):
         'denoising_strength',
         'firstphase_width', # obusolete
         'firstphase_height', # obusolete
+        'hires_upscale',
         'prompt',
         'styles',
         'seed',
@@ -261,7 +262,7 @@ def create_img2json(imagefile,alt_image_dir = None,mask_image_dir = None):
         's_tmin',
         's_noise',
         'sampler',
-        # img2img inpainting onky
+        # img2img inpainting only
         'mask_blur',
         'inpainting_fill',
         'inpaint_full_res',
