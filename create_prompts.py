@@ -424,6 +424,11 @@ def save_img(r,opt={'dir': './outputs'}):
         for key,value in opt['variables'].items():
             filename_pattern['var:' + key] = value
 
+    if 'command' in opt:
+        for key,value in opt['command'].items():
+            if type(key) == str:
+                filename_pattern['command:' + key] = value
+
     for n, i in enumerate(r['images']):
         try:
             meta = info['infotexts'][n]
@@ -633,10 +638,14 @@ def get_appends(appends):
 
 
 
-def yaml_parse(filename, mode='text'):
+def yaml_parse(filename, mode='text',override = None):
     with open(filename, encoding='utf-8') as f:
         yml = yaml.safe_load(f)
     command = yml['command']
+
+    if override is not None:
+        for key,item in override.items():
+            command[key] = item
 
     if 'before_multiple' in yml:
         yml['before_multiple'] = get_appends(yml['before_multiple'])
@@ -909,6 +918,15 @@ def prompt_random(prompts,appends,console_mode,max_number,weight_mode = False,de
     return output_text
 
 def main(args):
+    override = None
+    if args.override is not None:
+        override = {}
+        for com in args.override:
+            items = com.split('=')
+            key = items[0].strip()
+            item = '='.join(items[1:]).strip()
+            override[key] = item
+
     if args.json or args.api_mode:
         mode = 'json'
     else:
@@ -922,7 +940,7 @@ def main(args):
     yml = None
     if ext == '.yaml' or ext == '.yml':
         #yaml mode
-        prompts, appends, yml = yaml_parse(prompt_file,mode = mode)
+        prompts, appends, yml = yaml_parse(prompt_file,mode = mode,override = override)
     else:
         #text mode
         appends = []
@@ -1034,16 +1052,21 @@ def main(args):
     if args.num_once is not None:
         opt['num_once'] = args.num_once
 
+    if 'command' in yml:
+        opt['command'] = yml['command']
+
     if args.api_mode:
         sd_model = args.api_set_sd_model or options.get('sd_model')
         sd_vae = args.api_set_sd_vae or options.get('sd_vae')
+        opt['sd_model'] = sd_model
+        opt['sd_vae'] = sd_vae
         if sd_model is not None:
             set_sd_model(base_url=args.api_base,sd_model=sd_model,sd_vae=sd_vae)
         init()
         txt2img(output_text, base_url=args.api_base, output_dir=args.api_output_dir,opt=opt)
         shutdown()
 
-if __name__ == "__main__":
+def run_from_args(command_args=None):
     parser = argparse.ArgumentParser()
     parser.add_argument('input', type=str,
                         default='./prompt.txt',
@@ -1071,6 +1094,8 @@ if __name__ == "__main__":
     parser.add_argument('--api-userpass', type=str,
                         default=None,
                         help='API username:password')
+    
+
 
     ## 
     #parser.add_argument('--api-name', type=str,
@@ -1121,5 +1146,13 @@ if __name__ == "__main__":
                         default='Automatic',
                         help='Change sd vae "[Filename]" e.g. "Anything-V3.0.vae.pt", None is not using VAE')
 
-    args = parser.parse_args()
+#    --command_override="width=768, height=1024,"....
+    parser.add_argument('--override', type=str, nargs='*',
+                        default=None,
+                        help='command oveeride')
+
+    args = parser.parse_args(command_args)
     main(args)
+
+if __name__ == "__main__":
+    run_from_args()
