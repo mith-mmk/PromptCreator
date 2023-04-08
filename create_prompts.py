@@ -424,6 +424,11 @@ def save_img(r,opt={'dir': './outputs'}):
         for key,value in opt['variables'].items():
             filename_pattern['var:' + key] = value
 
+    if 'info' in opt:
+        for key,value in opt['info'].items():
+            if type(key) == str:
+                filename_pattern['info:' + key] = value
+
     if 'command' in opt:
         for key,value in opt['command'].items():
             if type(key) == str:
@@ -638,14 +643,24 @@ def get_appends(appends):
 
 
 
-def yaml_parse(filename, mode='text',override = None):
+def yaml_parse(filename, mode='text',override = None,info =None):
     with open(filename, encoding='utf-8') as f:
         yml = yaml.safe_load(f)
+    if 'command' not in yml:
+        yml['command'] = {}
+    if 'info' not in yml:
+        yml['info'] = {}
+
     command = yml['command']
 
     if override is not None:
         for key,item in override.items():
             command[key] = item
+
+    information = yml['info']
+    if info is not None:
+        for key,item in info.items():
+            information[key] = item
 
     if 'before_multiple' in yml:
         yml['before_multiple'] = get_appends(yml['before_multiple'])
@@ -917,16 +932,20 @@ def prompt_random(prompts,appends,console_mode,max_number,weight_mode = False,de
             output_text.append(new_prompt)
     return output_text
 
-def main(args):
-    override = None
-    if args.override is not None:
-        override = {}
-        for com in args.override:
-            items = com.split('=')
+def expand_arg(arg):
+    array = None
+    if arg is not None:
+        array = {}
+        for col in arg:
+            items = col.split('=')
             key = items[0].strip()
             item = '='.join(items[1:]).strip()
-            override[key] = item
+            array[key] = item
+    return array
 
+def main(args):
+    override = expand_arg(args.override)
+    info = expand_arg(args.info)
     if args.json or args.api_mode:
         mode = 'json'
     else:
@@ -940,7 +959,7 @@ def main(args):
     yml = None
     if ext == '.yaml' or ext == '.yml':
         #yaml mode
-        prompts, appends, yml = yaml_parse(prompt_file,mode = mode,override = override)
+        prompts, appends, yml = yaml_parse(prompt_file,mode = mode,override = override,info = info)
     else:
         #text mode
         appends = []
@@ -1055,6 +1074,9 @@ def main(args):
     if 'command' in yml:
         opt['command'] = yml['command']
 
+    if 'info' in yml:
+        opt['info'] = yml['info']
+
     if args.api_mode:
         sd_model = args.api_set_sd_model or options.get('sd_model')
         sd_vae = args.api_set_sd_vae or options.get('sd_vae')
@@ -1150,6 +1172,9 @@ def run_from_args(command_args=None):
     parser.add_argument('--override', type=str, nargs='*',
                         default=None,
                         help='command oveeride')
+    parser.add_argument('--info', type=str, nargs='*',
+                        default=None,
+                        help='add infomation')
 
     args = parser.parse_args(command_args)
     main(args)
