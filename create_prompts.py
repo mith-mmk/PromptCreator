@@ -544,6 +544,9 @@ def img2img(imagefiles,overrides=None,base_url='http://127.0.0.1:8760',output_di
                 override = overrides[n]
             else:
                 override = overrides
+            if 'model' in override:
+                set_sd_model(sd_model=override['model'],base_url=base_url,sd_vae=None)
+                del override['model']
             for key,value in override.items():
                 item[key] = value
 
@@ -846,7 +849,7 @@ def weight_calc(append,num,default_weight = 0.1,weight_mode = True):
                 else:
                     weight = max_value + default_weight
             except:
-                print('float convert error append %d line %d %s use default' % (num + 1,i,item[0]))
+                print('float convert error append %d line %d %s use default' % (num + 1,i,item))
                 weight = max_value + default_weight
             finally:
                 text = item[1:]
