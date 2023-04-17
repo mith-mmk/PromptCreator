@@ -5,3 +5,4 @@ prompts*.*
 list*
 __pycache__
 .vscode
+test/

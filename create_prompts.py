@@ -199,6 +199,22 @@ def create_parameters(parameters_text):
             print('unknow', option)
     return parameters
 
+def get_sd_model(base_url='http://127.0.0.1:7860',sd_model = None):
+    headers = {
+        'Content-Type': 'application/json',
+    }
+    base_url = normalize_base_url(base_url)
+    model_url = (base_url + '/sdapi/v1/sd-models')
+    try:
+        res = httpx.get(model_url,headers=headers,timeout=(share.get('timeout')))
+        for model in res.json():
+            if model['model_name'] == sd_model or model['hash'] == sd_model or model['title'] == sd_model:
+                return model
+    except:
+        pass
+    return None
+
+
 def set_sd_model(sd_model, base_url='http://127.0.0.1:7860',sd_vae='Automatic'):
     print('Try change sd model to %s' % (sd_model))
     headers = {
@@ -413,7 +429,6 @@ def save_img(r,opt={'dir': './outputs'}):
     else:
         info = r['info']
 
-
     print('\033[Kreturn %d images' % (len(r['images'])))
 
     filename_pattern = {}
@@ -438,12 +453,16 @@ def save_img(r,opt={'dir': './outputs'}):
     for n, i in enumerate(r['images']):
         try:
             meta = info['infotexts'][n]
+
+
 #               image = Image.open(io.BytesIO(base64.b64decode(i.split(",",1)[1])))
             image = Image.open(io.BytesIO(base64.b64decode(i)))
             pnginfo = PngImagePlugin.PngInfo()
             pnginfo.add_text('parameters', meta)
-
+            parameters = create_parameters(info['infotexts'][n])
+            print(parameters)
             filename = nameseed + '.png'
+
 
             for seeds in need_names:
                 replacer = ''
@@ -475,8 +494,15 @@ def save_img(r,opt={'dir': './outputs'}):
                     replacer = filename_pattern['job_timestamp'][10:12]
                 elif seeds == 'sec' and 'job_timestamp' in filename_pattern:
                     replacer = filename_pattern['job_timestamp'][12:14]
+                elif seeds == 'model':
+                    base_url = opt['base_url']
+                    model  = get_sd_model(base_url,parameters['model_hash'])
+                    print(model)
+                    replacer = model['model_name'] if model is not None else ''
                 elif type(filename_pattern[seeds]) is list and seeds in filename_pattern:
                     replacer = filename_pattern[seeds][n]
+                elif seeds in parameters:
+                    replacer = parameters[seeds]
                 else:
                     replacer = filename_pattern[seeds]
                 replacer = re.sub('[\<\>\:\"\/\\\\|?\*\n\s]+','_',str(replacer))[:127]
@@ -1086,6 +1112,7 @@ def main(args):
         sd_vae = args.api_set_sd_vae or options.get('sd_vae')
         opt['sd_model'] = sd_model
         opt['sd_vae'] = sd_vae
+        opt['base_url'] = args.api_base
         if sd_model is not None:
             set_sd_model(base_url=args.api_base,sd_model=sd_model,sd_vae=sd_vae)
         init()
