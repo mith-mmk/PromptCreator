@@ -497,12 +497,14 @@ def save_img(r,opt={'dir': './outputs'}):
                     base_url = opt['base_url']
                     model  = get_sd_model(base_url,parameters['model_hash'])
                     replacer = model['model_name'] if model is not None else ''
-                elif type(filename_pattern[seeds]) is list and seeds in filename_pattern:
+                elif seeds in filename_pattern and type(filename_pattern[seeds]) is list:
                     replacer = filename_pattern[seeds][n]
                 elif seeds in parameters:
                     replacer = parameters[seeds]
-                else:
+                elif seeds in filename_pattern:
                     replacer = filename_pattern[seeds]
+                else:
+                    replacer = '[' + seeds + ']'
                 replacer = re.sub('[\<\>\:\"\/\\\\|?\*\n\s]+','_',str(replacer))[:127]
                 filename = filename.replace('[' + seeds + ']',replacer)
             
