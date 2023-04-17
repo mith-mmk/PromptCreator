@@ -460,7 +460,6 @@ def save_img(r,opt={'dir': './outputs'}):
             pnginfo = PngImagePlugin.PngInfo()
             pnginfo.add_text('parameters', meta)
             parameters = create_parameters(info['infotexts'][n])
-            print(parameters)
             filename = nameseed + '.png'
 
 
@@ -497,7 +496,6 @@ def save_img(r,opt={'dir': './outputs'}):
                 elif seeds == 'model_name':
                     base_url = opt['base_url']
                     model  = get_sd_model(base_url,parameters['model_hash'])
-                    print(model)
                     replacer = model['model_name'] if model is not None else ''
                 elif type(filename_pattern[seeds]) is list and seeds in filename_pattern:
                     replacer = filename_pattern[seeds][n]
