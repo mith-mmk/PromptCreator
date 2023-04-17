@@ -494,7 +494,7 @@ def save_img(r,opt={'dir': './outputs'}):
                     replacer = filename_pattern['job_timestamp'][10:12]
                 elif seeds == 'sec' and 'job_timestamp' in filename_pattern:
                     replacer = filename_pattern['job_timestamp'][12:14]
-                elif seeds == 'model':
+                elif seeds == 'model_name':
                     base_url = opt['base_url']
                     model  = get_sd_model(base_url,parameters['model_hash'])
                     print(model)
