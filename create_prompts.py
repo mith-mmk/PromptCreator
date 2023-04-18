@@ -689,10 +689,10 @@ def yaml_parse(filename, mode='text',override = None,info =None):
         for key,item in override.items():
             command[key] = item
 
-#    information = yml['info']
-#    if info is not None:
-#        for key,item in info.items():
-#            information[key] = item
+    information = yml['info']
+    if info is not None:
+        for key,item in info.items():
+            information[key] = item
 
     if 'before_multiple' in yml:
         yml['before_multiple'] = get_appends(yml['before_multiple'])
