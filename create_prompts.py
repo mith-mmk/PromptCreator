@@ -1081,26 +1081,26 @@ def create_text(args):
             else:
                 json.dump(output_text,fp=fw,indent=2)
     result = {
-        options: options,
-        yml: yml,
-        output_text: output_text
+        'options': options,
+        'yml': yml,
+        'output_text': output_text
     }
     return result
 
 def main(args):
     if args.input is not None:
         result = create_text(args)
-        options = result.options
-        output_text = result.output_text
-        yml = result.yml
-    else:
+        options = result['options']
+        output_text = result['output_text']
+        yml = result['yml']
+    elif args.api_input_json:
         options = {}
         yml = {}
-        output_text = {}
-
-    if args.api_input_json:
         with open(args.api_input_json,'r',encoding='utf-8') as f:
             output_text = json.loads(f.read())
+    else:
+        print('option error')
+        exit(1)
     
     opt = {}
 
@@ -1219,7 +1219,7 @@ def run_from_args(command_args=None):
 #    --command_override="width=768, height=1024,"....
     parser.add_argument('--override', type=str, nargs='*',
                         default=None,
-                        help='command oveeride')
+                        help='command oveeride ex) "width=768, height=1024"')
     parser.add_argument('--info', type=str, nargs='*',
                         default=None,
                         help='add infomation')
