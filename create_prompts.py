@@ -497,10 +497,10 @@ def save_img(r,opt={'dir': './outputs'}):
                     base_url = opt['base_url']
                     model  = get_sd_model(base_url,parameters['model_hash'])
                     replacer = model['model_name'] if model is not None else ''
-                elif seeds in filename_pattern and type(filename_pattern[seeds]) is list:
-                    replacer = filename_pattern[seeds][n]
                 elif seeds in parameters:
                     replacer = parameters[seeds]
+                elif seeds in filename_pattern and type(filename_pattern[seeds]) is list:
+                    replacer = filename_pattern[seeds][n]
                 elif seeds in filename_pattern:
                     replacer = filename_pattern[seeds]
                 else:
@@ -680,6 +680,8 @@ def yaml_parse(filename, mode='text',override = None,info =None):
         yml['command'] = {}
     if 'info' not in yml:
         yml['info'] = {}
+    if 'options' in yml and 'json' in yml['options'] and yml['options']['json']:
+        mode = 'json'
 
     command = yml['command']
 
@@ -687,10 +689,10 @@ def yaml_parse(filename, mode='text',override = None,info =None):
         for key,item in override.items():
             command[key] = item
 
-    information = yml['info']
-    if info is not None:
-        for key,item in info.items():
-            information[key] = item
+#    information = yml['info']
+#    if info is not None:
+#        for key,item in info.items():
+#            information[key] = item
 
     if 'before_multiple' in yml:
         yml['before_multiple'] = get_appends(yml['before_multiple'])
@@ -709,7 +711,7 @@ def yaml_parse(filename, mode='text',override = None,info =None):
                 prompts = prompts + '--' + key + ' ' + str(item) + ' '
     elif mode == 'json':
         prompts = command
-    return (prompts, appends, yml)
+    return (prompts, appends, yml, mode)
 
 def read_file(filename):
     strs = []
@@ -973,23 +975,21 @@ def expand_arg(arg):
             array[key] = item
     return array
 
-def main(args):
+def create_text(args):
     override = expand_arg(args.override)
     info = expand_arg(args.info)
     if args.json or args.api_mode:
         mode = 'json'
     else:
         mode = 'text'
-
     current = args.append_dir
     prompt_file = args.input
     output = args.output
-
     ext = os.path.splitext(prompt_file)[-1:][0]
     yml = None
     if ext == '.yaml' or ext == '.yml':
         #yaml mode
-        prompts, appends, yml = yaml_parse(prompt_file,mode = mode,override = override,info = info)
+        prompts, appends, yml, mode = yaml_parse(prompt_file,mode = mode,override = override,info = info)
     else:
         #text mode
         appends = []
@@ -1080,15 +1080,32 @@ def main(args):
                 fw.write(output_text)
             else:
                 json.dump(output_text,fp=fw,indent=2)
-    
+    result = {
+        options: options,
+        yml: yml,
+        output_text: output_text
+    }
+    return result
+
+def main(args):
+    if args.input is not None:
+        result = create_text(args)
+        options = result.options
+        output_text = result.output_text
+        yml = result.yml
+    else:
+        options = {}
+        yml = {}
+        output_text = {}
+
     if args.api_input_json:
         with open(args.api_input_json,'r',encoding='utf-8') as f:
-            output_text = f.read()
+            output_text = json.loads(f.read())
     
+    opt = {}
+
     if options.get('filename_pattern'):
         args.api_filename_pattern = args.api_filname_pattern or options['filename_pattern']
-
-    opt = {}
     if args.api_filename_pattern is not None:
         opt['filename_pattern'] = args.api_filename_pattern
 
@@ -1121,8 +1138,8 @@ def main(args):
 
 def run_from_args(command_args=None):
     parser = argparse.ArgumentParser()
-    parser.add_argument('input', type=str,
-                        default='./prompt.txt',
+    parser.add_argument('input', type=str,nargs='?',
+                        default=None,
                         help='input promptfile')
     parser.add_argument('--append-dir', type=str,
                         default='./appends',
@@ -1208,6 +1225,9 @@ def run_from_args(command_args=None):
                         help='add infomation')
 
     args = parser.parse_args(command_args)
+    if args.input is None and not (args.api_mode and args.api_input_json is not None):
+        parser.print_help()
+        exit(1)
     main(args)
 
 if __name__ == "__main__":
