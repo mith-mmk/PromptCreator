@@ -450,7 +450,7 @@ def save_img(r, opt={'dir': './outputs'}):
         info = r['info']
 
     count = len(r['images'])
-    print(f'\033[Kreturn {count}%d images')
+    print(f'\033[Kreturn {count} images')
 
     filename_pattern = {}
 
