@@ -476,8 +476,6 @@ def save_img(r, opt={'dir': './outputs'}):
     for n, i in enumerate(r['images']):
         try:
             meta = info['infotexts'][n]
-
-
 #               image = Image.open(io.BytesIO(base64.b64decode(i.split(",",1)[1])))
             image = Image.open(io.BytesIO(base64.b64decode(i)))
             pnginfo = PngImagePlugin.PngInfo()
@@ -552,6 +550,10 @@ def save_img(r, opt={'dir': './outputs'}):
                                       ' ', str(replacer))[:127]
                 elif seeds == 'prompt_hash':
                     replacer = sha256(parameters['prompt'].encode('utf-8')).hexdigest()[:8]
+                elif seeds == 'prompt_no_styles':
+                    replacer = filename_pattern['prompt']
+                    replacer = re.sub(r'[\<\>\:\"\/\\\\|?\*\n\s]',
+                                      '_', str(replacer))[:127]
                 elif seeds in parameters:
                     replacer = parameters[seeds]
                 elif seeds in filename_pattern and type(filename_pattern[seeds]) is list:
