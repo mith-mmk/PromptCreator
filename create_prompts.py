@@ -390,10 +390,10 @@ def save_img(r, opt={'dir': './outputs'}):
     else:
         nameseed = '[num]-[seed]'
 
-    need_names = re.findall('\[.+?\]', nameseed)
+    need_names = re.findall(r'\[.+?\]', nameseed)
     need_names = [n[1:-1] for n in need_names]
-    before_counter = re.sub('\[num\].*', '', nameseed)
-    before_counter = re.sub('\[.*?\]', '', before_counter)
+    before_counter = re.sub(r'\[num\].*', '', nameseed)
+    before_counter = re.sub(r'\[.*?\]', '', before_counter)
     count = len(before_counter)
     use_num = False
     for name in need_names:
@@ -529,13 +529,13 @@ def save_img(r, opt={'dir': './outputs'}):
                     replacer = filename_pattern[seeds]
                 else:
                     replacer = '[' + seeds + ']'
-                replacer = re.sub('[\<\>\:\"\/\\\\|?\*\n\s]+',
+                replacer = re.sub(r'[\<\>\:\"\/\\\\|?\*\n\s]+',
                                   '_', str(replacer))[:127]
                 filename = filename.replace('[' + seeds + ']', replacer)
 
 #            seed = filename_pattern['all_seeds'] [n]
 #            filename = str(num).zfill(5) +'-' +  str(seed) + '.png'
-            filename = re.sub('\[.+?\:.+?\]', '', filename)
+            filename = re.sub(r'\[.+?\:.+?\]', '', filename)
             print('\033[Ksave... ', filename)
             filename = os.path.join(dir, filename)
             dirname = os.path.dirname(filename)
@@ -757,9 +757,9 @@ def read_file(filename):
         try:
             with open(filename, 'r', encoding='utf_8') as f:
                 for i, item in enumerate(f.readlines()):
-                    if re.match('^\s*#.*', item) or re.match('^\s*$', item):
+                    if re.match(r'^\s*#.*', item) or re.match(r'^\s*$', item):
                         continue
-                    item = re.sub('\s*#.*$', '', item)
+                    item = re.sub(r'\s*#.*$', '', item)
                     try:
                         strs.append(item_split(item))
                     except Exception:
@@ -774,7 +774,7 @@ def read_file(filename):
 def item_split(item):
     if type(item) is not str:
         return [str(item)]
-    item = item.replace('\n', ' ').strip().replace('\;', r'${semicolon}')
+    item = item.replace('\n', ' ').strip().replace(r'\;', r'${semicolon}')
     split = item.split(';')
 
     if type(split) is list:
@@ -828,12 +828,12 @@ def prompt_replace(string, replace_texts, var):
                         '${%s,%d}' % (var, k), rep)
 
     if type(string) is str:
-        string = re.sub('\$\{%s,\d+\}' % (var), '', string)
+        string = re.sub(r'\$\{%s,\d+\}' % (var), '', string)
         string = string.replace('${%s}' % (var), '')
     else:
         for key in string:
             if type(string[key]) is str:
-                string[key] = re.sub('\$\{%s,\d+\}' % (var), '', string[key])
+                string[key] = re.sub(r'\$\{%s,\d+\}' % (var), '', string[key])
                 string[key] = string[key].replace('${%s}' % (var), '')
 
     return string
