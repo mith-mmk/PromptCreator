@@ -79,7 +79,7 @@ async def progress_writer(url, data, progress_url, userpass=None):
             space = ' ' * (50 - len(sharp))
             string = f'{right:.1f}%  {job} step ({step:d}/{steps:d}) {elapsed_time:.2f} sec'
             if right >= 0.0:
-                string = '\033[KCreate Image [{sharp}{space}] {string}'
+                string = f'\033[KCreate Image [{sharp}{space}] {string}'
             else:
                 right = - right
                 sharp = '#' * int(right / 2)
