@@ -77,18 +77,14 @@ async def progress_writer(url, data, progress_url, userpass=None):
             elapsed_time = time.time() - start_time
             sharp = '#' * int(right / 2)
             space = ' ' * (50 - len(sharp))
+            string = f'{right:.1f}%  {job} step ({step:d}/{steps:d}) {elapsed_time:.2f} sec'
             if right >= 0.0:
-                string = '\033[KCreate Image [{}{}] {:.1f}%  {} step ({:d}/{:d}) {:.2f} sec'.format(
-                    sharp, space, right, job, step, steps, elapsed_time
-                )
+                string = '\033[KCreate Image [{sharp}{space}] {string}'
             else:
                 right = - right
                 sharp = '#' * int(right / 2)
                 space = ' ' * (50 - len(sharp))
-                string = '\033[KWeb UI interrupts using resource [{}{}] {:.1f}%  {} step ({:d}/{:d}) {:.2f} sec'.format(
-                    sharp, space, right, job, step, steps, elapsed_time
-                )
-
+                string = f'\033[KWeb UI interrupts using resource [{sharp}{space}] {string}'
             print(string, end='\r')
             return elapsed_time
 
@@ -232,7 +228,7 @@ def get_sd_model(base_url='http://127.0.0.1:7860', sd_model=None):
 
 
 def set_sd_model(sd_model, base_url='http://127.0.0.1:7860', sd_vae='Automatic'):
-    print('Try change sd model to %s' % (sd_model))
+    print(f'Try change sd model to {sd_model}')
     headers = {
         'Content-Type': 'application/json',
     }
@@ -249,10 +245,10 @@ def set_sd_model(sd_model, base_url='http://127.0.0.1:7860', sd_vae='Automatic')
                 load_model = model['title']
                 break
         if load_model is None:
-            print('%s model is not found' % (sd_model))
+            print(f'{sd_model} model is not found')
             exit()
         sd_model = load_model
-        print("%s model loading..." % (sd_model))
+        print(f'{sd_model} model loading...')
         payload = {"sd_model_checkpoint": sd_model, "sd_vae": sd_vae}
         data = json.dumps(payload)
         res = httpx.post(url, data=data, headers=headers, timeout=(
@@ -322,12 +318,12 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None):
         basename = os.path.basename(imagefile)
         alt_imagefile = os.path.join(alt_image_dir, basename)
         if os.path.isfile(alt_imagefile):
-            print('\033[Kbase image use alternative %s' % (alt_imagefile))
+            print(f'\033[Kbase image use alternative {alt_imagefile}')
             if 'line_count' in share:
                 share['line_count'] += 1
             load_image = alt_imagefile
     with open(load_image, 'rb') as f:
-        init_image = base64.b64encode(f.read()).decode("ascii")
+        init_image = base64.b64encode(f.read()).decode('ascii')
     json_raw = {}
     json_raw['init_images'] = ['data:image/png;base64,' + init_image]
 
@@ -336,7 +332,7 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None):
         mask_imagefile = os.path.join(mask_image_dir, basename)
         if os.path.isfile(mask_imagefile):
             with open(mask_imagefile, 'rb') as f:
-                print('\033[KUse image mask %s' % (mask_imagefile))
+                print(f'\033[KUse image mask {mask_imagefile}')
                 if 'line_count' in share:
                     share['line_count'] += 1
                 mask_image = base64.b64encode(f.read()).decode("ascii")
@@ -425,7 +421,7 @@ def save_img(r, opt={'dir': './outputs'}):
         elif name == 'sec':
             count += 2
         elif use_num:
-            print('[%s] is setting before [num]' % (name), file=sys.stderr)
+            print(f'[{name}] is setting before [num]', file=sys.stderr)
             exit(-1)
 
     num_length = 5
@@ -453,7 +449,8 @@ def save_img(r, opt={'dir': './outputs'}):
     else:
         info = r['info']
 
-    print('\033[Kreturn %d images' % (len(r['images'])))
+    count = len(r['images'])
+    print(f'\033[Kreturn {count}%d images')
 
     filename_pattern = {}
 
@@ -567,7 +564,7 @@ def img2img(imagefiles, overrides=None, base_url='http://127.0.0.1:8760', output
 #    dt = datetime.datetime.now().strftime('%y%m%d')
     count = len(imagefiles)
 
-    print('API loop count is %d times' % (count))
+    print(f'API loop count is {count} times')
     print('')
     flash = ''
     alt_image_dir = opt.get('alt_image_dir')
@@ -581,7 +578,7 @@ def img2img(imagefiles, overrides=None, base_url='http://127.0.0.1:8760', output
     for (n, imagefile) in enumerate(imagefiles):
         share['line_count'] = 0
         print(flash, end='')
-        print('\033[KBatch %d of %d' % (n + 1, count))
+        print(f'\033[KBatch {n + 1} of {count}')
         item = create_img2json(imagefile, alt_image_dir, mask_image_dir)
         if opt.get('interrogate') is not None and (item.get('prompt') is None or opt.get('force_interrogate')):
             print('\033[KInterrogate from an image....')
@@ -615,7 +612,7 @@ def img2img(imagefiles, overrides=None, base_url='http://127.0.0.1:8760', output
             exit(-1)
         if response.status_code != 200:
             print('\033[KError!', response.status_code, response.text)
-            print('\033[%dA' % (2), end='')
+            print('\033[2A', end='')
             continue
 
         r = response.json()
@@ -623,7 +620,7 @@ def img2img(imagefiles, overrides=None, base_url='http://127.0.0.1:8760', output
         if 'line_count' in share:
             prt_cnt += share['line_count']
             share['line_count'] = 0
-        flash = '\033[%dA' % (prt_cnt)
+        flash = f'\033[{prt_cnt}A'
     print('')
 
 # 2022-11-07 cannot run yet 2022-11-12 running?
@@ -652,7 +649,7 @@ def txt2img(output_text, base_url='http://127.0.0.1:8760', output_dir='./outputs
     os.makedirs(dir, exist_ok=True)
 #    dt = datetime.datetime.now().strftime('%y%m%d')
     count = len(output_text)
-    print('API loop count is %d times' % (count))
+    print(f'API loop count is {count} times')
     print('')
     flash = ''
 
@@ -664,7 +661,7 @@ def txt2img(output_text, base_url='http://127.0.0.1:8760', output_dir='./outputs
     for (n, item) in enumerate(output_text):
         share['line_count'] = 0
         print(flash, end='')
-        print('\033[KBatch %d of %d' % (n + 1, count))
+        print(f'\033[KBatch {n + 1} of {count}')
         # Why is an error happening? json=payload or json=item
         if 'variables' in item:
             opt['variables'] = item.pop('variables')
@@ -677,7 +674,7 @@ def txt2img(output_text, base_url='http://127.0.0.1:8760', output_dir='./outputs
             exit(-1)
         if response.status_code != 200:
             print('\033[KError!', response.status_code, response.text)
-            print('\033[%dA' % (2), end='')
+            print('\033[2A', end='')
             continue
 
         r = response.json()
@@ -685,7 +682,7 @@ def txt2img(output_text, base_url='http://127.0.0.1:8760', output_dir='./outputs
         if 'line_count' in share:
             prt_cnt += share['line_count']
             share['line_count'] = 0
-        flash = '\033[%dA' % (prt_cnt)
+        flash = f'\033[{prt_cnt}A'
     print('')
 
 
@@ -763,10 +760,9 @@ def read_file(filename):
                     try:
                         strs.append(item_split(item))
                     except Exception:
-                        print('Error happen line %s %d %s' %
-                              (filename, i, item))
+                        print(f'Error happen line {filename} {i} {item}')
         except FileNotFoundError:
-            print('%s is not found' % (filename))
+            print(f'{filename} is not found')
             exit(-1)
     return strs
 
@@ -918,8 +914,7 @@ def weight_calc(append, num, default_weight=0.1, weight_mode=True):
                 else:
                     weight = max_value + default_weight
             except ValueError:
-                print('float convert error append %d line %d %s use default' %
-                      (num + 1, i, item))
+                print(f'float convert error append {num + 1} line {i} {item} use default')
                 weight = max_value + default_weight
             finally:
                 text = item[1:]
