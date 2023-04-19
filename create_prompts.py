@@ -17,10 +17,12 @@ import random
 import re
 import sys
 import time
-
+from datetime import datetime
+from zoneinfo import ZoneInfo
 import httpx
 import yaml
 from PIL import Image, PngImagePlugin
+from hashlib import sha256
 
 share = {
     'timeout': 5,
@@ -482,7 +484,6 @@ def save_img(r, opt={'dir': './outputs'}):
             pnginfo.add_text('parameters', meta)
             parameters = create_parameters(info['infotexts'][n])
             filename = nameseed + '.png'
-            # date = datetime.strptime(filename_pattern['job_timestamp'],'%Y%m%d%H%M%S')
 
             for seeds in need_names:
                 replacer = ''
@@ -494,8 +495,27 @@ def save_img(r, opt={'dir': './outputs'}):
                     replacer = filename_pattern['all_subseeds'][n]
                 elif seeds == 'styles' and seeds in filename_pattern:
                     replacer = filename_pattern[seeds].join(' ')
-                elif seeds == 'date' and 'job_timestamp' in filename_pattern:
-                    replacer = filename_pattern['job_timestamp'][:8]
+                elif seeds == 'DATE' and 'job_timestamp' in filename_pattern:
+                    replacer = filename_pattern['job_timestamp'][:8]     # OLD Date
+                elif seeds == 'date':
+                    date = datetime.now()
+                    replacer = date.strftime('%Y-%m-%d')                 # Web UI Date
+                elif seeds == 'datetime' and 'job_timestamp' in filename_pattern:
+                    replacer = filename_pattern['job_timestamp']
+                elif re.match(r'datetime<.+?><.+?>', seeds):
+                    try:
+                        match = re.search(r'datetime<(.+)><(.+)>', seeds)
+                        date = datetime.now(tz=ZoneInfo(key=match.group(2)))
+                        replacer = date.strftime(match.group(1))
+                    except ValueError:
+                        replacer = '[' + seeds + ']'
+                elif re.match(r'datetime<.+>', seeds):
+                    try:
+                        date = datetime.now()
+                        match = re.search(r'datetime<(.+)>', seeds)
+                        replacer = date.strftime(match.group(1))
+                    except ValueError:
+                        replacer = '[' + seeds + ']'
                 elif seeds == 'shortdate' and 'job_timestamp' in filename_pattern:
                     replacer = filename_pattern['job_timestamp'][2:8]
                 elif seeds == 'year' and 'job_timestamp' in filename_pattern:
@@ -518,6 +538,20 @@ def save_img(r, opt={'dir': './outputs'}):
                     base_url = opt['base_url']
                     model = get_sd_model(base_url, parameters['model_hash'])
                     replacer = model['model_name'] if model is not None else ''
+                elif seeds == 'prompt':
+                    replacer = parameters['prompt']
+                    replacer = re.sub(r'[\<\>\:\"\/\\\\|?\*\n\s]',
+                                      '_', str(replacer))[:127]
+                elif seeds == 'prompt_spaces':
+                    replacer = parameters['prompt']
+                    replacer = re.sub(r'[\<\>\:\"\/\\\\|?\*\n\s]+',
+                                      ' ', str(replacer))[:127]
+                elif seeds == 'prompt_words':
+                    replacer = parameters['prompt']
+                    replacer = re.sub(r'[\<\>\:\"\/\\\\|?\*\n\,\(\)\{\}]+',
+                                      ' ', str(replacer))[:127]
+                elif seeds == 'prompt_hash':
+                    replacer = sha256(parameters['prompt'])[:8]
                 elif seeds in parameters:
                     replacer = parameters[seeds]
                 elif seeds in filename_pattern and type(filename_pattern[seeds]) is list:
@@ -526,9 +560,7 @@ def save_img(r, opt={'dir': './outputs'}):
                     replacer = filename_pattern[seeds]
                 else:
                     replacer = '[' + seeds + ']'
-                replacer = re.sub(r'[\<\>\:\"\/\\\\|?\*\n\s]+',
-                                  '_', str(replacer))[:127]
-                filename = filename.replace('[' + seeds + ']', replacer)
+                filename = filename.replace('[' + seeds + ']', str(replacer))
 
 #            seed = filename_pattern['all_seeds'] [n]
 #            filename = str(num).zfill(5) +'-' +  str(seed) + '.png'
