@@ -91,16 +91,12 @@ parser.add_argument('--filename-pattern', type=str,
                     help='Filename Patter default [num]-[seed]')
 
 
-parser.add_argument('--api-filename-variables', type=bool,nargs='?',
+parser.add_argument('--api-filename-variables', type=bool, nargs='?',
                     const=True, default=False,
                     help='replace variables use filename')
 
-
-
-parser.add_argument('input', type=str,nargs='+',
+parser.add_argument('input', type=str, nargs='+',
                     help='input files or dirs')
-
-
 
 parser.parse_args()
 args = parser.parse_args()
@@ -112,10 +108,10 @@ else:
 base_url = args.api_base
 output_dir = args.output or './outputs'
 
-items = ['denoising_strength','seed','subseed','subseed_strength','batch_size',
-    'n_iter', 'steps', 'cfg_scale','width','height','prompt','negative_prompt',
-    'sampler_index',
-    'mask_blur','inpainting_fill','inpaint_full_res','inpaint_full_res_padding', 'inpainting_mask_invert']
+items = ['denoising_strength', 'seed', 'subseed', 'subseed_strength', 'batch_size',
+         'n_iter', 'steps', 'cfg_scale', 'width', 'height', 'prompt', 'negative_prompt',
+         'sampler_index',
+         'mask_blur', 'inpainting_fill', 'inpaint_full_res', 'inpaint_full_res_padding', 'inpainting_mask_invert']
 
 overrides = {}
 
@@ -140,18 +136,19 @@ if len(input_files) == 0:
     print('no exit files')
     exit(1)
 
-if dicted_args.get('sd_model') is not None: set_sd_model(dicted_args.get('sd_model'), base_url= base_url,sd_vae = dicted_args.get('sd_vae'))
+if dicted_args.get('sd_model') is not None:
+    set_sd_model(dicted_args.get('sd_model'), base_url=base_url, sd_vae=dicted_args.get('sd_vae'))
 
 opt = {}
 
-opt_keys = ['alt_image_dir', 'interrogate', 'filename_pattern', 'api_filename_variables','mask_dir']
+opt_keys = ['alt_image_dir', 'interrogate', 'filename_pattern', 'api_filename_variables', 'mask_dir']
 for key in opt_keys:
     if dicted_args.get(key) is not None:
         opt[key] = dicted_args.get(key)
 
 try:
-    result = img2img(input_files,base_url=base_url,overrides=overrides,output_dir=output_dir,opt = opt)
-except:
+    result = img2img(input_files, base_url=base_url, overrides=overrides, output_dir=output_dir, opt=opt)
+except Exception:
     exit(-1)
 
 # - multiple images impl

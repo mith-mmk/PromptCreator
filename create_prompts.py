@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-#!pip install pyyaml
-#!pip install Pillow
-#!pip install httpx
+# !pip install pyyaml
+# !pip install Pillow
+# !pip install httpx
 
 # version 0.7 (C) 2022-3 MITH@mmk  MIT License
 
@@ -114,7 +114,7 @@ async def progress_writer(url, data, progress_url, userpass=None):
                         result = response.json()
                         right = result['progress']
                         elapsed_time = await write_progress(result, start_time)
-                    except :
+                    except Exception:
                         retry += 1
                         if retry >= 10:
                             print('Progress is unknown', file=sys.stderr)
@@ -226,7 +226,7 @@ def get_sd_model(base_url='http://127.0.0.1:7860', sd_model=None):
         for model in res.json():
             if model['model_name'] == sd_model or model['hash'] == sd_model or model['title'] == sd_model:
                 return model
-    except:
+    except Exception:
         pass
     return None
 
@@ -263,7 +263,7 @@ def set_sd_model(sd_model, base_url='http://127.0.0.1:7860', sd_vae='Automatic')
         else:
             print('change failed')
 
-    except:
+    except Exception:
         print('Change SD Model Error')
         exit()
 
@@ -371,7 +371,7 @@ def save_images(r, opt={'dir': './outputs'}):
 
 async def save_img_wrapper(r, opt):
     loop = share.get('loop')
-    if loop == None:
+    if loop is None:
         loop = asyncio.new_event_loop()
         share['loop'] = loop
 
@@ -444,7 +444,7 @@ def save_img(r, opt={'dir': './outputs'}):
                 name = file[num_start:num_end]
                 try:
                     num = max(num, int(name))
-                except:
+                except ValueError:
                     pass
         num += 1
 
@@ -581,7 +581,7 @@ def img2img(imagefiles, overrides=None, base_url='http://127.0.0.1:8760', output
     for (n, imagefile) in enumerate(imagefiles):
         share['line_count'] = 0
         print(flash, end='')
-        print('\033[KBatch %d of %d' % (n+1, count))
+        print('\033[KBatch %d of %d' % (n + 1, count))
         item = create_img2json(imagefile, alt_image_dir, mask_image_dir)
         if opt.get('interrogate') is not None and (item.get('prompt') is None or opt.get('force_interrogate')):
             print('\033[KInterrogate from an image....')
@@ -664,7 +664,7 @@ def txt2img(output_text, base_url='http://127.0.0.1:8760', output_dir='./outputs
     for (n, item) in enumerate(output_text):
         share['line_count'] = 0
         print(flash, end='')
-        print('\033[KBatch %d of %d' % (n+1, count))
+        print('\033[KBatch %d of %d' % (n + 1, count))
         # Why is an error happening? json=payload or json=item
         if 'variables' in item:
             opt['variables'] = item.pop('variables')
@@ -696,7 +696,7 @@ def get_appends(appends):
             key = items
             items = appends[items]
         else:
-            key = str(n+1)
+            key = str(n + 1)
         if type(items) is str:
             # filemode
             append = read_file(items)
@@ -762,8 +762,8 @@ def read_file(filename):
                     item = re.sub('\s*#.*$', '', item)
                     try:
                         strs.append(item_split(item))
-                    except:
-                        print('Errro happen line %s %d %s' %
+                    except Exception:
+                        print('Error happen line %s %d %s' %
                               (filename, i, item))
         except FileNotFoundError:
             print('%s is not found' % (filename))
@@ -888,7 +888,7 @@ def prompt_multiple(prompts, appends, console_mode, mode='text', variables_mode=
                 try:
                     float(re_str[0])
                     new_prompt = prompt_replace(new_prompt, re_str[1:], var)
-                except:
+                except ValueError:
                     new_prompt = prompt_replace(new_prompt, re_str, var)
         if console_mode:
             print(new_prompt)
@@ -917,7 +917,7 @@ def weight_calc(append, num, default_weight=0.1, weight_mode=True):
                     weight = max_value + float(item[0])
                 else:
                     weight = max_value + default_weight
-            except:
+            except ValueError:
                 print('float convert error append %d line %d %s use default' %
                       (num + 1, i, item))
                 weight = max_value + default_weight
@@ -1046,8 +1046,8 @@ def create_text(args):
             if os.path.isfile(path):
                 appends.append(read_file(path))
         with open(prompt_file, 'r', encoding='utf_8') as f:
-            for l in f.readlines():
-                prompts = prompts + ' ' + l.replace('\n', '')
+            for line in f.readlines():
+                prompts = prompts + ' ' + line.replace('\n', '')
 
     if yml is not None and 'options' in yml and yml['options'] is not None:
         options = yml['options']
@@ -1055,13 +1055,13 @@ def create_text(args):
         options = {}
 
     console_mode = False
-    if output is None and args.api_mode == False:
+    if output is None and args.api_mode is False:
         if options.get('output'):
             output = options['output']
         else:
             console_mode = True
 
-    if args.api_input_json == None and options.get('method') == 'random':
+    if args.api_input_json is None and options.get('method') == 'random':
         max_number = 100
         default_weight = 0.1
         weight_mode = False
