@@ -551,7 +551,7 @@ def save_img(r, opt={'dir': './outputs'}):
                     replacer = re.sub(r'[\<\>\:\"\/\\\\|?\*\n\,\(\)\{\}]+',
                                       ' ', str(replacer))[:127]
                 elif seeds == 'prompt_hash':
-                    replacer = sha256(parameters['prompt'])[:8]
+                    replacer = sha256(parameters['prompt'].encode('utf-8')).hexdigest()[:8]
                 elif seeds in parameters:
                     replacer = parameters[seeds]
                 elif seeds in filename_pattern and type(filename_pattern[seeds]) is list:
