@@ -1,0 +1,12 @@
+0.4;${onepiece}
+0.6;${twopiece}
+0.2;${setclothes}
+0.01;${bra} and ${panty}
+0.005;${bra} and ${panty} on ${overware}
+0.05;${swimware}
+0.02;${swimware} on ${overware}
+0.2;${onepiece} on ${overware}
+0.3;${twopiece} on ${overware}
+0.1;${setclothes} on ${overware}
+0.1;${motif} ${cosplay}
+0.05;${motif} ${cosplay} on ${overware}

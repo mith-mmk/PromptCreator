@@ -45,10 +45,11 @@ usage: create_prompts.py [-h] [--append-dir APPEND_DIR] [--output OUTPUT] [--jso
   --api-filename-variables [API_FILENAME_VARIABLES]
                         replace variables use filename
 
-  --api-set-sd-model API_SET_SD_MODEL
+  --api-set-sd-model SD_MODEL
                         Change sd model "Filename.ckpt [hash]" e.g. "wd-v1-3.ckpt [84692140]" or 84692140
 
-
+  --api-set-sd-vae VAE_FILE
+                        set vaefile(include extention)
 # Setting
  Python 3.10+(Also 3.8 and above) and use there packages.
  
@@ -233,5 +234,6 @@ green
 - versioning
 - extension mode
 - mix mode
-- nameseed, directry support
+- nameseed, directry support (exclusive support)
 - API for user authencation
+- {= expr}

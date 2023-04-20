@@ -1,0 +1,10 @@
+1.0;
+0.1;,closed one eye
+0.1;,closed eyes
+0.1;,wink
+0.1;,half-closed eyes
+0.1;,jitome
+0.1;,squinting
+0.1;,eye reflection
+0.05;,cross-eyed
+0.01;,lazy eye

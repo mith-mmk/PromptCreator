@@ -1,0 +1,45 @@
+0.1;${topscolor} babydoll
+0.1;${topscolor} open dress
+0.5;${topscolor} dress
+0.1;${topscolor} camisor
+0.1;${topscolor} ribbed sweater
+0.1;${topscolor} strapless dress
+0.1;${topscolor} tunic
+0.1;weding dress
+0.1;${topscolor} royal dress
+0.1;${topscolor} nurse cloth
+0.1;greek clothes
+0.1;nun clothes
+0.1;${topscolor} no sleeves
+0.1;${topscolor} school swimsuit
+0.1;${topscolor} swimsuit
+0.1;${topscolor} bikini
+0.1;${topscolor} chinadress
+0.1;${topscolor} kimono
+0.1;${topscolor} leotard
+0.1;${topscolor} raincoat 
+0.1;${topscolor} camisole
+0.1;${topscolor} print dress
+0.1;${topscolor} collared dress
+0.1;${topscolor} off-shoulder dress
+0.1;${topscolor} taut dress
+0.1;${topscolor} chinadress
+0.1;${topscolor} sleeveless dress
+0.1;${topscolor} strapless dress
+0.1;${topscolor} half dress
+0.1;${topscolor} side strip dress
+0.1;${topscolor} see-through dress
+0.1;${topscolor} cake dress
+0.1;${topscolor} cocktail dress
+0.1;${topscolor} negligee
+0.1;${topscolor} sailor dress
+0.1;${topscolor} tennis dress
+0.1;${topscolor} sweater dress
+0.1;${topscolor} sundress
+0.1;${topscolor} pinafore dress
+0.01;santa dress
+0.1;helloween dress
+0.1;${topscolor} nightgown
+0.1;${topscolor} evening gown
+
+0.1;chainmale

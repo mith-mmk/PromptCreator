@@ -1,0 +1,6 @@
+0.9;
+0.01;,${leg_motif} ${leg_color} thighhighs
+0.01;,${leg_motif} ${leg_color} sox
+0.01;,${leg_motif} ${leg_color} boots
+0.01;,${leg_motif} ${leg_color} legwear
+0.01;,garterbelt and ${leg_color} thighhighs

@@ -1,0 +1,12 @@
+0.1;${topscolor} micro bikini
+0.1;${topscolor} one-piece swimsuit
+0.1;${topscolor} swimwear
+0.1;${topscolor} bikini
+0.1;${topscolor} sports swimsuit
+0.1;school swimsuit
+0.1;${topscolor} one-piece swimsuit
+0.1;${topscolor} sports bikini
+0.1;${topscolor} thong bikini
+0.1;shell bikini
+0.1;${topscolor} o-ring bikini
+0.1;${topscolor} battle clothes

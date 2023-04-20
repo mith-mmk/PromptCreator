@@ -1,0 +1,41 @@
+0.2;
+0.1;blush
+0.1;light smile,blush
+0.1;full-face blush
+0.1;nose blush
+0.1;embarrassed
+0.1;tears
+0.1;expressionless
+0.1;sleepy
+0.1;evil grin
+0.1;smile
+0.1;:-)
+0.1;:-p
+0.1;:-o
+0.1;\;-d
+0.1;xd
+0.1;light smily
+0.1;^_^
+0.1;happy
+0.1;excited
+0.1;doyagao
+0.1;tsundere
+0.1;seductive smile
+0.1;embarrassed # 恥ずかしがる
+0.1;heart # あなたを愛しているのような恋愛顔
+0.1;sweatdrop
+0.1;smug
+0.1;grin
+0.1;smirk
+0.1;angry
+0.1;annoyed
+0.1;frown
+0.1;jitome
+0.1;😐
+0.1;😮
+0.1;🥺
+0.05;evil smile
+0.05;rape face
+0.1;thinking
+0.1;surprised
+0.1;drunk

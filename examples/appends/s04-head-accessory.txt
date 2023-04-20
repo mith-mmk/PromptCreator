@@ -1,0 +1,13 @@
+# add head ornament
+0.9;
+0.01;,${head_accessory_motif} ${head_accessory_color} hairpin
+0.01;,${head_accessory_motif} ${head_accessory_color} hair ornament 
+#0.1;,${head_accessory_color} hair band
+0.001;,blindfold
+0.005;,${head_accessory_color} headphones
+0.001;,${head_accessory_color} earphones
+0.001;,${head_accessory_color} headphones around neck
+0.001;,goggles
+0.001;,goggles around neck
+0.001;,${head_accessory_color} towel around neck
+

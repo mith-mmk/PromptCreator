@@ -1,0 +1,10 @@
+0.3;tareme,dropping 
+0.2;tsurime
+0.5;normal
+0.02;mole under eye
+0.01;tareme, mole under eye
+0.01;tsurime, mole under eye
+0.02;glasses,
+0.01;glasses, tareme
+0.01;glasses, tsurime
+

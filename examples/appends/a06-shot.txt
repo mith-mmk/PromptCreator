@@ -1,0 +1,9 @@
+10.0;
+1.0;,full body
+1.0;,full shot
+1.0;,cowboy shot
+1.0;,upper body
+1.0;,long shot
+1.0;,medium shot
+1.0;,medium full shot
+1.0;,wide shot

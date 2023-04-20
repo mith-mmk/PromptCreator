@@ -1,0 +1,78 @@
+4.0;
+solid
+argylec
+checker
+0.5;check
+0.5;stripes
+0.5;geometric pattern
+0.5;floral
+0.5;camouflage
+staggered plaid
+batterfly motif
+snow motif
+rose motif
+sakura motif
+heart motif
+fruit motif
+cherry motif
+squair motif
+army motif
+parl motif
+jwely
+alice motif
+frilled
+victorian
+medieval age like
+fantasy
+SF like
+star motif
+heart motif
+# printed
+0.05;animal print
+0.05;bat print
+0.05;bear print
+0.05;butterfly print
+0.05;cow print
+0.05;leopard print
+0.05;tiger print
+0.05;snake print
+0.05;constellation print
+0.05;clover print
+0.05;crescent print
+0.05;floral print
+0.05;rose print
+0.05;cherry print
+0.05;cherry blossom print
+0.05;sunflower print
+0.05;strawbery print
+0.05;morning glory print
+0.05;fish print
+0.05;food print
+0.05;flag print
+0.05;frog print
+0.05;fruit pattern
+0.05;apple print
+0.05;blueberry print
+0.05;cherry print
+0.05;kiwi print
+0.05;lemon print
+0.05;leaf print
+0.05;pineapple print
+0.05;orange print
+0.05;strawberry print
+0.05;watermelon print
+0.05;leaf print
+0.05;maple leaf print
+0.05;moon print
+0.05;musical note print
+0.05;paw print
+0.05;petal print
+0.05;piano print
+0.05;skull print
+0.05;sparkle print
+0.05;space print
+0.05;starry sky print
+0.05;star print
+0.05;triangle print
+0.05;wave print
+0.05;wing print

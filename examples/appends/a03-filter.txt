@@ -1,0 +1,4 @@
+1.0;
+,(blur)
+,(solo focus)
+,(sharp focus)

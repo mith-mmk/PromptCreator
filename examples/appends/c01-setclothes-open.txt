@@ -1,0 +1,42 @@
+# set clothes
+
+8.0;black long skirt maid uniform with white apron and white hairband
+0.1;grey slave cloth with metal slave callor
+0.1;black and white gothic lolita clothes
+2.0;${topscolor} lolita ¥(fashion style¥)
+1.0;${topscolor} gothic dress
+
+
+# Uniform
+0.1;${topscolor} magical girl uniform
+0.1;${topscolor} fantasy priest cloth
+0.1;${topscolor} fantasy wizard cloth
+2.0;${bottomscolor} pom pom (cheerleading),${topscolor} cheerleading uniform
+2.0;${topscolor} cheerleading uniform
+4.0;${topscolor} blazer and ${bottomscolor} uniform
+4.0;${topscolor} blouse ${bottomscolor} skirt
+4.0;black serafuku
+4.0;${topscolor} school uniform tops and ${bottomscolor} school uniform skirt
+
+0.1;Anna Miller's uniform
+0.1;carry attendant uniform
+0.1;police uniform with microskirt
+0.01;${topscolor} school idol uniform
+
+#japan
+0.1;${topscolor} kimono wear with ${bottomscolor} hakama
+0.1;${topscolor} furisode
+0.1;${topscolor} layered kimono
+0.1;${topscolor} short kimono
+0.1;miko
+0.1;yukata
+
+#china
+0.01;${topscolor} changpao
+0.01;${topscolor} fengguan
+0.01;${topscolor} hanfu
+0.01;${topscolor} longpao
+0.01;${topscolor} tangzhuang
+
+#AOZAI
+0.05;${topscolor} vietnamese dress

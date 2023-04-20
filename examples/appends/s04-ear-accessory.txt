@@ -1,0 +1,28 @@
+0.9;
+0.1;,earrings
+0.01;,stud earrings
+0.01;,hoop earrings
+0.01;,pom pom earrings
+0.01;,Flower earrings
+0.01;,Food-themed earrings
+0.01;,Heart earrings
+0.01;,Jack-o'-lantern earrings
+0.01;,Magatama earrings
+0.01;,Orange-shaped earrings
+0.01;,Pill earrings
+0.01;,Pineapple earrings
+0.01;,Planet earrings
+0.01;,Pom pom earrings
+0.01;,Potara earrings
+0.01;,Shell earrings
+0.01;,Skull earrings
+0.01;,Snowflake earrings
+0.01;,Spade earrings
+0.01;,Star earrings
+0.01;,Strawberry earrings
+0.01;,Tassel earrings
+0.01;,Yin yang earringsrings
+0.01;,Cherry earrings
+0.01;,Crescent earrings
+0.01;,Cross earrings
+0.01;,Crystal earrings

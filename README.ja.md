@@ -31,11 +31,39 @@ usage: create_prompts.py [-h] [--append-dir APPEND_DIR] [--output OUTPUT] input
   --api-input-json API_INPUT_JSON API MODE時にjsonファイルから画像を生成する
 
   --api-filename-pattern API MODE時のファイル出力パターン　デフォルト [num]-[seed] [num]-[seed]-[prompt]でWeb UIと同じになる。
-  　numはシーケンシャル値。
+  　numはシーケンシャル値。Web UIとの違いは、[num]の位置を固定長の変数が前に来る場合、後ろに移動できる設計なのでシーケンシャルにしたい場合、[num]が必須になる点です。
 
-  --max-number MAX_NUMBER Yaml Modeの option.numberを上書きする
+ 時間 以下はjobtimestampから計算
+- [shortdate] YYMMDD方式 %y%m%d
+- [DATE] 古いバージョンのdate。YYYYMMDD %Y-%m-%d
+- [year] YYYY
+- [month] 01-12
+- [day] 01-31
+- [time]  hhmmss
+- [hour] 00 - 23
+- [min] 00-59
+- [sec] 00-59
+- [datetime] WebUIと同じ YYYMMDDhhmmss %Y%m%d%h%M%s
 
-  --api-filename-variables Yaml Modeの変数をファイル名に使える様にする（エラーが出やすいので注意）
+　上記は[num]の前に配置可能
+
+　　以下は保存時間から計算
+- [date] YYYYMMDDでしたが、WebUIとの互換でYYYY-MM-DDに変更 %Y-%m-%d
+- [datetime<format>] WebUIと同じ
+- [datetime<format><timezone>] WebUIと同じ
+
+ 　一応 [prompt_hash] なども使える
+
+- [var] PngInfoで取れる値は一応使えるはず。ただし現在エスケープしないのでnegative promptなどは注意
+- [info:var] --info "key1=value1,key2=value2,...." で追加した値を追加
+- [command:var] 実行コマンドを追加 例：[command:width] この変数はAPIの返り値ではなく送信値を入れる
+
+--num-once ファイル名の番号チェックを最初の一度しか行いません
+
+--max-number MAX_NUMBER Yaml Modeの option.numberを上書きする
+
+--api-filename-variables Yaml Modeの変数をファイル名に使える様にする（エラーが出やすいので注意）
+　
 
 　　例：
 ```yaml
@@ -44,9 +72,15 @@ appends:
 ```
 　の時、[var:country] で国名が追加される e.g. [num]-[seed]-[var:country]
 
-  --api-set-sd-model API_SET_SD_MODEL SD MODELを変更する　例 e.g. --api-set-sd-model "wd-v1-3.ckpt [84692140]"
 
+--override "key1=value,key2=value2,...." yamlのcommandの値を上書きする 
+
+--api-set-sd-model API_SET_SD_MODEL SD MODELを変更する　例 e.g. --api-set-sd-model "wd-v1-3.ckpt [84692140]"
   　ハッシュからの変更はまだ実装してない。
+
+--api-set-sd-vae VAEファイルを変更する
+
+　上二つはAPIからのoptionの変更が可能な必要があります。
 
 ## Textモード
 　promptを書き散らしたTextファイルにリストを並べたappend_dirの下のファイルを読み込ませるスクリプト。置き換える順番は```${1},${2},${3}....```になり、ソートされたファイル名の順に適用される。--append-dirの設定が必要。改行は半角スペースに置き換わる。
@@ -226,5 +260,6 @@ cyan
 - versioning
 - extension mode
 - mix mode
-- ネームシードのディレクトリサポート
+- ネームシードのディレクトリサポート(限定対応)
 - API for user authencation
+- {= 計算式}

@@ -1,0 +1,14 @@
+0.5;shiny long
+long 
+shiny floating long
+0.5;shiny medium
+medium
+shiny short
+short
+0.5;shiny short bob cut
+short bob cut 
+0.2;shiny hair over shoulder
+hair over shoulder
+0.05;very short
+0.05;absurdly long
+very long 

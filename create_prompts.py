@@ -302,6 +302,9 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None):
         'inpaint_full_res_padding',
         'inpainting_mask_invert'
     ]
+    # EDNS = override_settings.eta_noise_seed_delta
+    # clip_skip = override_settings.CLIP_stop_at_last_layers
+    # model = override_setting.sd_model_checkpoint
 
     image = Image.open(imagefile)
     image.load()
@@ -345,7 +348,7 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None):
                 json_raw['inpaint_full_res_padding'] = 0
                 json_raw['inpainting_mask_invert'] = 0
 
-    override_setting = {}
+    override_settings = {}
     sampler_index = None
     for key, value in parameters.items():
         if key in schema:
@@ -354,12 +357,12 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None):
             sampler_index = value
             pass
         else:
-            override_setting[key] = value
+            override_settings[key] = value
 
     if ('sampler' not in json_raw) and sampler_index is not None:
         json_raw['sampler_index'] = sampler_index
 
-    json_raw['override_setting'] = override_setting
+    json_raw['override_settings'] = override_settings
     return json_raw
 
 
@@ -405,7 +408,11 @@ def save_img(r, opt={'dir': './outputs'}):
         if name == 'shortdate':
             count += 6
         elif name == 'date':
+            count += 10
+        elif name == 'DATE':
             count += 8
+        elif name == 'datetime':
+            count += 14
         elif name == 'shortyear':
             count += 2
         elif name == 'year':
@@ -538,28 +545,27 @@ def save_img(r, opt={'dir': './outputs'}):
                     replacer = model['model_name'] if model is not None else ''
                 elif seeds == 'prompt':
                     replacer = parameters['prompt']
-                    replacer = re.sub(r'[\<\>\:\"\/\\\\|?\*\n\s]',
-                                      '_', str(replacer))[:127]
+                    replacer = re.sub(r'[\<\>\:\"\/\\\\|?\*\n\s]', '_', str(replacer))[:127]
                 elif seeds == 'prompt_spaces':
                     replacer = parameters['prompt']
-                    replacer = re.sub(r'[\<\>\:\"\/\\\\|?\*\n\s]+',
-                                      ' ', str(replacer))[:127]
+                    replacer = re.sub(r'[\<\>\:\"\/\\\\|?\*\n\s]+', ' ', str(replacer))[:127]
                 elif seeds == 'prompt_words':
                     replacer = parameters['prompt']
-                    replacer = re.sub(r'[\<\>\:\"\/\\\\|?\*\n\,\(\)\{\}]+',
-                                      ' ', str(replacer))[:127]
+                    replacer = re.sub(r'[\<\>\:\"\/\\\\|?\*\n\,\(\)\{\}]+', ' ', str(replacer))[:127]
                 elif seeds == 'prompt_hash':
                     replacer = sha256(parameters['prompt'].encode('utf-8')).hexdigest()[:8]
                 elif seeds == 'prompt_no_styles':
                     replacer = filename_pattern['prompt']
-                    replacer = re.sub(r'[\<\>\:\"\/\\\\|?\*\n\s]',
-                                      '_', str(replacer))[:127]
+                    replacer = re.sub(r'[\<\>\:\"\/\\\\|?\*\n\,\(\)\{\}]+', '_', str(replacer))[:127]
                 elif seeds in parameters:
                     replacer = parameters[seeds]
+                    replacer = re.sub(r'[\<\>\:\"\/\\\\|?\*\n\,\(\)\{\}]+', '_', str(replacer))[:127]
                 elif seeds in filename_pattern and type(filename_pattern[seeds]) is list:
                     replacer = filename_pattern[seeds][n]
+                    replacer = re.sub(r'[\<\>\:\"\/\\\\|?\*\n\,\(\)\{\}]+', '_', str(replacer))[:127]
                 elif seeds in filename_pattern:
                     replacer = filename_pattern[seeds]
+                    replacer = re.sub(r'[\<\>\:\"\/\\\\|?\*\n\s]', '_', str(replacer))[:127]
                 else:
                     replacer = '[' + seeds + ']'
                 filename = filename.replace('[' + seeds + ']', str(replacer))
@@ -618,8 +624,7 @@ def img2img(imagefiles, overrides=None, base_url='http://127.0.0.1:8760', output
             print('\033[KInterrogate from an image....')
             share['line_count'] += 1
             try:
-                result = interrogate(imagefile, base_url,
-                                     model=opt.get('interrogate'))
+                result = interrogate(imagefile, base_url, model=opt.get('interrogate'))
                 if result.status_code == 200:
                     item['prompt'] = result.json()['caption']
             except BaseException as e:
@@ -630,16 +635,14 @@ def img2img(imagefiles, overrides=None, base_url='http://127.0.0.1:8760', output
             else:
                 override = overrides
             if 'model' in override:
-                set_sd_model(
-                    sd_model=override['model'], base_url=base_url, sd_vae=None)
+                set_sd_model(sd_model=override['model'], base_url=base_url, sd_vae=None)
                 del override['model']
             for key, value in override.items():
                 item[key] = value
 
         # Why is an error happening? json=payload or json=item
         payload = json.dumps(item)
-        response = request_post_wrapper(
-            url, data=payload, progress_url=progress, base_url=base_url, userpass=userpass)
+        response = request_post_wrapper(url, data=payload, progress_url=progress, base_url=base_url, userpass=userpass)
 
         if response is None:
             print('http connection - happening error')
@@ -741,8 +744,12 @@ def get_appends(appends):
 
 
 def yaml_parse(filename, mode='text', override=None, info=None):
-    with open(filename, encoding='utf-8') as f:
-        yml = yaml.safe_load(f)
+    try:
+        with open(filename, encoding='utf-8') as f:
+            yml = yaml.safe_load(f)
+    except FileNotFoundError:
+        print(f'File {filename} is not found')
+        exit(1)
     if 'command' not in yml:
         yml['command'] = {}
     if 'info' not in yml:
@@ -822,23 +829,6 @@ def prompt_replace(string, replace_texts, var):
         replace_texts = [replace_texts]
 
     rep = replace_texts[0]
-# $1 mode version <= 0.2, 0.4 expired
-#    i = ''
-#    if '1' <= var <= '9':
-#        i = '$' + var
-#    elif  '10' <= var <= '36':
-#        n = int(var)
-#        i = '$' + chr(n +97-10)
-#    if type(string) is str:
-#        string = string.replace(i,rep)
-#    elif type(string) is dict:
-#        for key in string:
-#            if type(string[key]) is str:
-#                pass
-#                string[key] = string[key].replace(i,rep)
-
-# mode version >= 0.3
-#    i = n + 1
     if type(string) is str:
         string = string.replace('${%s}' % (var), rep)
     elif type(string) is dict:
@@ -1062,21 +1052,29 @@ def create_text(args):
     yml = None
     if ext == '.yaml' or ext == '.yml':
         # yaml mode
-        prompts, appends, yml, mode = yaml_parse(
-            prompt_file, mode=mode, override=override, info=info)
+        prompts, appends, yml, mode = yaml_parse(prompt_file, mode=mode, override=override, info=info)
     else:
         # text mode
         appends = []
         prompts = ''
-        dirs = os.listdir(current)
+        try:
+            dirs = os.listdir(current)
+        except FileNotFoundError:
+            print(f'Directory {current} is not found')
+            exit(1)
+
         sorted(dirs)
         for filename in dirs:
             path = os.path.join(current, filename)
             if os.path.isfile(path):
                 appends.append(read_file(path))
-        with open(prompt_file, 'r', encoding='utf_8') as f:
-            for line in f.readlines():
-                prompts = prompts + ' ' + line.replace('\n', '')
+        try:
+            with open(prompt_file, 'r', encoding='utf_8') as f:
+                for line in f.readlines():
+                    prompts = prompts + ' ' + line.replace('\n', '')
+        except FileNotFoundError:
+            print(f'{prompt_file} is not found')
+            exit(1)
 
     if yml is not None and 'options' in yml and yml['options'] is not None:
         options = yml['options']

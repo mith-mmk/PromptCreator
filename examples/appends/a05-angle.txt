@@ -1,0 +1,6 @@
+1.0;
+,dynamic angle
+,dutch angle
+,perspective
+,vanishing point
+,depth of field

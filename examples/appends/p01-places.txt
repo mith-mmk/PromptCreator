@@ -1,0 +1,116 @@
+0.1;outdoor ${date}
+0.1;in the royal room
+0.1;on the path ${date}
+0.2;on the earth road ${date}
+0.1;on the beach ${date}
+0.1;in the old house
+0.1;in the old mansion
+0.2;in the school
+#0.05;on the battel ship
+0.05;in the airplane
+0.1;in the gym room
+0.1;on the bed own room
+0.1;on the poolside
+0.1;on the stone floor room
+0.1;in the fantasy forest ${date}
+0.1;on the fantasy field ${date}
+0.3;on the wooden floor room
+0.1;in the office room
+0.1;in the jinja shrine
+0.1;in the Japanese temple 
+0.1;in the tatami room
+0.1;in the temple
+0.1;in the castle
+0.1;in the forest ${date}
+0.1;in the garden ${date}
+0.03;in the ruins building ${date}
+0.03;in the ruins ${date}
+0.1;in the town ${date}
+0.1;sakura garden ${date}
+0.05;bamboo forest ${date}
+0.1;in the roses garden ${date}
+0.1;in the lilies garden ${date}
+0.1;in the flower garden ${date}
+0.1;near by the spring in the town ${date}
+0.1;in the laboratory
+0.1;in the clock tower
+0.1;in the fantasy machine
+0.1;in hill ${date}
+0.1;in mountain ${date}
+0.1;in the valley ${date}
+0.1;waterfall side ${date}
+0.1;river side ${date}
+0.1;in hot-air balloon
+0.1;in the station ${date}
+0.1;in the country
+0.1;in the battel field
+0.1;front touring spot ${date}
+0.1;front buildings ${date}
+0.1;front the house ${date}
+0.1;in the garden ${date}
+0.1;in the animal park ${date}
+0.1;in the room ${date}
+0.1;with windows ${date}
+0.1;with walls ${date}
+0.1;flower bed
+0.1;on the sand dunes ${date}
+0.1;in Ginza ${date}
+0.1;in Shibuya ${date}
+0.1;in Shinjuku ${date}
+0.1;in Osaka ${date}
+0.1;in Kyoto ${date}
+0.1;in New york ${date}
+0.1;in junky twon aka San Francisco ${date}
+0.1;in Hawaii ${date}
+0.1;in London ${date}
+0.1;in Rome ${date}
+0.1;in Paris ${date}
+0.1;in Madrid ${date}
+0.1;in Venis ${date}
+0.1;in Florence ${date}
+0.1;in New york ${date}
+0.1;in Antwerp ${date}
+0.1;in Boston ${date}
+0.1;in the live studium ${date}
+0.1;in the monastery
+0.1;in the buddest temple ${date}
+0.1;in the Indian city ${date}
+0.1;in the Chinese city ${date}
+0.1;in Hong Kong ${date}
+0.1;in Taipei ${date}
+0.1;in the Arabic city ${date}
+0.1;in the stall ${date}
+0.1;in the mountain hut ${date}
+0.1;in river ${date}
+0.1;on the wooden bridge ${date}
+0.1;on the streel bridge ${date}
+0.1;on the suspension bridge ${date}
+0.1;in Grand Canion ${date}
+0.1;in Alps ${date}
+0.1;in the pine forest ${date}
+0.1;in the chestnut forest ${date}
+0.1;in the coppice ${date}
+0.1;in the sandbox ${date}
+0.1;in the children's park ${date}
+0.1;in the building ${date}
+0.1;in the office street ${date}
+0.1;in the downtown street ${date}
+0.1;in the food shop
+0.1;in the hamburger shop
+0.1;in the restaurant
+0.1;in the tea room
+0.1;in the coffee shop
+0.1;in the Japanese garden
+0.1;in the park
+0.1;in the park
+0.1;in row of cherry blossom trees
+0.1;in the clothing store
+0.1;in the closet
+0.1;in the library
+0.1;in the car
+0.1;in the bus
+0.1;in the train
+
+
+
+

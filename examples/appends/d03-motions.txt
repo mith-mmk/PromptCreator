@@ -1,0 +1,9 @@
+0.7;
+0.1;,wind
+0.03;,motion lines
+0.1;,steam
+0.1;,wet
+0.03;,trembling
+#0.03;,shaking
+0.01;,twitching
+0.01;sweat

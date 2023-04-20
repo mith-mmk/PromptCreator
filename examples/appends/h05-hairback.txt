@@ -1,0 +1,28 @@
+3.0;
+0.1;twin-tail
+0.1;twin drills
+0.6;twin-tail
+0.1;low twin-tail
+0.1;tri tails
+0.1;short twin-tail
+0.1;quad tails
+0.6;ponytail
+0.1;short ponytail
+0.1;high ponytail
+0.1;side ponytail
+0.1;folded ponytail
+0.1;two side up
+0.1;one side up
+0.1;drill
+0.1;twin drill
+0.1;flipped
+0.1;messy
+0.1;ringlets
+0.1;braid
+0.1;side braid
+0.1;single braid
+0.1;twin braids
+0.1;french braid
+0.1;big
+0.1;hime
+0.1;half updo

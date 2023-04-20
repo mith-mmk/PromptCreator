@@ -1,0 +1,5 @@
+0.99;
+0.05;,${hat_motif} ${hat_color} cap
+0.05;,${hat_motif} ${hat_color} mini hat
+0.05;,${hat_motif} ${hat_color} hat
+0.01;,${hat_motif} ${hat_color} witch hat

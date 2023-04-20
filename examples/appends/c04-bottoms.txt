@@ -1,0 +1,48 @@
+#skirt
+${bottomscolor} beltskirt
+${bottomscolor} bikini skirt
+${bottomscolor} bow skirt
+${bottomscolor} checkered skirt
+${bottomscolor} denim skirt
+${bottomscolor} frilled skirt
+${bottomscolor} grass skirt
+${bottomscolor} hakama short skirt
+${bottomscolor} high-low skirt
+${bottomscolor} hoop skirt
+${bottomscolor} kimono skirt
+${bottomscolor} layered skirt
+${bottomscolor} long skirt
+${bottomscolor} microskirt
+${bottomscolor} miniskirt
+${bottomscolor} overskirt
+${bottomscolor} plaid skirt
+${bottomscolor} pleated skirt
+${bottomscolor} pencil skirt
+${bottomscolor} showgirl skirt
+${bottomscolor} side-tie skirt
+${bottomscolor} spank skirt
+${bottomscolor} suspender skirt
+# pant
+0.3;${bottomscolor} tight pants
+${bottomscolor} capri pants
+${bottomscolor} lowleg pants
+${bottomscolor} harem pants
+${bottomscolor} leather pants
+${bottomscolor} pant suit
+0.5;${bottomscolor} jeans
+0.3;${bottomscolor} denim shorts
+${bottomscolor} dolphin shorts
+${bottomscolor} shorts
+${bottomscolor} micro shorts
+${bottomscolor} kulot pants
+${bottomscolor} half pant
+
+#shorts
+${bottomscolor} bike shorts
+${bottomscolor} denim shorts
+${bottomscolor} dolphin shorts
+${bottomscolor} gym shorts
+${bottomscolor} lowleg shorts
+${bottomscolor} micro shorts
+${bottomscolor} short shorts
+${bottomscolor} shorts under skirt

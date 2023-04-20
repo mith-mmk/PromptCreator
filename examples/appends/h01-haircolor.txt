@@ -1,0 +1,35 @@
+two-tone
+multicolored
+0.2;light blonde
+0.2;blonde
+dark blonde
+0.3;black
+dark black
+0.1;dark brown
+0.2;brown
+light brown
+dark green
+green
+0.2;light green
+dark grey
+grey
+0.2;light grey
+0.2;pink
+light pink
+purple
+light purple
+light silver
+0.2;silver
+dark silver
+dark blue
+blue
+0.2;light blue
+white
+dark orange
+orange
+light orange
+white
+dark red
+0.2;red
+light red
+

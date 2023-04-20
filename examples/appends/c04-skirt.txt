@@ -1,0 +1,14 @@
+#skirt
+0.1;${bottomscolor} beltskirt
+0.1;${bottomscolor} bikini skirt
+0.3;${bottomscolor} denim skirt
+0.05;${bottomscolor} hakama short skirt
+0.05;${bottomscolor} kimono skirt
+0.2;${bottomscolor} long skirt
+0.5;${bottomscolor} microskirt
+0.4;${bottomscolor} miniskirt
+0.1;${bottomscolor} overskirt
+0.1;${bottomscolor} plaid skirt
+0.1;${bottomscolor} pleated skirt
+0.1;${bottomscolor} pencil skirt
+0.1;${bottomscolor} suspender skirt

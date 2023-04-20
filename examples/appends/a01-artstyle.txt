@@ -1,0 +1,43 @@
+# everthingV3ではあまり効かない
+0.001;Granblue Fantasy,Atelier Ryza
+0.005;Atelier Ryza
+0.001;painted, simple
+#0.005;yd_(orange_maru)
+0.005;yuzusoft
+#0.005;raspberry_cube
+0.005;grisaia_\(series\)
+0.005;minori
+0.005;akasaai
+0.001;idolmaster_cinderella_girls
+0.001;ururihi
+0.001;gochumon wa usagi desuka?
+0.001;animated
+0.005;oyari_ashito
+0.005;gweda
+0.005;hololive,nijisanji
+#0.005;asanagi
+0.005;topu
+0.005;Unfairr
+0.005;a1-pictures
+0.005;egami
+0.005;pixiv
+0.005;kekemotsu
+0.005;ebifurya
+0.005;tony_taka
+0.005;erere
+0.005;violet_evergarden
+0.005;makoto shinkai
+0.005;momoco_\(momoco_haru\)
+0.005;mika_pikazo
+0.005;kantoku_\(style\)
+0.005;P.A works
+0.005;Kyoto Animation
+0.005;Production I.G
+0.005;Stadio deen
+0.005;Ufotable
+0.005;Yuumei
+0.005;RossDraws
+0.005;Charlie Bowater
+0.005;hiten_1
+0.005;masterpiece, best quality
+

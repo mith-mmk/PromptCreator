@@ -1,0 +1,24 @@
+# pant
+0.3;${bottomscolor} tight pants
+${bottomscolor} capri pants
+${bottomscolor} lowleg pants
+${bottomscolor} harem pants
+${bottomscolor} leather pants
+${bottomscolor} pant suit
+0.5;${bottomscolor} jeans
+0.3;${bottomscolor} denim shorts
+${bottomscolor} dolphin shorts
+${bottomscolor} shorts
+${bottomscolor} micro shorts
+${bottomscolor} kulot pants
+${bottomscolor} half pant
+
+#shorts
+${bottomscolor} bike shorts
+${bottomscolor} denim shorts
+${bottomscolor} dolphin shorts
+${bottomscolor} gym shorts
+${bottomscolor} lowleg shorts
+${bottomscolor} micro shorts
+${bottomscolor} short shorts
+${bottomscolor} shorts under skirt

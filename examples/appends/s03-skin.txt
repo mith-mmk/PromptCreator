@@ -1,0 +1,6 @@
+0.8;
+0.1;brown skin
+0.1;dark skin
+0.1;dark brown skin
+0.1;light brown skin
+

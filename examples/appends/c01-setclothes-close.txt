@@ -1,0 +1,7 @@
+2.0;(gym uniform) and (${bottomscolor} bloomer)
+2.0;(gym uniform) and (${bottomscolor} bloomer) with ${topscolor} track jacket
+2.0;${topscolor} playboy bunny
+1.0;${topscolor} teniss uniform
+1.0;${topscolor} femail volleyball uniform
+1.0;${topscolor} track suit
+2.0;office suit

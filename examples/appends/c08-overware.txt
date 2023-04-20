@@ -1,0 +1,6 @@
+${overwarecolor} towel
+${overwarecolor} coat
+${overwarecolor} jacket
+${overwarecolor} hooded jacket
+${overwarecolor} boleo
+0.05;${overwarecolor} naked apron

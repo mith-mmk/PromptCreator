@@ -1,0 +1,20 @@
+0.6;in the day
+0.2;goldentime
+0.1;twilight
+0.1;twilight,crescent moon
+0.1;moon night
+0.1;moon and stars
+0.3;night
+0.1;deep night
+0.3;blue sky
+0.02;cloud
+0.02;cloudy sky
+0.05;rain
+0.05;snow
+0.02;flower snow
+0.01;bleezard
+0.01;thunder strom
+0.01;strom and bleezard
+0.02;dancing ice
+0.01;dancing snow
+0.05;night,fire works,star light

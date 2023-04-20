@@ -1,0 +1,178 @@
+0.4;1girl is standing up
+
+0.05;1girl is sitting wareza
+0.05;1girl is sitting seiza
+0.05;1girl is sitting yokozuwari,arm_support
+0.05;1girl is sitting cross-legged
+0.05;1girl is sitting lean forward
+0.05;1girl is sitting knees away
+0.05;1girl is sitting with knees up
+0.05;1girl is sitting one leg up
+0.05;1girl is sitting chair sideways
+0.05;1girl is sitting lean against a wall
+0.05;1girl is sitting unconventional a wall
+0.05;1girl is sitting watch your posture
+0.05;1girl is sitting legs to the side
+0.05;1girl is sitting elbow on knee
+0.05;1girl is sitting bent legs
+0.05;1girl is sitting squat
+0.05;1girl is sitting on stairs
+0.05;1girl is sitting backwards
+0.05;1girl is sitting on the chair cross legs
+0.05;1girl is sitting,arm_support
+0.05;1girl is butterfly sitting 
+0.1;2girl are have teatime sitting on the chair
+0.1;2girls are sitting wareza
+
+0.2;1girl is running
+0.2;1girl is walking
+0.1;1girl is lying on back
+0.1;1girl is lying on stomach
+0.4;1girl is hands_up,cowboy shot;cowboy
+0.1;1girl is hand_on_hip,holding_mop
+0.1;1girl is holding_mop
+
+0.05;1girl is standing arms behind back
+0.05;1girl is standing arms behind head
+0.05;1girl is standing arms behind ass
+0.05;1girl is standing (both hands on chest:1.4)
+0.05;1girl is standing leen foward
+0.05;1girl is standing leaning back
+0.05;1girl is standing from behind
+0.05;1girl is standing from above
+0.05;1girl is standing from belowe
+0.05;1girl is standing hands together in front
+0.05;1girl is standing with one leg in front of the other
+0.05;1girl is walking
+0.05;1girl is standing lean against a wall
+0.05;1girl is standing indirect gaze
+0.05;1girl is standing looking back over shoulder
+0.05;1girl is standing angled shoulder
+0.05;1girl is standing hand up on shoulder
+0.05;1girl is standing touching face
+0.05;1girl is standing hand on hip
+0.05;1girl is standing power pose
+
+
+
+0.1;2girls are serving teaset
+0.1;2girls are serving dish
+0.1;2girls are cleaning
+0.1;2girls are sweaping
+0.1;1girl is singing
+0.1;1girl is awaking
+0.1;1girl is sleeping
+0.1;1girl is jumping
+0.1;1girl is falling from sky
+0.1;1girl is falling from sky
+0.1;3girl are talking
+0.1;2girl are learning
+0.1;1girl is stealed and eating custard pudding
+0.1;6girl+ are dancing
+0.01;2girls take sweets by forks
+0.01;2girls are holding apples and moving mouth
+0.01;1girl is eating a dish of yakisoba
+0.01;1girl is eating ramen using chopsticks
+0.02;1girl is holiding a donut
+0.02;1girl is holiding a crepe
+0.01;1girl is eating a pizza
+0.01;1girl is eating a dish of curry using spoon
+0.01;1girl is eating a yakisoba using chopstick
+0.01;1girl is holding sushi moving mouth
+0.01;2girls are eatings chicken
+0.01;2girls are eatings cakes using fork
+0.01;2girls are eatings pancakes using fork
+0.01;1girl is lunch grab with chopstick
+0.01;1girl is eating dinner
+0.01;2girls are lipping candy
+0.1;1girl is driking a plastic cup of black tapioka tea
+0.05;2girls are drinking disposable cup of tea
+0.05;2girls are drinking disposable cup of coffee
+0.1;2girls are drinking canned juice
+0.1;2girls are plastic bottles of water
+0.1;1girl is shopping
+0.1;1girl looks at a movie
+0.1;1girl is using laptop
+0.1;1girl is playing game
+0.1;2girs are playing tennis
+0.1;2girls are playing with ball
+0.1;6+girl are playing football
+0.1;1girl is showing landscape
+0.01;1girl is cooking ramen
+0.01;1girl is cooking chinese fried rice
+0.1;1girl is cooking
+0.1;1girl rides on a moter bike
+0.1;1girl rides on a bike
+0.1;1girl rides on a horse
+0.1;1girl opens a door
+0.1;1girl is reading a book
+0.1;1girl is double v sign
+0.1;1girl is v sign
+0.1;1girl is playing iron bar
+0.1;1girl is playing vartical bar
+0.05;1girl is drawing lottery
+0.05;1girl is shooting fireworks
+0.01;1girl is looking aftar
+0.01;1girl is looking at another
+0.01;1girl is looking at breasts
+0.01;1girl is looking at hand
+0.01;1girl is looking at mirror
+0.01;1girl is looking at phone
+0.01;1girl is looking at viewer
+0.01;1girl is looking away
+0.01;1girl is looking back
+0.01;1girl is looking down
+0.01;1girl is looking outside
+0.01;1girl is looking over eyewear
+0.01;1girl is looking through legs
+0.01;1girl is looking to the side
+0.01;1girl is looking up
+0.1;1girl is swiming
+0.1;1girl is playing a card
+0.05;1girl is playing a roulette
+0.05;1girl is playing a slot machine
+0.05;1girl is playing a guiter
+0.05;1girl is playing a keyboard
+0.05;1girl is playing a piano and sitting on the piano chair
+0.05;1girl is playing a flute
+0.05;1girl is cleaning a window
+0.05;1girl is cleaning a floor
+0.05;1girl is cleaning a wall
+0.1;1girl is cleaning
+0.1;1girl is waving
+0.1;1girl is salute
+0.1;1girl is armpits
+0.1;1girl is hands up
+0.1;1girl is arm up
+0.1;1girl is arms up
+0.1;1girl is arms behind head
+0.1;1girl is hand on own chest
+0.1;1girl is hand on own hip
+0.1;1girl is hand on own head
+0.1;1girl is hand in own thigh
+0.1;1girl is hand in own leg
+0.1;1girl is hand in own cheek
+0.1;1girl is hand in own arm
+0.1;1girl is hand to own mouth 
+0.1;1girl is outstretched arms
+0.1;1girl is spread arms
+0.1;1girl is outstretched hand
+0.1;1girl is reaching
+0.1;1girl is crossed arms
+0.1;1girl is own hands together
+0.1;1girl is arm support
+0.1;1girl is arms behind back
+0.1;1girl is arm at side
+0.1;1girl is hand in pocket
+0.1;1girl is paw pose
+0.1;1girl is claw pose
+0.1;1girl is rabbit pose
+0.1;1girl is reclining
+0.1;1girl is hugging own legs
+0.1;1girl is indian style
+0.1;2girls are eye contact
+0.1;2girls are back-to-back
+0.1;1girl is yawn
+0.1;1girl is throwing a ball
+0.1;1girl is own hands together
+0.1;1girl is hand between legs

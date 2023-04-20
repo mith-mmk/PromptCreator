@@ -1,0 +1,10 @@
+1.0;
+0.05;sidelocks
+0.05;hair flaps
+0.05;hair intakes
+0.05;sidelocks tied back
+0.05;flipped
+0.05;single hair bun
+0.05;twin bun
+0.05;cone hair bun
+0.05;triple bun

@@ -1,0 +1,13 @@
+2.0;
+0.5;,${hair_ornament_color} hair ribbon
+,${hair_ornament_color} ${hair_ornnament_motif} hair ornament
+,hair bell
+,hairclip
+,hairpin
+,hair flower
+,hair tubes
+0.01;,kanzashi
+# use bun only
+,${hair_ornament_color} bun cover
+0.01;,clown
+,${hair_ornament_color} hair bow 

@@ -1,0 +1,34 @@
+0.5;${topscolor} blouse
+0.1;${topscolor} camisole
+0.2;${topsmotif} ${topscolor} tank top
+0.8;${topsmotif} ${topscolor} t-shirt
+0.1;${topsmotif} ${topscolor} sundress
+0.1;${topsmotif} ${topscolor} chemise
+0.1;${topsmotif} ${topscolor} collared shirt
+0.1;${topscolor} college shirt
+0.1;${topsmotif} ${topscolor} dress shirt
+0.1;${topscolor} flapper shirt
+0.3;${topscolor} gym shirt
+0.1;${topscolor} rash guard
+0.1;${topscolor} swim shirt
+0.1;${topsmotif} ${topscolor} v-neck
+0.1;${topscolor} hawaiian shirt
+0.1;${topscolor} impossible shirt
+0.1;${topsmotif} ${topscolor} lace-trimmed shirt
+0.1;${topsmotif} ${topscolor} loose shirt
+0.1;${topsmotif} ${topscolor} naked shirt
+#0.1;${topscolor} no shirt
+0.1;${topsmotif} ${topscolor} oversized shirt
+0.1;${topsmotif} ${topscolor} pleated shirt
+0.1;${topsmotif} ${topscolor} ribbed shirt
+0.1;${topsmotif} ${topscolor} sailor shirt
+0.1;${topscolor} sleeveless shirt
+0.1;${topsmotif} ${topscolor} taut shirt
+0.1;${topsmotif} ${topscolor} tied shirt
+0.1;${topsmotif} ${topscolor} tight shirt
+0.1;${topsmotif} ${topscolor} torn shirt
+0.1;${topsmotif} ${topscolor} unbuttoned shirt
+0.1;${topsmotif} ${topscolor} untucked shirt
+0.2;${topsmotif} ${topscolor} sweater
+0.2;${topsmotif} ${topscolor} cable knit
+#0.1;topless

@@ -1,0 +1,7 @@
+#相性が大きい
+1.0;
+#,POV
+,from above
+,from behind
+,from side
+,from below

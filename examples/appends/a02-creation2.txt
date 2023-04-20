@@ -1,0 +1,15 @@
+1.0;game_cg
+1.0;anime_screencap
+0.05;thick outline, black outline
+0.05;sketch
+0.05;watercolor
+0.05:1990s_\(style\)
+0.05;retro artstyle
+0.4;diorama style
+0.4;super-deformed
+0.01;action figure diorama
+0.1;miniature
+0.1;Lego style
+0.1;Nendroid style
+0.1;3D
+

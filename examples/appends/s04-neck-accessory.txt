@@ -1,0 +1,3 @@
+0.9;
+0.01;,${neck_accessory_motif} ${neck_accessory_color} pendant
+0.01;,${neck_accessory_motif} ${neck_accessory_color} chocar

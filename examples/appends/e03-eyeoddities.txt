@@ -1,0 +1,13 @@
+1.0;
+0.01;pac-man
+0.01;ringed
+0.01;consticted pupils
+0.01;++
+0.01;sit pupil
+0.01;sybol-shaped pupils
+0.01;diamond shaped
+0.01;heart-shaped
+0.01;blank
+0.01;sharingan
+0.01;shading
+

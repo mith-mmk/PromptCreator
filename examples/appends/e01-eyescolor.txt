@@ -1,0 +1,23 @@
+light blonde
+blonde
+0.3;black
+green
+grey
+0.3;brown
+silver
+0.3;light blue
+blue
+0.3;emerald green
+lime green
+two-tone
+0.03;multicolored
+0.03;gradient 
+orange
+purple
+pink
+red
+yellow
+amber
+white
+aqua # NAI=構図に引きずられやすい
+0.01;heterochromia

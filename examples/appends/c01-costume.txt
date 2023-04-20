@@ -1,0 +1,21 @@
+${topscolor} santa costume,santa hat
+reindeer costume
+halloween costume
+vampire costume
+witch costume
+0.01;mummy costume
+
+# コスプレ系
+0.01;(hatune miku cloth:1.2)
+0.01;(yamato \(kancolle\) cloth:1.2)
+0.01;(illustrious \(azure lane\) cloth:1.2)
+0.01;(atago \(azur lane\) cloth:1.2)
+0.01;(shimakaze \(kancolle\) cloth:1.2)
+
+0.01;${topscolor} fantasy priest cloth
+0.01;${topscolor} fantasy witch cloth
+0.01;${topscolor} fantasy archer cloth
+0.01;${topscolor} fantasy fighter cloth
+0.01;${topscolor} bikini armor cloth
+0.01;${topscolor} lady knight cloth
+0.01;${topscolor} battle clothes

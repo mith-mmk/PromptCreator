@@ -1,0 +1,8 @@
+0.9;
+0.1;,white grove,garter belt and knee sox 
+0.01;,fake cat ear
+0.01;,fake bunny ear
+0.01;,a dark mole under one eye
+0.05;,${accessory_motif} ${accessory_color} embrem
+0.001;playing cards
+0.001;jack-o'-lantern

@@ -1,0 +1,6 @@
+0.9;
+,${body_accessory_color} randsel
+,${body_accessory_color} school bag
+,${body_accessory_color} bag
+,${body_accessory_color} backpack
+
