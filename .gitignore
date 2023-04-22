@@ -1,7 +1,6 @@
 append
 outputs
 prompts
-prompts*.*
 list*
 __pycache__
 .vscode

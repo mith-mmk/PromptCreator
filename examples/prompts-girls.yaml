@@ -1,0 +1,124 @@
+version: 0.8
+options:
+#   sd_model: anythingV5Anything_anythingV5PrtRE
+#   sd_vae: kl-f8-anime2-vae.safetensors
+    output: ./outputs/examples-kenzen.json
+    json: true # output JSON
+    method: random # default= multiple,random, ...
+    number: 100   # list limit, "multiple" is not use
+    weight: true   # weight befour appends prompt separate ;
+    default_weight: 0.1  # default 0.1 None
+appends:
+    negative: examples/appends/000-negative.txt
+    eyes: ['${eyeshape} ${eyeoddities} ${eyecolor}${eyemotion}']
+    eyecolor: examples/appends/e01-eyescolor.txt
+    eyeshape: examples/appends/e02-eyeshapes.txt
+    eyeoddities: examples/appends/e03-eyeoddities.txt
+    eyemotion: examples/appends/e04-eyemotion.txt
+    hair: ['${haircolor} ${hairvariation} ${hairtop} ${hairside} ${hairback} ${hairbang} ${hairlength}']
+    haircolor: examples/appends/h01-haircolor.txt
+    hairvariation: examples/appends/h07-hairvariation.txt
+    hairtop: examples/appends/h06-hairtop.txt
+    hairside: examples/appends/h04-hairside.txt
+    hairback: examples/appends/h05-hairback.txt
+    hairbang: examples/appends/h03-hairbangs.txt
+    hairlength: examples/appends/h02-hairlength.txt
+    clothes: ['${motif} ${clothes1} ${hair_ornament}','${clothes1}']
+    hair_ornament: examples/appends/h08-hair-ornament.txt
+    hair_ornament_color: examples/appends/s05-colors.txt
+    hair_ornnament_motif: examples/appends/c09-motif.txt
+    motif: examples/appends/c09-clothes-motif.txt
+    clothes1: examples/appends/c00-clothes.txt
+    onepiece: examples/appends/c01-onepiece.txt
+    setclothes: examples/appends/c01-setclothes-open.txt examples/appends/c01-setclothes-close.txt examples/appends/c01-setclothes-lora.txt
+    cosplay: examples/appends/c01-costume.txt
+    swimware: examples/appends/c01-swimwear.txt
+    twopiece: examples/appends/c01-twopiece.txt
+    tops: examples/appends/c02-tops.txt
+    bottoms: ['${skirt}','${pant}']
+    skirt: examples/appends/c04-skirt.txt
+    pant: examples/appends/c04-pant.txt
+    topsmotif: examples/appends/c09-clothes-motif.txt
+    topscolor: examples/appends/c03-topscolors.txt
+    bottomscolor: examples/appends/c05-bottomscolors.txt
+    panty: examples/appends/c06-panties.txt
+    pantymotif: examples/appends/c09-motif.txt
+    pantycolor: examples/appends/c05-bottomscolors.txt
+    bra: examples/appends/c07-bra.txt
+    bramotif: examples/appends/c09-motif.txt
+    bracolor: examples/appends/c03-topscolors.txt
+    overware: examples/appends/c08-overware.txt
+    overwarecolor: examples/appends/c03-topscolors.txt
+
+    doing: examples/appends/d01-doings.txt
+    motion: examples/appends/d03-motions.txt
+
+    lookings: examples/appends/s00-lookings.txt
+    coutenance: examples/appends/s01-countenance.txt
+    breast: examples/appends/s02-breast.txt
+    skin: examples/appends/s03-skin.txt
+    accessories: ['${hat}${head_accessory}${neck_accessory}${body_accessory}${hand_accessory}${leg_accessory}${accessory}']
+    hand_accessory: examples/appends/s04-hand-accessory.txt
+    hand_accessory_motif: examples/appends/c09-motif.txt
+    hand_accessory_color: examples/appends/s05-colors.txt
+    neck_accessory: examples/appends/s04-neck-accessory.txt
+    neck_accessory_motif: examples/appends/c09-motif.txt
+    neck_accessory_color: examples/appends/s05-colors.txt
+    head_accessory: examples/appends/s04-head-accessory.txt
+    head_accessory_motif: examples/appends/c09-motif.txt
+    head_accessory_color: examples/appends/s05-colors.txt
+    body_accessory: examples/appends/s04-body-accessory.txt
+    body_accessory_motif: examples/appends/c09-motif.txt
+    body_accessory_color: examples/appends/s05-colors.txt
+    leg_accessory: examples/appends/s04-leg-accessory.txt
+    leg_motif: examples/appends/c09-motif.txt
+    leg_color: examples/appends/s05-colors.txt
+    accessory: examples/appends/s04-accessories.txt
+    accessory_motif: examples/appends/c09-motif.txt
+    accessory_color: examples/appends/s05-colors.txt
+    hat:  examples/appends/s04-hat.txt
+    hat_motif: examples/appends/c09-motif.txt
+    hat_color: examples/appends/s05-colors.txt
+
+    place: examples/appends/p01-places.txt
+    date: examples/appends/p02-date.txt
+    umbrella_motif: examples/appends/c09-motif.txt
+    umbrella_color: examples/appends/s05-colors.txt 
+
+    artstyle: ['${creation} (${artstyle1},${artstyle2})']
+    artstyle1: examples/appends/a01-artstyle.txt
+    artstyle2: examples/appends/a01-artstyle.txt
+    creation: examples/appends/a02-creation2.txt
+    camera: ['${filter}${effect}${angle}${shot}${direction}']
+
+    filter: examples/appends/a03-filter.txt
+    effect: examples/appends/a04-effect.txt
+    angle: examples/appends/a05-angle.txt
+    shot: examples/appends/a06-shot.txt
+    direction: examples/appends/a07-direction.txt
+    
+command:
+    prompt: "(${lookings}) wearing (${clothes}) ${accessories}, ${eyes} eyes, ${coutenance}, ${hair} hair, (${breast}) ${doing,1}, ${artstyle}, ${place} ${motion}${camera}"
+    negative_prompt: "nsfw,${negative}"
+    seed: -1
+    width: 512
+    height: 704
+    steps: 30
+    cfg_scale: 12.5
+    sampler_index: DPM++ SDE Karras
+    batch_size: 1  # if you can use n size batch
+    n_iter: 1 # also same butch count
+# higher.fix
+    enable_hr: true
+    denoising_strength: 0.4
+    hr_scale: 2.0
+    hr_second_pass_steps: 10
+#    hr_resize_x : 1024
+#    hr_resize_y : 1280
+    hr_upscaler: None
+
+#    firstphase_width: 512
+#    firstphase_height: 512
+    override_settings:
+       filter_nsfw: true # true / false
+#       CLIP_stop_at_last_layers: 2
