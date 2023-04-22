@@ -236,7 +236,7 @@ cyan
 - color.txtとcolor2.txtを結合して利用
 
 ### escape
-　;は\;もしくは\$\{semicolon\}でエスケープ可能です。
+　;は\\;もしくは\$\{semicolon\}でエスケープ可能です。
 
 ### 書きかけ
 - before_multiple:
