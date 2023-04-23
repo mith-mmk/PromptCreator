@@ -521,6 +521,7 @@ def save_img(r, opt={'dir': './outputs'}):
                         replacer = date.strftime(match.group(1))
                     except ValueError:
                         replacer = '[' + seeds + ']'
+                        replacer = re.sub(r'[\<\>\:\"\/\\\\|?\*\n\s]', '_', str(replacer))[:127]
                 elif seeds == 'shortdate' and 'job_timestamp' in filename_pattern:
                     replacer = filename_pattern['job_timestamp'][2:8]
                 elif seeds == 'year' and 'job_timestamp' in filename_pattern:
@@ -568,6 +569,7 @@ def save_img(r, opt={'dir': './outputs'}):
                     replacer = re.sub(r'[\<\>\:\"\/\\\\|?\*\n\s]', '_', str(replacer))[:127]
                 else:
                     replacer = '[' + seeds + ']'
+                    replacer = re.sub(r'[\<\>\:\"\/\\\\|?\*\n\s]', '_', str(replacer))[:127]
                 filename = filename.replace('[' + seeds + ']', str(replacer))
 
 #            seed = filename_pattern['all_seeds'] [n]
