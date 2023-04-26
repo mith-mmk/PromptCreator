@@ -205,6 +205,10 @@ def create_parameters(parameters_text):
                 pass
             elif key == 'clip_skip':
                 parameters['CLIP_stop_at_last_layers'] = keyvalue[1]
+            elif key == 'ENSD':
+                parameters['eta_noise_seed_delta'] = keyvalue[1]
+            elif key == 'Model_hash':
+                parameters['model_hash'] = keyvalue[1]
             else:
                 parameters[key] = keyvalue[1]
         else:
@@ -266,7 +270,7 @@ def set_sd_model(sd_model, base_url='http://127.0.0.1:7860', sd_vae='Automatic')
         exit()
 
 
-def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None):
+def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None, base_url=None):
     schema = [
         'enable_hr',
         'denoising_strength',
@@ -302,9 +306,6 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None):
         'inpaint_full_res_padding',
         'inpainting_mask_invert'
     ]
-    # EDNS = override_settings.eta_noise_seed_delta
-    # clip_skip = override_settings.CLIP_stop_at_last_layers
-    # model = override_setting.sd_model_checkpoint
 
     image = Image.open(imagefile)
     image.load()
@@ -349,6 +350,7 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None):
                 json_raw['inpainting_mask_invert'] = 0
 
     override_settings = {}
+
     sampler_index = None
     for key, value in parameters.items():
         if key in schema:
@@ -356,6 +358,10 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None):
         elif key == 'sampler_index':
             sampler_index = value
             pass
+        elif key == 'model_hash':
+            if base_url is not None:
+                model = get_sd_model(base_url, value)
+                override_settings['sd_model_checkpoint'] = model.title
         else:
             override_settings[key] = value
 
@@ -465,9 +471,18 @@ def save_img(r, opt={'dir': './outputs'}):
 
     for key, value in info.items():
         filename_pattern[key] = value
-
     if 'variables' in opt:
+        var = re.compile(r'\$\{(.+?)\}')
         for key, value in opt['variables'].items():
+            value = str(value)
+            match = var.search(value)
+            while match is not None:
+                for new_key in match.groups():
+                    if new_key in opt['variables']:
+                        value = value.replace('${%s}' % (new_key), opt['variables'][new_key])
+                    else:
+                        value = value.replace('${%s}' % (new_key), '')
+                    match = var.search(value)
             filename_pattern['var:' + key] = value
 
     if 'info' in opt:
@@ -621,7 +636,7 @@ def img2img(imagefiles, overrides=None, base_url='http://127.0.0.1:8760', output
         share['line_count'] = 0
         print(flash, end='')
         print(f'\033[KBatch {n + 1} of {count}')
-        item = create_img2json(imagefile, alt_image_dir, mask_image_dir)
+        item = create_img2json(imagefile, alt_image_dir, mask_image_dir, base_url)
         if opt.get('interrogate') is not None and (item.get('prompt') is None or opt.get('force_interrogate')):
             print('\033[KInterrogate from an image....')
             share['line_count'] += 1

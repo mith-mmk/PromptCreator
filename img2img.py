@@ -56,7 +56,6 @@ parser.add_argument('--sd-vae', type=str,
                     default='automatic',
                     help='Initalize change sd model vae ex) Anything-V3.0.vae.pt')
 
-
 parser.add_argument('--alt-image-dir', type=str,
                     default=None,
                     help='Alternative input image files diretory')
@@ -85,11 +84,9 @@ parser.add_argument('--inpainting_mask_invert', type=int,
                     default=None,
                     help='inpainting_mask_invert')
 
-
 parser.add_argument('--filename-pattern', type=str,
                     default=None,
                     help='Filename Patter default [num]-[seed]')
-
 
 parser.add_argument('--api-filename-variables', type=bool, nargs='?',
                     const=True, default=False,
