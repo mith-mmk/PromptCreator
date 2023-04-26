@@ -11,6 +11,7 @@ import os
 import modules.api as api
 from modules.img2img import img2img
 from modules.txt2img import txt2img
+from modules.interrogate import interrogate
 from modules.prompt import expand_arg, create_text
 
 
@@ -66,10 +67,31 @@ def img2img_from_args(args):
         exit(-1)
 
 
+def interrogate_from_args(args):
+    base_url = args.api_base
+    if type(args.input) is str:
+        filenames = [args.input]
+    else:
+        filenames = args.input
+    # model = 'deepdanbooru' need set webui --deepdanbooru option
+    for filename in filenames:
+        result = interrogate(filename, base_url=base_url, model=args.model)  # 'clip' or 'deepdanbooru'
+        print(result)
+        if result.status_code == 200:
+            print(filename)
+            print(result.json()['caption'])
+        else:
+            print(result.text)
+            print('Is Web UI replace newest version?')
+
+
 def main(args):
-    if args.api_mode and args.api_type == 'img2img':
-        img2img_from_args(args)
-        return
+    if args.api_mode:
+        if args.api_type == 'img2img':
+            img2img_from_args(args)
+            return
+        if args.api_type == 'interrogate':
+            interrogate_from_args(args)
 
     if args.input is not None:
         result = create_text(args)
@@ -196,11 +218,11 @@ def run_from_args(command_args=None):
 
     parser.add_argument('--api-type', type=str,
                         default='txt2img',
-                        help='call API type txt2img, img2img, default txt2img')
+                        help='call API type "txt2img", "img2img", "interrogate" default txt2img')
 
     parser.add_argument('--interrogate', type=str,
                         default=None,
-                        help='If an image does not have prompt, it uses alternative interrogate API. model "clip" or "deepdanbooru"')
+                        help='If an image does not have prompt, it uses alternative interrogate API or api-type="interrogate". model "clip" or "deepdanbooru"')
 
     parser.add_argument('--alt-image-dir', type=str,
                         default=None,
