@@ -92,6 +92,7 @@ def main(args):
             return
         if args.api_type == 'interrogate':
             interrogate_from_args(args)
+            return
 
     if args.input is not None:
         result = create_text(args)
