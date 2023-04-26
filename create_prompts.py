@@ -659,6 +659,7 @@ def img2img(imagefiles, overrides=None, base_url='http://127.0.0.1:8760', output
 
         # Why is an error happening? json=payload or json=item
         payload = json.dumps(item)
+        print(payload)
         response = request_post_wrapper(url, data=payload, progress_url=progress, base_url=base_url, userpass=userpass)
 
         if response is None:
@@ -1176,7 +1177,62 @@ def create_text(args):
     return result
 
 
+def img2img_from_args(args):
+    opt = {}
+    opt['sd_model'] = args.api_set_sd_model
+    opt['sd_vae'] = args.api_set_sd_vae
+    items = ['denoising_strength', 'seed', 'subseed', 'subseed_strength', 'batch_size',
+             'n_iter', 'steps', 'cfg_scale', 'width', 'height', 'prompt', 'negative_prompt',
+             'sampler_index',
+             'mask_blur', 'inpainting_fill', 'inpaint_full_res', 'inpaint_full_res_padding', 'inpainting_mask_invert']
+    overrides_arg = expand_arg(args.override)
+    overrides = {}
+    if overrides_arg is not None:
+        for item in items:
+            if overrides_arg.get(item):
+                overrides[item] = overrides_arg[item]
+    print(overrides)
+    if type(args.input) is str:
+        filenames = [args.input]
+    base_url = args.api_base
+    output_dir = args.output or './outputs'
+    dicted_args = vars(args)
+    input_files = []
+    for filename in filenames:
+        if os.path.isdir(filename):
+            path = filename
+            files = os.listdir(path)
+            for file in files:
+                file = os.path.join(path, file)
+                if os.path.isfile(file):
+                    input_files.append(file)
+        elif os.path.isfile(filename):
+            input_files.append(filename)
+    if len(input_files) == 0:
+        print('no exit files')
+        exit(1)
+
+    if dicted_args.get('sd_model') is not None:
+        set_sd_model(dicted_args.get('sd_model'), base_url=base_url, sd_vae=dicted_args.get('sd_vae'))
+
+    opt = {}
+
+    opt_keys = ['alt_image_dir', 'interrogate', 'filename_pattern', 'api_filename_variables', 'mask_dir']
+    for key in opt_keys:
+        if dicted_args.get(key) is not None:
+            opt[key] = dicted_args.get(key)
+
+    try:
+        img2img(input_files, base_url=base_url, overrides=overrides, output_dir=output_dir, opt=opt)
+    except Exception:
+        exit(-1)
+
+
 def main(args):
+    if args.api_mode and args.api_type == 'img2img':
+        img2img_from_args(args)
+        return
+
     if args.input is not None:
         result = create_text(args)
         options = result['options']
@@ -1229,10 +1285,10 @@ def main(args):
 
 
 def run_from_args(command_args=None):
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(argument_default=None)
     parser.add_argument('input', type=str, nargs='?',
                         default=None,
-                        help='input promptfile')
+                        help='input promptfile or image file for img2img')
     parser.add_argument('--append-dir', type=str,
                         default='./appends',
                         help='direcory of input append prompt files')
@@ -1255,19 +1311,6 @@ def run_from_args(command_args=None):
     parser.add_argument('--api-userpass', type=str,
                         default=None,
                         help='API username:password')
-
-    ##
-    # parser.add_argument('--api-name', type=str,
-    #                    default='txt2img',
-    #                    help='call api txt2img/img2img')
-
-    # parser.add_argument('--image-path', type=str,
-    #                    default='./inputs',
-    #                    help='img2img path')
-
-    # parser.add_argument('--mask-path', type=str,
-    #                    default='./inputs-mask',
-    #                    help='img2img mask path')
 
     parser.add_argument('--api-output-dir', type=str,
                         default='outputs',
@@ -1311,6 +1354,28 @@ def run_from_args(command_args=None):
     parser.add_argument('--info', type=str, nargs='*',
                         default=None,
                         help='add infomation')
+
+# img2img
+
+    parser.add_argument('--api-type', type=str,
+                        default='txt2img',
+                        help='call API type txt2img, img2img, default txt2img')
+
+    parser.add_argument('--interrogate', type=str,
+                        default=None,
+                        help='If an image does not have prompt, it uses alternative interrogate API. model "clip" or "deepdanbooru"')
+
+    parser.add_argument('--alt-image-dir', type=str,
+                        default=None,
+                        help='Alternative input image files diretory for img2img')
+
+    parser.add_argument('--mask-dirs', type=str,
+                        default=None,
+                        help='Mask images directory for img2img')
+
+    parser.add_argument('--mask_blur', type=int,
+                        default=None,
+                        help='Mask blur for img2img')
 
     args = parser.parse_args(command_args)
     if args.input is None and not (args.api_mode and args.api_input_json is not None):
