@@ -34,10 +34,10 @@ def create_parameters(parameters_text):
             elif key == 'batch_pos':
                 pass
             elif key == 'clip_skip':
-                parameters['CLIP_stop_at_last_layers'] = keyvalue[1]
-            elif key == 'ENSD':
-                parameters['eta_noise_seed_delta'] = keyvalue[1]
-            elif key == 'Model_hash':
+                parameters['CLIP_stop_at_last_layers'] = int(keyvalue[1])
+            elif key == 'ensd':
+                parameters['eta_noise_seed_delta'] = int(keyvalue[1])
+            elif key == 'model_hash':
                 parameters['model_hash'] = keyvalue[1]
             else:
                 parameters[key] = keyvalue[1]
@@ -137,7 +137,8 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None, base_url
         elif key == 'model_hash':
             if base_url is not None:
                 model = api.get_sd_model(base_url, value)
-                override_settings['sd_model_checkpoint'] = model.title
+                if model is not None:
+                    override_settings['sd_model_checkpoint'] = model.title
         else:
             override_settings[key] = value
 

@@ -48,15 +48,26 @@ def img2img(imagefiles, overrides=None, base_url='http://127.0.0.1:8760', output
                 override = overrides[n]
             else:
                 override = overrides
+            override_settings = {}
             if 'model' in override:
-                api.set_sd_model(sd_model=override['model'], base_url=base_url, sd_vae=None)
+                model = api.set_sd_model(sd_model=override['model'], base_url=base_url, sd_vae=None)
                 del override['model']
+                override_settings['sd_model_checkpoint'] = model.title
+            if 'clip_skip' in override:
+                override_settings['CLIP_stop_at_last_layers'] = override['clip_skip']
+                del override['clip_skip']
+            if 'ensd' in override:
+                override_settings['eta_noise_seed_delta'] = override['ensd']
+                del override['ensd']
+            if override_settings != {}:
+                override['override_settings'] = override_settings
             for key, value in override.items():
-                item[key] = value
+                if value is not None:
+                    item[key] = value
 
         # Why is an error happening? json=payload or json=item
         payload = json.dumps(item)
-        print(payload)
+#        print(payload)
         response = api.request_post_wrapper(url, data=payload, progress_url=progress, base_url=base_url, userpass=userpass)
 
         if response is None:

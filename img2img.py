@@ -1,5 +1,6 @@
 # img2img api test inpritation,function specifications are change after commit
-from create_prompts import img2img, set_sd_model
+from modules.img2img import img2img
+from modules.api import set_sd_model
 import os
 
 import argparse
