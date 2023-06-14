@@ -133,17 +133,13 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None, base_url
             json_raw[key] = value
         elif key == 'sampler_index':
             sampler_index = value
-            pass
         elif key == 'model_hash':
-            if base_url is not None:
-                model = api.get_sd_model(base_url, value)
-                if model is not None:
-                    override_settings['sd_model_checkpoint'] = model.title
+            override_settings['sd_model_checkpoint'] = value
         else:
             override_settings[key] = value
-
     if ('sampler' not in json_raw) and sampler_index is not None:
         json_raw['sampler_index'] = sampler_index
 
     json_raw['override_settings'] = override_settings
+
     return json_raw
