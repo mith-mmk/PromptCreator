@@ -67,7 +67,6 @@ def img2img(imagefiles, overrides=None, base_url='http://127.0.0.1:8760', output
 
         # Why is an error happening? json=payload or json=item
         payload = json.dumps(item)
-#        print(payload)
         response = api.request_post_wrapper(url, data=payload, progress_url=progress, base_url=base_url, userpass=userpass)
 
         if response is None:
