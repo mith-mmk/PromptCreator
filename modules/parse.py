@@ -135,17 +135,10 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None, base_url
             sampler_index = value
         elif key == 'model_hash':
             override_settings['sd_model_checkpoint'] = value
-        else:
+        elif key == 'CLIP_stop_at_last_layers':
             override_settings[key] = value
     if ('sampler' not in json_raw) and sampler_index is not None:
         json_raw['sampler_index'] = sampler_index
-
-    if 'hires_resize' in override_settings:
-        del override_settings['hires_resize']
-    if 'hires_steps' in override_settings:
-        del override_settings['hires_steps']
-    if 'hires_upscaler' in override_settings:
-        del override_settings['hires_upscaler']
 
     json_raw['override_settings'] = override_settings
     return json_raw
