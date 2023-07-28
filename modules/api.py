@@ -5,6 +5,9 @@ import httpx
 import sys
 import json
 
+# shared function for api
+
+
 share = {
     'timeout': 5,
     'max_timeout': 1000

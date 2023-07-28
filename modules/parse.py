@@ -4,6 +4,7 @@ from PIL import Image
 import modules.api as api
 
 
+# parsing json from metadata in an image
 def create_parameters(parameters_text):
     para = parameters_text.split('\n')
     if len(para) == 1:
@@ -46,6 +47,7 @@ def create_parameters(parameters_text):
     return parameters
 
 
+# parsing json from image's metadata
 def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None, base_url=None):
     schema = [
         'enable_hr',
@@ -128,6 +130,8 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None, base_url
     override_settings = {}
 
     sampler_index = None
+    # override settings only return sd_model_checkpoint and CLIP_stop_at_last_layers
+    # Automatic1111 2023/07/25 verion do not support VAE tag
     for key, value in parameters.items():
         if key in schema:
             json_raw[key] = value

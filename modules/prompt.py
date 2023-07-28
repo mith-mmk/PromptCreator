@@ -6,6 +6,8 @@ import itertools as it
 import json
 import os
 
+# randam prompt creator
+
 
 def get_appends(appends):
     appends_result = {}

@@ -3,6 +3,8 @@ import json
 import modules.api as api
 from modules.save import save_images
 
+# Call txt2img API from webui
+
 
 def txt2img(output_text, base_url='http://127.0.0.1:8760', output_dir='./outputs', opt={}):
     base_url = api.normalize_base_url(base_url)

@@ -13,6 +13,8 @@ from PIL import Image, PngImagePlugin
 import modules.api as api
 from modules.parse import create_parameters
 
+# The Image saver, but enough support aysnc
+
 
 def save_images(r, opt={'dir': './outputs'}):
     return asyncio.run(save_img_wrapper(r, opt))

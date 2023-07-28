@@ -1,6 +1,8 @@
 import re
 from modules.prompt import item_split
 
+# Read a file and return a list of prompt
+
 
 def read_file(filename):
     strs = []

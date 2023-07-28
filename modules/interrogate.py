@@ -3,6 +3,7 @@ import base64
 import json
 
 
+# iterrogate API from webui, model = clip or deepdanbooru
 def interrogate(imagefile, base_url, model='clip', userpass=None):
     base_url = api.normalize_base_url(base_url)
     url = (base_url + '/sdapi/v1/interrogate')

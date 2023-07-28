@@ -5,6 +5,8 @@ from modules.parse import create_img2json
 from modules.save import save_img
 from modules.interrogate import interrogate
 
+# Call img2img API from webui, it has many bugs
+
 
 def img2img(imagefiles, overrides=None, base_url='http://127.0.0.1:8760', output_dir='./outputs', opt={}):
     base_url = api.normalize_base_url(base_url)
