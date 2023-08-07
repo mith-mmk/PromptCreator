@@ -142,6 +142,24 @@ command:
     cfg_scale: 7.5
 ```
 
+#### 予約語
+ 予約語はすべて$で始まります。
+
+ 例) 
+ ```yaml
+ seed: ${$RANDOM}
+ ```
+
+ - $RANDOM 10個の乱数(0-2**31-1)を返します
+ - $SYSTEM
+ - $ARCHITECTURE
+ - $VERSION
+ - $MACHINE
+ - $PROCESSOR
+ - $PYTHON_VERSION
+ - $HOSTNAME
+ - ...
+
 ### 乱数モード
 
 　呪文を自動生成します。

@@ -132,6 +132,24 @@ command:
     cfg_scale: 7.5
 ```
 
+#### Reserved word
+ Reserved word is start $.
+
+ ex.) 
+ ```yaml
+ seed: ${$RANDOM}
+ ```
+
+ - $RANDOM array of 10 interger numbers(0-2**31-1)
+ - $SYSTEM return SYSTEM
+ - $ARCHITECTURE
+ - $VERSION
+ - $MACHINE
+ - $PROCESSOR
+ - $PYTHON_VERSION
+ - $HOSTNAME
+ - todo
+    
 ### mutiply mode
   Prompts is made by a round robin.
 

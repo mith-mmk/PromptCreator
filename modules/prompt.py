@@ -5,8 +5,25 @@ import re
 import itertools as it
 import json
 import os
+import platform
 
 # randam prompt creator
+
+
+def set_reserved(keys):
+    # 10 integer numbers
+    keys['$RANDOM'] = []
+    for _ in range(0, 10):
+        keys['$RANDOM'].append(str(random.randint(0, 2**31 - 1)))
+    keys['$SYSTEM'] = ['1.0;' + platform.system()]
+    keys['$ARCHITECTURE'] = ['1.0;' + platform.architecture()[0]]
+    keys['$VERSION'] = ['1.0;' + platform.version()]
+    keys['$MACHINE'] = ['1.0;' + platform.machine()]
+    keys['$PROCESSOR'] = ['1.0;' + platform.processor()]
+    keys['$PYTHON_VERSION'] = ['1.0;' + platform.python_version()]
+    keys['$HOSTNAME'] = ['1.0;' + platform.node()]
+
+    return keys
 
 
 def get_appends(appends):
@@ -362,6 +379,7 @@ def create_text(args):
         except FileNotFoundError:
             print(f'{prompt_file} is not found')
             exit(1)
+    appends = set_reserved(appends)
 
     if yml is not None and 'options' in yml and yml['options'] is not None:
         options = yml['options']
