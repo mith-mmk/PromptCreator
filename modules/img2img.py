@@ -73,7 +73,7 @@ def img2img(imagefiles, overrides=None, base_url='http://127.0.0.1:8760', output
 
         if response is None:
             print('http connection - happening error')
-            exit(-1)
+            raise Exception('http connection - happening error')
         if response.status_code != 200:
             print('\033[KError!', response.status_code, response.text)
             print('\033[2A', end='')

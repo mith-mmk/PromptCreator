@@ -142,13 +142,13 @@ def request_post_wrapper(url, data, progress_url=None, base_url=None, userpass=N
         if base_url:
             progress_interrupt(base_url + '/sdapi/v1/skip')  # chage api?
         print('enter Ctrl-c, Process stopping', file=sys.stderr)
-        exit(2)
+        raise KeyboardInterrupt
     except httpx.ConnectError:
         print('All connection attempts failed,Is the server down?', file=sys.stderr)
-        exit(2)
+        raise httpx.ConnectError
     except httpx.ConnectTimeout:
         print('Connection Time out,Is the server down or server address mistake?', file=sys.stderr)
-        exit(2)
+        raise httpx.ConnectTimeout
     return result
 
 
@@ -194,7 +194,7 @@ def set_sd_model(sd_model, base_url='http://127.0.0.1:7860', sd_vae='Automatic')
                 break
         if load_model is None:
             print(f'{sd_model} model is not found')
-            exit()
+            raise
         sd_model = load_model
         print(f'{sd_model} model loading...')
         payload = {"sd_model_checkpoint": sd_model, "sd_vae": sd_vae}
@@ -209,4 +209,4 @@ def set_sd_model(sd_model, base_url='http://127.0.0.1:7860', sd_vae='Automatic')
 
     except Exception:
         print('Change SD Model Error')
-        exit()
+        raise

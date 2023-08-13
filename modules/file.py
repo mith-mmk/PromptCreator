@@ -20,5 +20,5 @@ def read_file(filename):
                         print(f'Error happen line {filename} {i} {item}')
         except FileNotFoundError:
             print(f'{filename} is not found')
-            exit(-1)
+            raise FileNotFoundError
     return strs

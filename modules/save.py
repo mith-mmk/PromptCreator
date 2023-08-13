@@ -81,7 +81,7 @@ def save_img(r, opt={'dir': './outputs'}):
             count += 2
         elif use_num:
             print(f'[{name}] is setting before [num]', file=sys.stderr)
-            exit(-1)
+            raise ValueError
 
     num_length = 5
     if 'num_length' in opt:
@@ -245,9 +245,9 @@ def save_img(r, opt={'dir': './outputs'}):
             image.save(filename, pnginfo=pnginfo)
         except KeyboardInterrupt:
             print('\033[KProcess stopped Ctrl+C break', file=sys.stderr)
-            exit(2)
+            raise KeyboardInterrupt
         except BaseException as e:
             print('\033[Ksave error', e, filename, file=sys.stderr)
-            exit(2)
+            raise e
 #    opt['startnum'] = num
     return len(r['images']) + 2

@@ -133,7 +133,7 @@ def run_from_args_img2img(command_args=None):
             input_files.append(filename)
     if len(input_files) == 0:
         print('no exit files')
-        exit(1)
+        return False
 
     if dicted_args.get('sd_model') is not None:
         set_sd_model(dicted_args.get('sd_model'), base_url=base_url, sd_vae=dicted_args.get('sd_vae'))
@@ -148,11 +148,17 @@ def run_from_args_img2img(command_args=None):
     try:
         img2img(input_files, base_url=base_url, overrides=overrides, output_dir=output_dir, opt=opt)
     except Exception:
-        exit(-1)
+        return False
+    return True
 
 
 if __name__ == "__main__":
-    run_from_args_img2img()
+    try:
+        result = run_from_args_img2img()
+        if not result:
+            exit(1)
+    except Exception:
+        exit(1)
 
 
 # - multiple images impl

@@ -47,7 +47,7 @@ def img2img_from_args(args):
             input_files.append(filename)
     if len(input_files) == 0:
         print('no exit files')
-        exit(1)
+        return False
 
     if dicted_args.get('sd_model') is not None:
         api.set_sd_model(dicted_args.get('sd_model'), base_url=base_url, sd_vae=dicted_args.get('sd_vae'))
@@ -64,7 +64,8 @@ def img2img_from_args(args):
         img2img(input_files, base_url=base_url, overrides=overrides, output_dir=output_dir, opt=opt)
     except Exception as e:
         print(e)
-        exit(-1)
+        return False
+    return True
 
 
 def interrogate_from_args(args):
@@ -139,9 +140,11 @@ def main(args):
         if sd_model is not None:
             api.set_sd_model(base_url=args.api_base, sd_model=sd_model, sd_vae=sd_vae)
         api.init()
-        txt2img(output_text, base_url=args.api_base,
-                output_dir=args.api_output_dir, opt=opt)
+        result = txt2img(output_text, base_url=args.api_base, output_dir=args.api_output_dir, opt=opt)
+        if not result:
+            return False
         api.shutdown()
+        return True
 
 
 def run_from_args(command_args=None):
@@ -241,9 +244,14 @@ def run_from_args(command_args=None):
     if args.input is None and not (args.api_mode and args.api_input_json is not None):
         parser.print_help()
         print("need [input] or --api-mode --api_input_json [filename]")
-        exit(1)
-    main(args)
+        return False
+    return main(args)
 
 
 if __name__ == "__main__":
-    run_from_args()
+    try:
+        result = run_from_args()
+        if not result:
+            exit(1)
+    except Exception:
+        exit(1)

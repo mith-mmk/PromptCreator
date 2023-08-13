@@ -52,7 +52,7 @@ def yaml_parse(filename, mode='text', override=None, info=None):
             yml = yaml.safe_load(f)
     except FileNotFoundError:
         print(f'File {filename} is not found')
-        exit(1)
+        raise FileNotFoundError
     if 'command' not in yml:
         yml['command'] = {}
     if 'info' not in yml:
@@ -107,7 +107,7 @@ def read_file(filename):
                         print(f'Error happen line {filename} {i} {item}')
         except FileNotFoundError:
             print(f'{filename} is not found')
-            exit(-1)
+            raise FileNotFoundError
     return strs
 
 
@@ -365,7 +365,7 @@ def create_text(args):
             dirs = os.listdir(current)
         except FileNotFoundError:
             print(f'Directory {current} is not found')
-            exit(1)
+            raise FileNotFoundError
 
         sorted(dirs)
         for filename in dirs:
@@ -378,7 +378,7 @@ def create_text(args):
                     prompts = prompts + ' ' + line.replace('\n', '')
         except FileNotFoundError:
             print(f'{prompt_file} is not found')
-            exit(1)
+            raise FileNotFoundError
     appends = set_reserved(appends)
 
     if yml is not None and 'options' in yml and yml['options'] is not None:
