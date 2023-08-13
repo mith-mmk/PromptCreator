@@ -107,7 +107,7 @@ def main(args):
             output_text = json.loads(f.read())
     else:
         print('option error')
-        exit(1)
+        raise Exception('option error')
 
     opt = {}
 
