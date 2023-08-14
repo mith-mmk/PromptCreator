@@ -7,7 +7,6 @@ import argparse
 
 
 def run_from_args_img2img(command_args=None):
-    print(command_args)
     parser = argparse.ArgumentParser(argument_default=None)
 
     parser.add_argument('--output', type=str,
