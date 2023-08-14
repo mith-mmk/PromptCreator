@@ -7,7 +7,8 @@ import argparse
 
 
 def run_from_args_img2img(command_args=None):
-    parser = argparse.ArgumentParser()
+    print(command_args)
+    parser = argparse.ArgumentParser(argument_default=None)
 
     parser.add_argument('--output', type=str,
                         default=None,
@@ -63,7 +64,7 @@ def run_from_args_img2img(command_args=None):
                         default=None,
                         help='Alternative input image files diretory')
 
-    parser.add_argument('--mask-dirs', type=str,
+    parser.add_argument('--mask-dir', type=str,
                         default=None,
                         help='Mask images directory')
 
@@ -98,8 +99,7 @@ def run_from_args_img2img(command_args=None):
     parser.add_argument('input', type=str, nargs='+',
                         help='input files or dirs')
 
-    parser.parse_args()
-    args = parser.parse_args()
+    args = parser.parse_args(command_args)
 
     if type(args.input) is str:
         filenames = [args.input]
