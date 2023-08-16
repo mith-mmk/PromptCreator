@@ -217,6 +217,9 @@ def run_from_args(command_args=None):
     parser.add_argument('--info', type=str, nargs='*',
                         default=None,
                         help='add infomation')
+    parser.add_argument('--save-extend-meta', type=bool, nargs='?',
+                        const=True, default=False,
+                        help='save extend meta data')
 
 # img2img
 

@@ -85,7 +85,7 @@ def save_img(r, opt={'dir': './outputs'}):
 
     num_length = 5
     if 'num_length' in opt:
-        num = opt['num_length']
+        num_length = opt['num_length']
     if 'startnum' in opt:
         num = opt['startnum']
     else:
@@ -112,7 +112,7 @@ def save_img(r, opt={'dir': './outputs'}):
     print(f'\033[Kreturn {count} images')
 
     filename_pattern = {}
-
+    variables = {}
     for key, value in info.items():
         filename_pattern[key] = value
     if 'variables' in opt:
@@ -127,6 +127,7 @@ def save_img(r, opt={'dir': './outputs'}):
                     else:
                         value = value.replace('${%s}' % (new_key), '')
                     match = var.search(value)
+            variables[key] = value
             filename_pattern['var:' + key] = value
 
     if 'info' in opt:
@@ -242,6 +243,24 @@ def save_img(r, opt={'dir': './outputs'}):
             num += 1
             if 'num_once' in opt:
                 opt['startnum'] = num
+            # extendend_meta is expantion meta data for this app
+            # vae, model_name, filename_pattern, command options, variables, info, command
+            if opt.get('save_extend_meta'):
+                extentend_meta = {}
+                if 'model_name' in opt:
+                    extentend_meta['model_name'] = opt['sd_model']
+                if 'sd_vae' in opt:
+                    extentend_meta['vae_filename'] = opt['sd_vae']
+                if 'filename_pattern' in opt:
+                    extentend_meta['filename_pattern'] = opt['filename_pattern']
+                if 'command' in opt:
+                    extentend_meta['command'] = opt['command']
+                if 'variables' in opt:
+                    extentend_meta['variables'] = variables
+                if 'info' in opt:
+                    extentend_meta['info'] = opt['info']
+                extendend_meta = json.dumps(extentend_meta)
+                pnginfo.add_text('expantion', extendend_meta)
             image.save(filename, pnginfo=pnginfo)
         except KeyboardInterrupt:
             print('\033[KProcess stopped Ctrl+C break', file=sys.stderr)
