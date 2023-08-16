@@ -1,0 +1,95 @@
+version: 1
+# Path: prompts\config.yaml
+host: http://localhost:7860
+path: ./prompts/
+schedule:
+  start: 7
+  stop: 23
+# log setter
+log:
+  # log output folder path
+  path: f:/ai/logs/
+  # remain days
+  days: 7
+  # logging level
+  level: info
+  # print stdin list
+  # info information = default
+  # verbose verbose information
+  # debug debug information
+  # error exceptions
+  # warning/ critical not implemented
+  print_levels: ['info', 'verbose', 'warning', 'error', 'critical']
+# clone is model clone from nas
+clone:
+  clone: true
+  src: f:/ai/models/
+  dest: e:/ai/models/
+
+txt2img:
+  # model,vae file,mode
+  # models: ./sample/models.csv # from csv file
+  - "sd_xl_base_1.0",Automatic,XL
+  - "AnythingV5Ink_v32Ink",orangemix-vae.safetensors,SFW
+  - "sd_xl_base_0.9",Automatic,SKIP
+  # Modes are setting task running genres, see abort_matrix
+  # XL -> only xl
+  # SFW -> only sfw
+  # SKIP -> task skip
+  # prompt,folder,number,genre,filename pattern
+  # prompts: ./prompts/prompts.csv  # from csv file 
+  - fantasy,fantasy,10,sfw,[num]-[seed]-Fantasy
+  - xl-fantasy,fantasy,10,xl,[num]-[seed]-Fantasy
+  - car,car,4,sfw,[num]-[seed]-Car
+  # with prefix
+  # ./prompt/prompt-girls-fantasy.yaml    number 10 output f:/ai/outputs/fantasy-images/000000-000000-Fantasy.png
+  # ./prompt/prompt-girls-xl-fantasy.yaml number 10 output f:/ai/outputs/fantasy-images/000000-000000-Fantasy.png
+  # ./prompt/prompt-car.yaml number 5 output f:/ai/outputs/car-images/000000-000000-Car.png
+  prefix:
+    default: 'prompt-girls'
+    exception: 'prompt-'
+    exception_list: ['monster', 'landscape', 'animal', 'car', 'building', 'weapon', 'robot']
+    # exception_list: ./prompts/exceptions.csv
+    suffix: '.yaml'
+  prompt_base: ./prompts/
+  output: f:/ai/outputs/
+  folder_suffix: '-images'
+  # output folder ex.) f:\ai\outputs\monster-images\000001-999999-Orc.png
+  #overrides: #set option overrides
+  # abort_matrix is MODE: GENRE list
+  abort_matrix: # '*' is all genres
+    BOTH: ['sfw', 'nsfw']
+    SFW: ['sfw']
+    NSFW: ['nsfw']
+    XL: ['xl']
+  coef_matrix:
+    XL: 0.5
+  # coef_matrix is coef for number, if number is 10, 10 * 0.5 = 5
+
+# png only, yet
+img2img:
+  steps: 20
+  denosing_stringth: 0.7
+  n_iter: 2
+  batch_size: 1
+  file_pattern: 'img[num]-[seed]'
+  dir:
+    # seek input files from this folder's subfolders
+    input: f:/ai/outputs/$retake/batch
+    # ex. search
+    # f:\ai\outputs\$retake/batch\cars\
+    # f:\ai\outputs\$retake/batch\monster\
+    # work folder
+    work: f:/ai/outputs/$retake/.work
+    # img2img image modified folder
+    append: f:/ai/outputs/$retake/modified
+    # img2img image mask folder
+    mask: f:/ai/outputs/$retake/mask
+    # complete img2img images folder
+    ended: f:/ai/outputs/$retake/$end
+    output: f:/ai/outputs/
+    folder_suffix: -images
+    # output images f:\ai\outputs\monster-images\img000001-9999999.png
+
+#custom:
+# todo! custom script options
