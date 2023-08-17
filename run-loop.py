@@ -179,6 +179,11 @@ def load_config(config_file):
         'clone': MODEL_CLONE,
         'src': MODEL_SRC,
         'dest': MODEL_DEST,
+        'folders': [
+            'Stable-Diffusion',
+            'Lora',
+            'embeddings',
+            'vae'],
     }
     loop = {
         'mode': False,
@@ -229,14 +234,14 @@ def load_config(config_file):
             config['loop']['commands'] = loop_config['commands']
 
         if 'clone' in yaml_config:
-            clone = yaml_config['clone']
-            if not ('clone' in clone):
-                clone['clone'] = MODEL_CLONE
-            if not ('src' in clone):
-                clone['src'] = MODEL_SRC
-            if not ('dest' in clone):
-                clone['dest'] = MODEL_DEST
-            config['clone'] = clone
+            if 'clone' in clone:
+                clone['clone'] = yaml_config['clone']
+            if 'src' in clone:
+                clone['src'] = yaml_config['src']
+            if 'dest' in clone:
+                clone['dest'] = yaml_config['dest']
+            if 'folders' in clone:
+                clone['folders'] = yaml_config['folders']
  
         if 'txt2img' in yaml_config:
             txt_config = yaml_config['txt2img']
@@ -394,12 +399,10 @@ def run_custom(command, *args):
     logging.info(f'custom {command}')
     
         
-def model_copy(src_dir, dest_dir):
-    folders = [
-        'Stable-Diffusion',
-        'Lora',
-        'embeddings',
-        'vae']
+def model_copy(clone):
+    src_dir = clone['src']
+    dest_dir = clone['dest']
+    folders = clone['folders']
     for folder in folders:
         src = os.path.join(src_dir, folder)
         dest = os.path.join(dest_dir, folder)
@@ -688,7 +691,7 @@ def loop(config_file):
                         run_custom(args)
                     case 'clone':
                         clone = config['clone']
-                        model_copy(clone['src'], clone['dest'])
+                        model_copy(clone)
                     case 'sleep':
                         time.sleep(int(args[0]))
                     case 'exit':
@@ -736,7 +739,7 @@ def main(config_file=CONFIG):
         if config['clone']['clone']:
             clone = config['clone']
             print('clone')
-            model_copy(clone['src'], clone['dest'])
+            model_copy(clone)
         logging.info('txt2img')
         stdprint.info('txt2img')
         try:

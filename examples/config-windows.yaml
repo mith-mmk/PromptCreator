@@ -25,6 +25,11 @@ clone:
   clone: true
   src: f:/ai/models/
   dest: e:/ai/models/
+  folders:
+    - Stable-Diffusion
+    - vae
+    - Lora
+    - embbeded
 
 txt2img:
   # model,vae file,mode

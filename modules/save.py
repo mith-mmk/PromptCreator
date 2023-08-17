@@ -143,10 +143,9 @@ def save_img(r, opt={'dir': './outputs'}):
     for n, i in enumerate(r['images']):
         try:
             meta = info['infotexts'][n]
-#               image = Image.open(io.BytesIO(base64.b64decode(i.split(",",1)[1])))
+            # this code is old automatic1111 version
+            # image = Image.open(io.BytesIO(base64.b64decode(i.split(",",1)[1])))
             image = Image.open(io.BytesIO(base64.b64decode(i)))
-            pnginfo = PngImagePlugin.PngInfo()
-            pnginfo.add_text('parameters', meta)
             parameters = create_parameters(info['infotexts'][n])
             filename = nameseed + '.png'
 
@@ -245,6 +244,8 @@ def save_img(r, opt={'dir': './outputs'}):
                 opt['startnum'] = num
             # extendend_meta is expantion meta data for this app
             # vae, model_name, filename_pattern, command options, variables, info, command
+            pnginfo = PngImagePlugin.PngInfo()
+            pnginfo.add_text('parameters', meta)
             if opt.get('save_extend_meta'):
                 extentend_meta = {}
                 if 'model_name' in opt:
