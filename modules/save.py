@@ -282,16 +282,18 @@ def save_img(r, opt={'dir': './outputs'}):
                         user_bytes = bytes(extendend_meta, encoding='utf-16le')
                         exif_dict["0th"] = {}
                         exif_dict["0th"][piexif.ImageIFD.XPComment] = user_bytes
+                    print(exif_dict)
                     exif_bytes = piexif.dump(exif_dict)
                     image.save(filename, exif=exif_bytes, quality=quality)
                 except ImportError:
                     print("piexif not found")
                     image.save(filename, quality=quality)
-            pnginfo = PngImagePlugin.PngInfo()
-            pnginfo.add_text('parameters', meta)
-            if extendend_meta is not None:
-                pnginfo.add_text('expantion', extendend_meta)
-            image.save(filename, pnginfo=pnginfo)
+            else:
+                pnginfo = PngImagePlugin.PngInfo()
+                pnginfo.add_text('parameters', meta)
+                if extendend_meta is not None:
+                    pnginfo.add_text('expantion', extendend_meta)
+                image.save(filename, pnginfo=pnginfo)
         except KeyboardInterrupt:
             print('\033[KProcess stopped Ctrl+C break', file=sys.stderr)
             raise KeyboardInterrupt

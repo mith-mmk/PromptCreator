@@ -111,6 +111,10 @@ def main(args):
 
     opt = {}
 
+    opt['save_extend_meta'] = args.save_extend_meta
+    opt['image_type'] = args.image_type
+    opt['image_quality'] = args.image_quality
+
     if options.get('filename_pattern'):
         args.api_filename_pattern = args.api_filname_pattern or options['filename_pattern']
     if args.api_filename_pattern is not None:
@@ -223,6 +227,9 @@ def run_from_args(command_args=None):
     parser.add_argument('--image-type', type=str,
                         default='png',
                         help='image type jpg or png')
+    parser.add_argument('--image-quality', type=int,
+                        default=80,
+                        help='image quality 1-100')
 
 # img2img
 

@@ -283,7 +283,7 @@ def load_config(config_file):
     
         if 'prefix' in txt_config:
             prefix = txt_config['prefix']
-            if 'prompts' in prefix:
+            if 'default' in prefix:
                 txt2img['prefix']['default'] = prefix['default']
             if 'exception' in prefix:
                 txt2img['prefix']['exception'] = prefix['exception']
@@ -709,9 +709,10 @@ def loop(config_file):
                 logging.exception(type(e))
                 stdprint.info(type(e))
                 continue
-        config = load_config(config_file)
-        if not config['loop']['mode']:
-            break
+            config = load_config(config_file)
+            if not config['loop']['mode']:
+                break
+            loop = config['loop']
 
 
 def main(config_file=CONFIG):
