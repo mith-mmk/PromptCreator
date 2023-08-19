@@ -147,7 +147,10 @@ def save_img(r, opt={'dir': './outputs'}):
             # image = Image.open(io.BytesIO(base64.b64decode(i.split(",",1)[1])))
             image = Image.open(io.BytesIO(base64.b64decode(i)))
             parameters = create_parameters(info['infotexts'][n])
-            filename = nameseed + '.png'
+            if 'image_type' in opt and opt['image_type'] == 'jpg':
+                filename = nameseed + '.jpg'
+            else:
+                filename = nameseed + '.png'
 
             for seeds in need_names:
                 replacer = ''
@@ -244,8 +247,8 @@ def save_img(r, opt={'dir': './outputs'}):
                 opt['startnum'] = num
             # extendend_meta is expantion meta data for this app
             # vae, model_name, filename_pattern, command options, variables, info, command
-            pnginfo = PngImagePlugin.PngInfo()
-            pnginfo.add_text('parameters', meta)
+
+            extendend_meta = None
             if opt.get('save_extend_meta'):
                 extentend_meta = {}
                 if 'model_name' in opt:
@@ -260,7 +263,33 @@ def save_img(r, opt={'dir': './outputs'}):
                     extentend_meta['variables'] = variables
                 if 'info' in opt:
                     extentend_meta['info'] = opt['info']
+                extentend_meta['automatic1111'] = meta
                 extendend_meta = json.dumps(extentend_meta)
+
+            # jpeg
+            if 'image_type' in opt and opt['image_type'] == 'jpg':
+                quality = opt['image_quality'] if 'image_quality' in opt else 80
+                try:
+                    import piexif
+                    # piexif header is Only Big Endian
+                    bytes_text = bytes(meta, encoding='utf-16be')
+                    exif_dict = {
+                        "Exif": {
+                            piexif.ExifIFD.UserComment: b'UNICODE\0' + bytes_text,
+                        }
+                    }
+                    if extendend_meta is not None:
+                        user_bytes = bytes(extendend_meta, encoding='utf-16le')
+                        exif_dict["0th"] = {}
+                        exif_dict["0th"][piexif.ImageIFD.XPComment] = user_bytes
+                    exif_bytes = piexif.dump(exif_dict)
+                    image.save(filename, exif=exif_bytes, quality=quality)
+                except ImportError:
+                    print("piexif not found")
+                    image.save(filename, quality=quality)
+            pnginfo = PngImagePlugin.PngInfo()
+            pnginfo.add_text('parameters', meta)
+            if extendend_meta is not None:
                 pnginfo.add_text('expantion', extendend_meta)
             image.save(filename, pnginfo=pnginfo)
         except KeyboardInterrupt:

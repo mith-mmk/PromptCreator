@@ -220,6 +220,9 @@ def run_from_args(command_args=None):
     parser.add_argument('--save-extend-meta', type=bool, nargs='?',
                         const=True, default=False,
                         help='save extend meta data')
+    parser.add_argument('--image-type', type=str,
+                        default='png',
+                        help='image type jpg or png')
 
 # img2img
 

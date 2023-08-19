@@ -234,14 +234,15 @@ def load_config(config_file):
             config['loop']['commands'] = loop_config['commands']
 
         if 'clone' in yaml_config:
+            clone_config = yaml_config['clone']
             if 'clone' in clone:
-                clone['clone'] = yaml_config['clone']
+                clone['clone'] = clone_config['clone']
             if 'src' in clone:
-                clone['src'] = yaml_config['src']
+                clone['src'] = clone_config['src']
             if 'dest' in clone:
-                clone['dest'] = yaml_config['dest']
+                clone['dest'] = clone_config['dest']
             if 'folders' in clone:
-                clone['folders'] = yaml_config['folders']
+                clone['folders'] = clone_config['folders']
  
         if 'txt2img' in yaml_config:
             txt_config = yaml_config['txt2img']
@@ -449,6 +450,7 @@ def run_img2img(config):
     for folder in folders:
         stdprint.verbose(f'processing folder {folder}')
         files = glob.glob(os.path.join(folder, '*.png'))
+        files.extend(glob.glob(os.path.join(folder, '*.jpg')))
         if len(files) == 0:
             stdprint.verbose(f'no files in {folder}')
             continue
@@ -474,7 +476,9 @@ def run_img2img(config):
         if result:
             stdprint.info(f'img2img.py finished {folder}')
             try:
+                # *.png, *.jpg を ended_dir に移動
                 files = glob.glob(os.path.join(work_dir, '*.png'))
+                files.extend(glob.glob(os.path.join(work_dir, '*.jpg')))
                 for file in files:
                     shutil.move(file, ended_dir)
             except Exception:
@@ -483,6 +487,7 @@ def run_img2img(config):
             stdprint.error(f'img2img.py failed {folder}')
             try:
                 files = glob.glob(os.path.join(work_dir, '*.png'))
+                files.extend(glob.glob(os.path.join(work_dir, '*.jpg')))
                 for file in files:
                     shutil.move(file, folder)
             except Exception as e:

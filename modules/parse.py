@@ -87,12 +87,33 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None, base_url
 
     image = Image.open(imagefile)
     image.load()
-    if 'parameters' in image.info and image.info['parameters'] is not None:
-        parameter_text = image.info['parameters']
-        parameters = create_parameters(parameter_text)
-    else:
+    # if png?
+    if imagefile.lower().endswith('.png'):
+        if 'parameters' in image.info and image.info['parameters'] is not None:
+            parameter_text = image.info['parameters']
+            parameters = create_parameters(parameter_text)
+        else:
+            parameters = {'width': image.width, 'height': image.height}
+    elif imagefile.lower().endswith('.jpg'):
+        exif = image.getexif()
         parameters = {'width': image.width, 'height': image.height}
-
+        if exif is not None:
+            endien = 'LE' if exif.endian == '<' else 'BE'
+            exif = exif.get_ifd(0x8769)
+            if exif:
+                if '37510' in exif.get_ifd(0x8769):
+                    user_comment = exif.get_ifd(0x8769)[37510]
+                    code = user_comment[:8]
+                    parameter_text = None
+                    if code == b"ASCII\x00\x00\x00":
+                        parameter_text = user_comment[8:].decode('ascii')
+                    elif code == b"UNICODE\x00":
+                        if endien == 'LE':
+                            parameter_text = user_comment[8:].decode('utf-16le')
+                        else:
+                            parameter_text = user_comment[8:].decode('utf-16be')
+                    if parameter_text is not None:
+                        parameters = create_parameters(parameter_text)
     # workaround for hires.fix spec change
     parameters['width'] = image.width
     parameters['height'] = image.height
