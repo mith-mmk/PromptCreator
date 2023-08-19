@@ -82,6 +82,18 @@ appends:
 
 　上二つはAPIからのoptionの変更が可能な必要があります。
 
+--override
+    変数を上書きします 例）　"width=768, height=1024"
+--info
+    インフォメーションを追記します "date=2022/08/19, comment=random"
+    filepetternで[info:date] の用に使います
+--save-extend-meta
+    拡張メタデータを保存します。pngの場合は、'expantion'に、jpgの場合はXPCommentに書き出します
+--image-type 'jpg' or 'png'
+    jpgかpngを選択します。defaultはpng
+--image-quality
+    jpgの時のクォリティを指定します(デフォルト 80)
+   
 ## Textモード
 　promptを書き散らしたTextファイルにリストを並べたappend_dirの下のファイルを読み込ませるスクリプト。置き換える順番は```${1},${2},${3}....```になり、ソートされたファイル名の順に適用される。--append-dirの設定が必要。改行は半角スペースに置き換わる。
 

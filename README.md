@@ -50,6 +50,22 @@ usage: create_prompts.py [-h] [--append-dir APPEND_DIR] [--output OUTPUT] [--jso
 
   --api-set-sd-vae VAE_FILE
                         set vaefile(include extention)
+
+  --override
+                        command oveeride ex= "width=768, height=1024"
+
+  --info
+                        add infomation ex="date=2022/08/19, comment=random"
+
+  --save-extend-meta
+                        save extend meta data using create_prompt
+
+  --image-type
+                        image type jpg or png/ default png
+
+  --image-quality
+                        default 80, image quality for jpg
+                
 # Setting
  Python 3.10+(Also 3.8 and above) and use there packages.
  
