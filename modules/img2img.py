@@ -45,6 +45,15 @@ def img2img(imagefiles, overrides=None, base_url='http://127.0.0.1:8760', output
                     item['prompt'] = result.json()['caption']
             except BaseException as e:
                 print('itterogate failed', e)
+        if 'extend' in opt:
+            # extend = opt['extend']
+            del opt['extend']
+            # if 'variable' in extend:
+            #   opt['variable'] = extend['variable']
+            # if 'info' in extend:
+            #   opt['info'] = extend['info']
+            # if 'file_pettern' in extend and opt.get('use_extend_file_pettern'):
+            #   opt['file_pettern'] = extend['file_pettern']
         if overrides is not None:
             if type(overrides) is list:
                 override = overrides[n]

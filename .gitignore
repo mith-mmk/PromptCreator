@@ -5,3 +5,5 @@ list*
 __pycache__
 .vscode
 test/
+plugins/**
+!plugins/plugin_modules_is_here.txt

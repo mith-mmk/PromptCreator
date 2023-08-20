@@ -31,6 +31,20 @@ clone:
     - Lora
     - embbeded
 
+loop:
+  mode: true # custom loop mode false = sequential loop
+  loop_count: 1 # 0 is infinite
+  commands:
+    - clone
+    - check
+  #  - ping
+  #  - txt2img
+  #  - img2img
+    - custom subprocess cmd /c dir
+    - custom ls .
+  #  - custom 1
+    - sleep 5
+
 txt2img:
   # model,vae file,mode
   # models: ./sample/models.csv # from csv file
@@ -96,5 +110,6 @@ img2img:
     folder_suffix: -images
     # output images f:\ai\outputs\monster-images\img000001-9999999.png
 
-#custom:
-# todo! custom script options
+custom:
+    subprocess: cmd
+    ls: ls

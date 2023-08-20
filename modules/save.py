@@ -271,7 +271,11 @@ def save_img(r, opt={'dir': './outputs'}):
                 quality = opt['image_quality'] if 'image_quality' in opt else 80
                 try:
                     import piexif
-                    # piexif header is Only Big Endian
+                    # piexif only uses big-endian in headers
+                    #   _dump.py:23 header = b"Exif\x00\x00\x4d\x4d\x00\x2a\x00\x00\x00\x08"
+                    # The exif specification does not define Unicode encoding types set in User Comment.
+                    # It does only define using Unicode Standard.
+                    # But some libiraies use UTF-16 and piexif uses big-endian, so I use UTF-16BE.
                     bytes_text = bytes(meta, encoding='utf-16be')
                     exif_dict = {
                         "Exif": {
@@ -279,6 +283,7 @@ def save_img(r, opt={'dir': './outputs'}):
                         }
                     }
                     if extendend_meta is not None:
+                        # XPComment is little-endian(UCS2LE ≒ UTF-16LE), It is defind by Microsoft.
                         user_bytes = bytes(extendend_meta, encoding='utf-16le')
                         exif_dict["0th"] = {}
                         exif_dict["0th"][piexif.ImageIFD.XPComment] = user_bytes

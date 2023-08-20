@@ -88,20 +88,23 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None, base_url
     image = Image.open(imagefile)
     image.load()
     # if png?
+    extend = None
     if imagefile.lower().endswith('.png'):
         if 'parameters' in image.info and image.info['parameters'] is not None:
             parameter_text = image.info['parameters']
             parameters = create_parameters(parameter_text)
+            # extend = image.info['expantion']
+            # extend = json.loads(extend)
         else:
             parameters = {'width': image.width, 'height': image.height}
     elif imagefile.lower().endswith('.jpg'):
-        exif = image.getexif()
+        tiff = image.getexif()
         parameters = {'width': image.width, 'height': image.height}
-        if exif is not None:
-            endien = 'LE' if exif.endian == '<' else 'BE'
-            exif = exif.get_ifd(0x8769)
+        if tiff is not None:
+            endien = 'LE' if tiff.endian == '<' else 'BE'
+            exif = tiff.get_ifd(0x8769)
             if exif:
-                if '37510' in exif.get_ifd(0x8769):
+                if 37510 in exif.get_ifd(0x8769):
                     user_comment = exif.get_ifd(0x8769)[37510]
                     code = user_comment[:8]
                     parameter_text = None
@@ -114,6 +117,10 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None, base_url
                             parameter_text = user_comment[8:].decode('utf-16be')
                     if parameter_text is not None:
                         parameters = create_parameters(parameter_text)
+            # if 0x9C9C in tiff:
+            #     extend = tiff[0x9C9C].decode('utf-16le')
+            #     extend = json.loads(extend)
+
     # workaround for hires.fix spec change
     parameters['width'] = image.width
     parameters['height'] = image.height
@@ -131,6 +138,7 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None, base_url
         init_image = base64.b64encode(f.read()).decode('ascii')
     json_raw = {}
     json_raw['init_images'] = ['data:image/png;base64,' + init_image]
+    json_raw['extend'] = extend
 
     if mask_image_dir is not None:
         basename = os.path.basename(imagefile)

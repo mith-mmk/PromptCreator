@@ -199,7 +199,7 @@ def load_config(config_file):
         'img2img': img2img,
         'log': log,
         'clone': clone,
-        'custom': False,   # dispose custom
+        'custom': {},   # dispose custom
         'loop': loop,
     }
     # CONFIG ファイルがない場合
@@ -372,6 +372,8 @@ def load_config(config_file):
                     image_dirs['folder_suffix'] = dirs['folder_suffix']
                 stdprint.debug(image_dirs)
             config['img2img'] = img2img
+        if 'custom' in yaml_config:
+            config['custom'] = yaml_config['custom']
     return config
 
 
@@ -395,11 +397,21 @@ def custom(args):
     subprocess.run(args)
 
 
-def run_custom(command, *args):
-    stdprint.info(f'custom {command}')
-    logging.info(f'custom {command}')
-    
-        
+def run_custom(plugin_name, config, args):
+    try:
+        stdprint.info(f'custom {plugin_name} {args}')
+        logging.info(f'custom {plugin_name} {args}')
+        if plugin_name == 'subprocess':
+            custom(args[1:])
+        elif os.path.isdir(os.path.join('./plugins', plugin_name)):
+            import importlib
+            plugin_module = importlib.import_module(f"plugins.{plugin_name}.run")
+            plugin_module.run(args[1:], config)
+    except Exception as e:
+        stdprint.error(f'plugin error {e}')
+        logging.error(e)
+
+
 def model_copy(clone):
     src_dir = clone['src']
     dest_dir = clone['dest']
@@ -693,7 +705,17 @@ def loop(config_file):
                     case 'img2img':
                         run_img2img(config)
                     case 'custom':
-                        run_custom(args)
+                        if len(args) == 0:
+                            stdprint.info('custom command not found')
+                            logging.info('custom command not found')
+                            continue
+                        plugin = args[0]
+                        stdprint.info(f'custom {plugin}')
+                        if plugin in config['custom'][plugin]:
+                            plugin_config = config['custom'][plugin]
+                        else:
+                            plugin_config = None
+                        run_custom(plugin, plugin_config, args)
                     case 'clone':
                         clone = config['clone']
                         model_copy(clone)
@@ -756,12 +778,6 @@ def main(config_file=CONFIG):
         logging.info('img2img')
         try:
             run_img2img(config)
-        except Exception as e:
-            logging.exception(type(e))
-        try:
-            stdprint.info('custom')
-            if (config['custom']):
-                run_custom()
         except Exception as e:
             logging.exception(type(e))
 
