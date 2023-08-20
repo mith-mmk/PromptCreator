@@ -46,10 +46,30 @@ def get_appends(appends):
     return appends_result
 
 
+def update_nested_dict(original_dict, new_dict):
+    for key, value in new_dict.items():
+        if isinstance(value, dict) and key in original_dict and isinstance(original_dict[key], dict):
+            update_nested_dict(original_dict[key], value)
+        else:
+            original_dict[key] = value
+    return original_dict
+
+
+def recursive_yaml_load(filename, override=None, info=None):
+    with open(filename, encoding='utf-8') as f:
+        yml = yaml.safe_load(f)
+    if 'base_yaml' in yml:
+        base_yaml = recursive_yaml_load(yml['base_yaml'])
+        del yml['base_yaml']
+        yml = update_nested_dict(base_yaml, yml)
+    return yml
+
+
 def yaml_parse(filename, mode='text', override=None, info=None):
     try:
-        with open(filename, encoding='utf-8') as f:
-            yml = yaml.safe_load(f)
+        yml = recursive_yaml_load(filename)
+#        with open(filename, encoding='utf-8') as f:
+#            yml = yaml.safe_load(f)
     except FileNotFoundError:
         print(f'File {filename} is not found')
         raise FileNotFoundError
@@ -462,3 +482,14 @@ def create_text(args):
         'output_text': output_text
     }
     return result
+
+
+# test
+'''
+if __name__ == '__main__':
+    (prompts, yml, append, mode) = yaml_parse('./prompts/prompts-girls-santa.yaml')
+    print(prompts)
+    print(yml)
+    print(append)
+    print(mode)
+'''
