@@ -9,7 +9,7 @@ import glob
 import csv
 import yaml
 import logging
-
+from logging.handlers import TimedRotatingFileHandler
 import img2img
 import create_prompts
 
@@ -337,6 +337,12 @@ def load_config(config_file):
         today = datetime.datetime.now().strftime('%Y%m%d')
         logfile = os.path.join(log['path'], today + '.log')
         logging.basicConfig(filename=logfile, level=log['level'])
+        logger = logging.getLogger("run-loop")
+        logger.setLevel(logging.DEBUG)
+        log_file_handler = TimedRotatingFileHandler(
+            logfile, when="midnight", interval=1, backupCount=7)
+        log_file_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+        logger.addHandler(log_file_handler)
         log_remover(log)
 
         dirs = config['img2img']['dir']
@@ -394,7 +400,15 @@ def check_time(config_file):
 
 
 def custom(args):
-    subprocess.run(args)
+    result = subprocess.run(args)
+    if result.returncode == 0:
+        stdprint.info(f'custom command finished {args}')
+        logging.info(f'custom command finished {args}')
+        return True
+    else:
+        stdprint.error(f'custom command failed {args}')
+        logging.error(f'custom command failed {args}')
+        return False
 
 
 def run_custom(plugin_name, config, args):
@@ -402,14 +416,16 @@ def run_custom(plugin_name, config, args):
         stdprint.info(f'custom {plugin_name} {args}')
         logging.info(f'custom {plugin_name} {args}')
         if plugin_name == 'subprocess':
-            custom(args[1:])
+            result = custom(args[1:])
         elif os.path.isdir(os.path.join('./plugins', plugin_name)):
             import importlib
             plugin_module = importlib.import_module(f"plugins.{plugin_name}.run")
-            plugin_module.run(args[1:], config)
+            result = plugin_module.run(args[1:], config)
+        return result
     except Exception as e:
         stdprint.error(f'plugin error {e}')
         logging.error(e)
+        return False
 
 
 def model_copy(clone):
@@ -652,6 +668,19 @@ def compare(*args):
     return True
 
 
+def prepare_custom(config, args):
+    if len(args) == 0:
+        stdprint.info('custom command not found')
+        logging.info('custom command not found')
+        return False
+    plugin = args[0]
+    if plugin in config['custom'][plugin]:
+        plugin_config = config['custom'][plugin]
+    else:
+        plugin_config = None
+    return plugin, plugin_config
+
+
 def loop(config_file):
     stdprint.info('loop mode')
     config = load_config(config_file)
@@ -705,17 +734,39 @@ def loop(config_file):
                     case 'img2img':
                         run_img2img(config)
                     case 'custom':
-                        if len(args) == 0:
-                            stdprint.info('custom command not found')
-                            logging.info('custom command not found')
-                            continue
-                        plugin = args[0]
-                        stdprint.info(f'custom {plugin}')
-                        if plugin in config['custom'][plugin]:
-                            plugin_config = config['custom'][plugin]
+                        (plugin, plugin_config) = prepare_custom(config, args)
+                        if plugin:
+                            stdprint.info(f'custom {plugin}')
+                            run_custom(plugin, plugin_config, args)
                         else:
-                            plugin_config = None
-                        run_custom(plugin, plugin_config, args)
+                            continue
+                    case 'custom-loop':
+                        (plugin, plugin_config) = prepare_custom(config, args)
+                        if plugin:
+                            stdprint.info(f'custom loop {plugin} : {args}')
+                            if len(args) > 1:
+                                args = args[1:]
+                            else:
+                                args = []
+                            try:
+                                sleep_time = int(args[0])
+                            except Exception:
+                                sleep_time = 5
+                            while True:
+                                result = run_custom(plugin, plugin_config, args)
+                                print(result)
+                                if result:
+                                    break
+                                stdprint.info(f'retry {plugin}')
+                                time.sleep(sleep_time)
+                        else:
+                            continue
+                    case 'custom-compare':
+                        if plugin:
+                            stdprint.info(f'custom compare {plugin}')
+                            next = run_custom(plugin, plugin_config, args)
+                        else:
+                            continue
                     case 'clone':
                         clone = config['clone']
                         model_copy(clone)
