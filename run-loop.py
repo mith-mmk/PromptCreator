@@ -9,14 +9,16 @@ import glob
 import csv
 import yaml
 import logging
-from logging.handlers import TimedRotatingFileHandler
 import img2img
 import create_prompts
 
+from modules.logger import CustomTimedRotatingFileHandler, log_remover
 from modules.stdprint import Print
 
 # FULL AUTOMATIC CRATE IMAGES FROM STABLE DIFFUSION script
 # MIT License (C) 2023 mith@mmk
+
+# Todo replace stdprint,logiing to logger.py
 
 # sample fuction call from create_prompts.py and img2img_from_args()
 
@@ -125,13 +127,6 @@ def load_not_default(filename):
         return not_girls
     else:
         return []
-
-
-def log_remover(log):
-    # 7日以上前のログを削除
-    for f in glob.glob(os.path.join(log['path'], '*.log')):
-        if os.path.getmtime(f) < time.time() - log['days'] * 24 * 60 * 60:
-            os.remove(f)
 
 
 # loopごとに読み直す
@@ -336,14 +331,14 @@ def load_config(config_file):
 
         today = datetime.datetime.now().strftime('%Y%m%d')
         logfile = os.path.join(log['path'], today + '.log')
-        logging.basicConfig(filename=logfile, level=log['level'])
+        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filename=logfile)
+        handler = CustomTimedRotatingFileHandler(logfile, when="D", interval=1, backupCount=7)
+        handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+
         logger = logging.getLogger("run-loop")
-        logger.setLevel(logging.DEBUG)
-        log_file_handler = TimedRotatingFileHandler(
-            logfile, when="midnight", interval=1, backupCount=7)
-        log_file_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
-        logger.addHandler(log_file_handler)
-        log_remover(log)
+        logger.setLevel(log['level'])
+        logger.addHandler(handler)
+        log_remover(log['path'], log['days'])
 
         dirs = config['img2img']['dir']
 
@@ -411,7 +406,7 @@ def custom(args):
         return False
 
 
-def run_custom(plugin_name, config, args):
+def run_plugin(plugin_name, config, args):
     try:
         stdprint.info(f'custom {plugin_name} {args}')
         logging.info(f'custom {plugin_name} {args}')
@@ -469,11 +464,14 @@ def run_img2img(config):
     folder_suffix = dirs['folder_suffix']
 
     stdprint.debug(config)
+    logging.debug(config)
 
     # INPUT_DIRの下のフォルダ取得する
     folders = glob.glob(os.path.join(input_dir, '*'))
     stdprint.verbose(input_dir)
     stdprint.verbose(folders)
+    logging.debug(input_dir)
+    logging.debug(folders)
 
     for folder in folders:
         stdprint.verbose(f'processing folder {folder}')
@@ -509,8 +507,8 @@ def run_img2img(config):
                 files.extend(glob.glob(os.path.join(work_dir, '*.jpg')))
                 for file in files:
                     shutil.move(file, ended_dir)
-            except Exception:
-                pass
+            except Exception as e:
+                logging.debug(e)
         else:
             stdprint.error(f'img2img.py failed {folder}')
             try:
@@ -520,6 +518,7 @@ def run_img2img(config):
                     shutil.move(file, folder)
             except Exception as e:
                 stdprint.error(e)
+                logging.debug(e)
 
 
 def escape_split(str, split):
@@ -551,9 +550,11 @@ def txt2img(config):
     overrides = config['overrides']
     if type(overrides) == str:
         overrides = escape_split(overrides, ' ')
+        logging.debug(f'overrides string {overrides}')
     elif type(overrides) == list:
-        pass
+        logging.debug(f'overrides list {overrides}')
     else:
+        logging.debug('overrides is None')
         overrides = None
 
     while True:
@@ -570,6 +571,7 @@ def txt2img(config):
             matrix = None
         if matrix is None:
             stdprint.info(f'SKIP {model_name} {vae} {mode}')
+            logging.info(f'SKIP {model_name} {vae} {mode}')
         else:
             break
     
@@ -583,10 +585,10 @@ def txt2img(config):
             prompt_name = prompt_base + prefix['exception'] + prompt_name + prefix['suffix']
         else:
             prompt_name = prompt_base + prefix['default'] + prompt_name + prefix['suffix']
-
         folder = prompt['folder']
         number = float(prompt['number'])
         genre = prompt['genre']
+        logging.debug(f'prompt_name {prompt_name} folder {folder} number {number} genre {genre}')
 
         file_pattern = prompt['file_pattern']
         if file_pattern == '':
@@ -674,7 +676,7 @@ def prepare_custom(config, args):
         logging.info('custom command not found')
         return False
     plugin = args[0]
-    if plugin in config['custom'][plugin]:
+    if 'custom' in config['custom'] and plugin in config['custom'][plugin]:
         plugin_config = config['custom'][plugin]
     else:
         plugin_config = None
@@ -737,34 +739,47 @@ def loop(config_file):
                         (plugin, plugin_config) = prepare_custom(config, args)
                         if plugin:
                             stdprint.info(f'custom {plugin}')
-                            run_custom(plugin, plugin_config, args)
+                            run_plugin(plugin, plugin_config, args)
                         else:
                             continue
                     case 'custom-loop':
+                        try:
+                            sleep_time = int(args[0])
+                            args = args[1:]
+                        except Exception:
+                            sleep_time = 5
+                        
+                        try:
+                            max_count = int(args[0])
+                            args = args[1:]
+                        except Exception:
+                            max_count = 0
+                       
+                        stdprint.info(args)
                         (plugin, plugin_config) = prepare_custom(config, args)
                         if plugin:
-                            stdprint.info(f'custom loop {plugin} : {args}')
+                            stdprint.info(f'custom loop {plugin} : {args} count {max_count} sleep {sleep_time}')
                             if len(args) > 1:
                                 args = args[1:]
                             else:
                                 args = []
-                            try:
-                                sleep_time = int(args[0])
-                            except Exception:
-                                sleep_time = 5
-                            while True:
-                                result = run_custom(plugin, plugin_config, args)
+                            count = 0
+
+                            while max_count == 0 or max_count > count:
+                                result = run_plugin(plugin, plugin_config, args)
                                 print(result)
                                 if result:
                                     break
-                                stdprint.info(f'retry {plugin}')
+                                count += 1
+                                stdprint.info(f'retry {count} {plugin}')
                                 time.sleep(sleep_time)
                         else:
                             continue
                     case 'custom-compare':
+                        (plugin, plugin_config) = prepare_custom(config, args)
                         if plugin:
                             stdprint.info(f'custom compare {plugin}')
-                            next = run_custom(plugin, plugin_config, args)
+                            next = run_plugin(plugin, plugin_config, args)
                         else:
                             continue
                     case 'clone':
@@ -774,6 +789,8 @@ def loop(config_file):
                         time.sleep(int(args[0]))
                     case 'exit':
                         exit()
+                    case 'break':
+                        break
                     case _:
                         stdprint.info(f'unknown command {command}')
                         logging.info(f'unknown command {command}')
