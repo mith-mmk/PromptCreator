@@ -8,17 +8,16 @@ import shutil
 import glob
 import csv
 import yaml
-import logging
+# import logging
 import img2img
 import create_prompts
-
-from modules.logger import CustomTimedRotatingFileHandler, log_remover
-from modules.stdprint import Print
+from modules.logger import LogPrint
+# from modules.logger import Print
 
 # FULL AUTOMATIC CRATE IMAGES FROM STABLE DIFFUSION script
 # MIT License (C) 2023 mith@mmk
 
-# Todo replace stdprint,logiing to logger.py
+# Todo replace logger,logiing to logger.py
 
 # sample fuction call from create_prompts.py and img2img_from_args()
 
@@ -78,7 +77,7 @@ ABORT_MATRIX = {
     'SKIP': None
 }
 
-stdprint = Print()
+logger = LogPrint()
 
 
 def load_models_csv(filename):
@@ -168,7 +167,7 @@ def load_config(config_file):
     log = {
         'path': LOG_PATH,
         'days': LOG_DAYS,
-        'level': logging.INFO,
+        'level': 'info',
     }
     clone = {
         'clone': MODEL_CLONE,
@@ -309,37 +308,14 @@ def load_config(config_file):
                 log['days'] = LOG_DAYS
             if not ('path' in log):
                 log['path'] = LOG_PATH
-            if 'level' in log:
-                match log['level']:
-                    case 'debug':
-                        log_level = logging.DEBUG
-                    case 'info':
-                        log_level = logging.INFO
-                    case 'warning':
-                        log_level = logging.WARNING
-                    case 'error':
-                        log_level = logging.ERROR
-                    case 'critical':
-                        log_level = logging.CRITICAL
-                    case _:
-                        log_level = logging.INFO
-                log['level'] = log_level
-            if 'print_levels' in log:
-                global stdprint
-                stdprint = Print(log['print_levels'])
+            if 'level' not in log:
+                log['level'] = 'info'
+            if 'print_levels' not in log:
+                log['print_levels'] = ['info']
             config['log'] = log
 
-        today = datetime.datetime.now().strftime('%Y%m%d')
-        logfile = os.path.join(log['path'], today + '.log')
-        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filename=logfile)
-        handler = CustomTimedRotatingFileHandler(logfile, when="D", interval=1, backupCount=7)
-        handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
-
-        logger = logging.getLogger("run-loop")
-        logger.setLevel(log['level'])
-        logger.addHandler(handler)
-        log_remover(log['path'], log['days'])
-
+        log = config['log']
+        logger.setConfig(log['path'], log['print_levels'], log['level'], log['days'])
         dirs = config['img2img']['dir']
 
         if 'img2img' in yaml_config:
@@ -356,7 +332,7 @@ def load_config(config_file):
                 img2img['file_pattern'] = img_config['file_pattern']
             if 'dir' in img_config:
                 dirs = img_config['dir']
-                stdprint.debug(dirs)
+                logger.debug(dirs)
                 if 'input' in dirs:
                     image_dirs['input'] = dirs['input']
                 if 'work' in dirs:
@@ -371,7 +347,7 @@ def load_config(config_file):
                     image_dirs['output'] = dirs['output']
                 if 'folder_suffix' in dirs:
                     image_dirs['folder_suffix'] = dirs['folder_suffix']
-                stdprint.debug(image_dirs)
+                logger.debug(image_dirs)
             config['img2img'] = img2img
         if 'custom' in yaml_config:
             config['custom'] = yaml_config['custom']
@@ -385,7 +361,7 @@ def check_time(config_file):
     stop_hour = config['stop_hour']
     now = datetime.datetime.now()
     if not (now.hour >= start_hour and now.hour < stop_hour):
-        stdprint.info(f'sleeping...{now.hour} running between {start_hour} and {stop_hour}')
+        logger.info(f'sleeping...{now.hour} running between {start_hour} and {stop_hour}')
     while not (now.hour >= start_hour and now.hour < stop_hour):
         time.sleep(60)
         config = load_config(config_file)
@@ -397,19 +373,16 @@ def check_time(config_file):
 def custom(args):
     result = subprocess.run(args)
     if result.returncode == 0:
-        stdprint.info(f'custom command finished {args}')
-        logging.info(f'custom command finished {args}')
+        logger.info(f'custom command finished {args}')
         return True
     else:
-        stdprint.error(f'custom command failed {args}')
-        logging.error(f'custom command failed {args}')
+        logger.error(f'custom command failed {args}')
         return False
 
 
 def run_plugin(plugin_name, config, args):
     try:
-        stdprint.info(f'custom {plugin_name} {args}')
-        logging.info(f'custom {plugin_name} {args}')
+        logger.info(f'custom {plugin_name} {args}')
         if plugin_name == 'subprocess':
             result = custom(args[1:])
         elif os.path.isdir(os.path.join('./plugins', plugin_name)):
@@ -418,8 +391,7 @@ def run_plugin(plugin_name, config, args):
             result = plugin_module.run(args[1:], config)
         return result
     except Exception as e:
-        stdprint.error(f'plugin error {e}')
-        logging.error(e)
+        logger.error(f'plugin error {e}')
         return False
 
 
@@ -432,18 +404,17 @@ def model_copy(clone):
         dest = os.path.join(dest_dir, folder)
         if not os.path.exists(dest):
             os.makedirs(dest)
-        stdprint.info(f'copying {src} to {dest}')
-        logging.info(f'copying {src} to {dest}')
+        logger.info(f'copying {src} to {dest}')
         if os.name == 'nt':
             subprocess.Popen(['robocopy', src, dest, '/NP', '/J', '/R:1', '/W:1', '/FFT'], stdout=subprocess.DEVNULL)
-            stdprint.verbose('robocopy', src, dest, '/NP', '/J', '/R:1', '/W:1', '/FFT')
+            logger.verbose('robocopy', src, dest, '/NP', '/J', '/R:1', '/W:1', '/FFT')
         else:
             dest = dest.replace('\\', '/')
             # dest の最後を / にする
             if dest[-1] != '/':
                 dest = dest + '/'
             subprocess.Popen(['rsync', '-av', src, dest], stdout=subprocess.DEVNULL)
-            stdprint.verbose('rsync', '-av', src, dest)
+            logger.verbose('rsync', '-av', src, dest)
 
 
 def run_img2img(config):
@@ -463,25 +434,22 @@ def run_img2img(config):
     output_dir = dirs['output']
     folder_suffix = dirs['folder_suffix']
 
-    stdprint.debug(config)
-    logging.debug(config)
+    logger.debug(config)
 
     # INPUT_DIRの下のフォルダ取得する
     folders = glob.glob(os.path.join(input_dir, '*'))
-    stdprint.verbose(input_dir)
-    stdprint.verbose(folders)
-    logging.debug(input_dir)
-    logging.debug(folders)
+    logger.verbose(input_dir)
+    logger.verbose(folders)
 
     for folder in folders:
-        stdprint.verbose(f'processing folder {folder}')
+        logger.verbose(f'processing folder {folder}')
         files = glob.glob(os.path.join(folder, '*.png'))
         files.extend(glob.glob(os.path.join(folder, '*.jpg')))
         if len(files) == 0:
-            stdprint.verbose(f'no files in {folder}')
+            logger.verbose(f'no files in {folder}')
             continue
         for file in files:
-            stdprint.verbose(f'move {file} to {work_dir}')
+            logger.verbose(f'move {file} to {work_dir}')
             shutil.move(file, work_dir)
         # img2img.pyのrun_from_args_img2img()
         args = [
@@ -496,11 +464,11 @@ def run_img2img(config):
             '--batch_size', str(img2img_batch_size),
             work_dir,
         ]
-        stdprint.verbose(args)
+        logger.verbose(args)
         result = img2img.run_from_args_img2img(args)
         result = True
         if result:
-            stdprint.info(f'img2img.py finished {folder}')
+            logger.info(f'img2img.py finished {folder}')
             try:
                 # *.png, *.jpg を ended_dir に移動
                 files = glob.glob(os.path.join(work_dir, '*.png'))
@@ -508,17 +476,16 @@ def run_img2img(config):
                 for file in files:
                     shutil.move(file, ended_dir)
             except Exception as e:
-                logging.debug(e)
+                logger.debug(e)
         else:
-            stdprint.error(f'img2img.py failed {folder}')
+            logger.error(f'img2img.py failed {folder}')
             try:
                 files = glob.glob(os.path.join(work_dir, '*.png'))
                 files.extend(glob.glob(os.path.join(work_dir, '*.jpg')))
                 for file in files:
                     shutil.move(file, folder)
             except Exception as e:
-                stdprint.error(e)
-                logging.debug(e)
+                logger.error(e)
 
 
 def escape_split(str, split):
@@ -550,11 +517,11 @@ def txt2img(config):
     overrides = config['overrides']
     if type(overrides) == str:
         overrides = escape_split(overrides, ' ')
-        logging.debug(f'overrides string {overrides}')
+        logger.debug(f'overrides string {overrides}')
     elif type(overrides) == list:
-        logging.debug(f'overrides list {overrides}')
+        logger.debug(f'overrides list {overrides}')
     else:
-        logging.debug('overrides is None')
+        logger.debug('overrides is None')
         overrides = None
 
     while True:
@@ -562,16 +529,14 @@ def txt2img(config):
         model_name = model['model_name']
         vae = model['vae']
         mode = model['mode']
-        logging.info(f'Set model {model_name} vae {vae} mode {mode}')
-        stdprint.info(f'Set model {model_name} vae {vae} mode {mode}')
+        logger.info(f'Set model {model_name} vae {vae} mode {mode}')
 
         if mode in abort_matrix:
             matrix = abort_matrix[mode]
         else:
             matrix = None
         if matrix is None:
-            stdprint.info(f'SKIP {model_name} {vae} {mode}')
-            logging.info(f'SKIP {model_name} {vae} {mode}')
+            logger.info(f'SKIP {model_name} {vae} {mode}')
         else:
             break
     
@@ -588,7 +553,7 @@ def txt2img(config):
         folder = prompt['folder']
         number = float(prompt['number'])
         genre = prompt['genre']
-        logging.debug(f'prompt_name {prompt_name} folder {folder} number {number} genre {genre}')
+        logger.debug(f'prompt_name {prompt_name} folder {folder} number {number} genre {genre}')
 
         file_pattern = prompt['file_pattern']
         if file_pattern == '':
@@ -597,7 +562,7 @@ def txt2img(config):
         if matrix == '*' or genre in matrix:
             number = int(number * coef)
             output = os.path.join(output_dir, folder + folder_suffix)
-            logging.info(f'{model_name}, {prompt_name}, {output}, {genre}')
+            logger.info(f'{model_name}, {prompt_name}, {output}, {genre}')
             args = [
                 '--api-mode',
                 '--api-base', HOST,
@@ -611,21 +576,19 @@ def txt2img(config):
             ]
             if overrides is not None:
                 args.extend(overrides)
-            logging.info(args)
-            stdprint.verbose(args)
+            logger.verbose(args)
 
             try:
                 create_prompts.run_from_args(args)
             except Exception as e:
-                logging.exception(type(e))
-                stdprint.debug(type(e))
+                logger.debug(type(e))
 
 
 def ping(config):
     host = config['host'].split(':')[1].replace('//', '')
-    stdprint.info(f'ping {host}')
+    logger.info(f'ping {host}')
     result = subprocess.run(['ping', host, '-n', '1', '-w', '1000'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    stdprint.debug(f'ping {host} {result.returncode}')
+    logger.debug(f'ping {host} {result.returncode}')
     return result.returncode
 
 
@@ -634,7 +597,7 @@ def wait_ping(config):
     while res != 0:
         res = ping(config)
         if res != 0:
-            stdprint.info('ping failed')
+            logger.info('ping failed')
             time.sleep(5)
 
 
@@ -672,8 +635,8 @@ def compare(*args):
 
 def prepare_custom(config, args):
     if len(args) == 0:
-        stdprint.info('custom command not found')
-        logging.info('custom command not found')
+        logger.info('custom command not found')
+#         logging.info('custom command not found')
         return False
     plugin = args[0]
     if 'custom' in config['custom'] and plugin in config['custom'][plugin]:
@@ -684,31 +647,29 @@ def prepare_custom(config, args):
 
 
 def loop(config_file):
-    stdprint.info('loop mode')
+    logger.info('loop mode')
     config = load_config(config_file)
-    stdprint.info(config['loop'])
+    logger.info(config['loop'])
     if not config['loop']['mode']:
-        stdprint.info('loop mode is not setting')
+        logger.info('loop mode is not setting')
         return
-    stdprint.debug(config)
+    logger.debug(config)
     random.seed()
     loop_counter = 0
-    logging.info('start')
-    stdprint.info('start')
+    logger.info('start')
     loop = config['loop']
-    logging.info(f'MAX LOOP {loop["loop_count"]}')
+    logger.info(f'MAX LOOP {loop["loop_count"]}')
     while True:
         if loop['loop_count'] > 0 and loop_counter >= loop['loop_count']:
-            stdprint.info('LOOP completed')
+            logger.info('LOOP completed')
             exit()
         loop_counter += 1
-        logging.info(f'LOOP #{loop_counter} / {loop["loop_count"]}')
-        stdprint.info(f'LOOP #{loop_counter} / {loop["loop_count"]}')
+        logger.info(f'LOOP #{loop_counter} / {loop["loop_count"]}')
 
         next = True
 
         for command in loop['commands']:
-            stdprint.info(command)
+            logger.info(command)
             if not next:
                 next = True
                 continue
@@ -738,7 +699,7 @@ def loop(config_file):
                     case 'custom':
                         (plugin, plugin_config) = prepare_custom(config, args)
                         if plugin:
-                            stdprint.info(f'custom {plugin}')
+                            logger.info(f'custom {plugin}')
                             run_plugin(plugin, plugin_config, args)
                         else:
                             continue
@@ -755,10 +716,10 @@ def loop(config_file):
                         except Exception:
                             max_count = 0
                        
-                        stdprint.info(args)
+                        logger.info(args)
                         (plugin, plugin_config) = prepare_custom(config, args)
                         if plugin:
-                            stdprint.info(f'custom loop {plugin} : {args} count {max_count} sleep {sleep_time}')
+                            logger.info(f'custom loop {plugin} : {args} count {max_count} sleep {sleep_time}')
                             if len(args) > 1:
                                 args = args[1:]
                             else:
@@ -771,14 +732,14 @@ def loop(config_file):
                                 if result:
                                     break
                                 count += 1
-                                stdprint.info(f'retry {count} {plugin}')
+                                logger.info(f'retry {count} {plugin}')
                                 time.sleep(sleep_time)
                         else:
                             continue
                     case 'custom-compare':
                         (plugin, plugin_config) = prepare_custom(config, args)
                         if plugin:
-                            stdprint.info(f'custom compare {plugin}')
+                            logger.info(f'custom compare {plugin}')
                             next = run_plugin(plugin, plugin_config, args)
                         else:
                             continue
@@ -792,12 +753,10 @@ def loop(config_file):
                     case 'break':
                         break
                     case _:
-                        stdprint.info(f'unknown command {command}')
-                        logging.info(f'unknown command {command}')
+                        logger.info(f'unknown command {command}')
 
             except Exception as e:
-                logging.exception(type(e))
-                stdprint.info(type(e))
+                logger.info(type(e))
                 continue
             config = load_config(config_file)
             if not config['loop']['mode']:
@@ -812,23 +771,20 @@ def main(config_file=CONFIG):
 
     while True:
         try:
-            logging.info('start')
-            stdprint.info('start')
+            logger.info('start')
             check_time(config_file)
-            logging.info('running...')
-            stdprint.info('running...')
+            logger.info('running...')
             res = 1
             while res != 0:
                 res = ping(config)
                 if res != 0:
-                    stdprint.info('ping failed')
+                    logger.info('ping failed')
                     time.sleep(5)
             config = load_config(config_file)
         except Exception as e:
-            logging.exception(type(e))
-            stdprint.info(e)
-            stdprint.info('Please check config.yaml')
-            stdprint.info('Wait 60 seconds...')
+            logger.info(type(e))
+            logger.info('Please check config.yaml')
+            logger.info('Wait 60 seconds...')
             time.sleep(60)
             continue
         
@@ -836,19 +792,16 @@ def main(config_file=CONFIG):
             clone = config['clone']
             print('clone')
             model_copy(clone)
-        logging.info('txt2img')
-        stdprint.info('txt2img')
+        logger.info('txt2img')
         try:
             txt2img(config)
         except Exception as e:
-            logging.exception(type(e))
-        stdprint.info('img2img')
-        logging.info('img2img')
+            logger.error(type(e))
+        logger.info('img2img')
         try:
             run_img2img(config)
         except Exception as e:
-            logging.exception(type(e))
-
+            logger.error(type(e))
         time.sleep(1)
 
 
