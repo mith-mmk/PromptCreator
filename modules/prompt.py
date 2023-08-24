@@ -11,21 +11,40 @@ from modules.formula import FormulaCompute
 # randam prompt creator
 
 
-# in test
-def prompt_formula(new_prompt, variables):
+def text_formula(text, variables):
     compute = FormulaCompute()
-    re.compile(r'\$\{\=(.+?)\}')
-    formulas = re.findall(r'\$\{\=(.+?)\}', new_prompt)
+    formulas = re.findall(r'\$\{\=(.+?)\}', text)
     for formula in formulas:
         replace_text = compute.getCompute(formula, variables)
-        try:
-            if replace_text is not None:
-                new_prompt = new_prompt.replace(formula, replace_text)
-            else:
-                error = compute.getError()
-                raise f'formula error {error}'
-        except Exception:
-            print(f'Error happen formula {formula}')
+        if replace_text is not None:
+            text = text.replace('${=' + formula + '}', str(replace_text))
+        else:
+            error = compute.getError()
+            print(f'Error happen formula {formula} {error}')
+    return text
+
+
+# in test
+def prompt_formula(new_prompt, variables, info=None):
+    try:
+        if info is not None:
+            for key, item in info.items():
+                variables[f'info:{key}'] = item
+    except Exception as e:
+        print(e)
+        print(info)
+
+    if type(new_prompt) is str:
+        return text_formula(new_prompt, variables)
+    elif type(new_prompt) is dict:
+        for key in new_prompt:
+            if type(new_prompt[key]) is str:
+                new_prompt[key] = text_formula(new_prompt[key], variables)
+            elif type(new_prompt[key]) is dict:
+                for key2 in new_prompt[key]:
+                    if type(new_prompt[key][key2]) is str:
+                        new_prompt[key][key2] = text_formula(
+                            new_prompt[key][key2], variables)
     return new_prompt
 
 
@@ -108,17 +127,17 @@ def yaml_parse(filename, mode='text', override=None, info=None):
         for key, item in override.items():
             command[key] = item
 
-    information = yml['info']
-    if info is not None:
-        for key, item in info.items():
-            information[key] = item
-
     if 'before_multiple' in yml:
         yml['before_multiple'] = get_appends(yml['before_multiple'])
     if 'appends' in yml:
         appends = get_appends(yml['appends'])
     if 'appends_multiple' in yml:
         yml['appends_multiple'] = get_appends(yml['appends_multiple'])
+
+    if info is not None:
+        for key, item in info.items():
+            yml['info'][key] = item
+        appends['$INFO'] = info
 
     prompts = ''
 
@@ -209,6 +228,9 @@ def prompt_multiple(prompts, appends, console_mode, mode='text', variables_mode=
         output_text = ''
     elif mode == 'json':
         output_text = []
+    info = appends.get('$INFO')
+    if info is not None:
+        del appends['$INFO']
 
     array = list(appends.values())
     keys = list(appends.keys())
@@ -256,7 +278,7 @@ def prompt_multiple(prompts, appends, console_mode, mode='text', variables_mode=
                 except ValueError:
                     new_prompt = prompt_replace(new_prompt, re_str, var)
         
-        # new_prompt = prompt_formula(new_prompt, variables)
+        new_prompt = prompt_formula(new_prompt, variables)
         if console_mode:
             print(new_prompt)
         if mode == 'text':
@@ -302,6 +324,9 @@ def prompt_random(prompts, appends, console_mode, max_number, weight_mode=False,
         output_text = ''
     elif mode == 'json':
         output_text = []
+    info = appends.get('$INFO')
+    if info is not None:
+        del appends['$INFO']
 
     keys = list(appends.keys())
     appends = list(appends.values())
@@ -359,7 +384,7 @@ def prompt_random(prompts, appends, console_mode, max_number, weight_mode=False,
                 variables[var] = re_str[0]
             else:
                 variables[var] = re_str
-        # new_prompt = prompt_formula(new_prompt, variables)
+        new_prompt = prompt_formula(new_prompt, variables, info)
 
         if console_mode:
             print(new_prompt)
@@ -431,6 +456,11 @@ def create_text(args):
         options = yml['options']
     else:
         options = {}
+    if 'info' in yml:
+        keys = list(yml['info'].keys())
+        for key in keys:
+            if key not in info:
+                appends[f'info:{key}'] = yml['info'][key]
 
     console_mode = False
     if output is None and args.api_mode is False:
@@ -474,10 +504,12 @@ def create_text(args):
         else:
             if 'appends_multiple' in yml:
                 output_text = prompt_random(prompts, appends, False, max_number, weight_mode=weight_mode,
-                                            default_weight=default_weight, mode=mode, variables_mode=args.api_filename_variable)
+                                            default_weight=default_weight, mode=mode, variables_mode=args.api_filename_variable,
+                                            )
             else:
                 output_text = prompt_random(prompts, appends, console_mode, max_number, weight_mode=weight_mode,
-                                            default_weight=default_weight, mode=mode, variables_mode=args.api_filename_variable)
+                                            default_weight=default_weight, mode=mode, variables_mode=args.api_filename_variable,
+                                            )
         if 'appends_multiple' in yml:
             if type(output_text) is list:
                 multiple_text = []

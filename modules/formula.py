@@ -91,6 +91,7 @@ class FormulaCompute():
                     else:
                         self.setTokenError('Unknown variable type', self.token_start, self.token_end, TOKENTYPE.ERROR)
                     values = self.variables[var]
+
                     if type(values) == list:
                         value = values[num]
                     else:
@@ -461,7 +462,7 @@ class FormulaCompute():
         typeSpace = re.compile(r'^\s+')
         typeNumber = re.compile(r'^[0-9]+(\.[0-9]+)?')
         typeVariable1 = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*')
-        typeVariable2 = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]\:[a-zA-Z_][a-zA-Z0-9_]*\,[0-9]+')
+        typeVariable2 = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*\:[a-zA-Z_][a-zA-Z0-9_]*')
         # abc,1
         typeVariable3 = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*\,[0-9]+')
 
