@@ -20,7 +20,7 @@ def text_formula(text, variables):
             text = text.replace('${=' + formula + '}', str(replace_text))
         else:
             error = compute.getError()
-            print(f'Error happen formula {formula} {error}')
+            print(f'Error happen formula {formula}, {error}')
     return text
 
 

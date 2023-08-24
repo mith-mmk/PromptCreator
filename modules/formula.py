@@ -66,12 +66,20 @@ class FormulaCompute():
         if not self.parse():
             debug_print('parse error', self.token_error_message)
             return False
-        if not self.reverce_polish_notation():
+        try:
+            if not self.reverce_polish_notation():
+                return False
+        except Exception as e:
+            debug_print(e)
+            self.setTokenError('Unknown error', self.token_start, self.token_end, TOKENTYPE.ERROR)
             return False
         return True
     
     def setTokenError(self, message, start, end, type):
-        pass
+        self.token_error_message = message
+        self.token_error_start = start
+        self.token_error_end = end
+        self.token_error_type = type
     
     def parse(self):
         for i, token in enumerate(self.tokens):
@@ -135,8 +143,10 @@ class FormulaCompute():
             elif token['type'] == TOKENTYPE.END:
                 break
             else:
-                debug_print('Unknown token', token['value'])
-                self.setTokenError('Unknown token', self.token_start, self.token_end, TOKENTYPE.ERROR)
+                value = token['value']
+                debug_print(f'Illegal syntax {value}')
+                self.setTokenError(f'Illegal syntax {value}', self.token_start, self.token_end, TOKENTYPE.ERROR)
+
                 return False
 
         debug_print(self.tokens)
@@ -323,11 +333,29 @@ class FormulaCompute():
                         case 'random':  # random(start, end)
                             end = stack.pop()
                             start = stack.pop()
-                            stack.append(random.randint(start, end))
+                            if start > end:
+                                self.setTokenError('Random error start > end', self.token_start, self.token_end, TOKENTYPE.ERROR)
+                                return False
+                            try:
+                                if type(start) == float or type(end) == float:
+                                    stack.append(random.uniform(start, end))
+                                else:
+                                    stack.append(random.randint(start, end))
+                            except ValueError:
+                                self.setTokenError('Random error must number', self.token_start, self.token_end, TOKENTYPE.ERROR)
+                                return False
                         case 'random_int':  # randomint(0, 2^64 -1)
-                            stack.append(random.randint(0, 2**64 - 1))
+                            try:
+                                stack.append(random.randint(0, 2**64 - 1))
+                            except ValueError:
+                                self.setTokenError('Random error', self.token_start, self.token_end, TOKENTYPE.ERROR)
+                                return False
                         case 'random_float':  # randomfloat(0, 1)
-                            stack.append(random.random())
+                            try:
+                                stack.append(random.random())
+                            except ValueError:
+                                self.setTokenError('Random error', self.token_start, self.token_end, TOKENTYPE.ERROR)
+                                return False
                         case 'random_string':  # randomstring(length)
                             length = stack.pop()
                             stack.append(''.join([random.choice('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789') for i in range(length)]))
@@ -550,7 +578,7 @@ class FormulaCompute():
                 self.tokens.append({'type': TOKENTYPE.END, 'value': ''})
                 count += 1
             else:
-                self.setTokenError('Unknown token', self.token_start, self.token_end, TOKENTYPE.ERROR)
+                self.setTokenError(f'Syntax error {current}', self.token_start, self.token_end, TOKENTYPE.ERROR)
                 return False
         self.token_type = TOKENTYPE.END
         self.token_start = count
