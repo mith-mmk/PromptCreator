@@ -9,6 +9,17 @@ import platform
 
 # randam prompt creator
 
+# def prompt_formula(new_prompt, variables):
+#    re.compile(r'\$\{\=(.+?)\}')
+#    formulas = re.findall(r'\$\{\=(.+?)\}', new_prompt)
+#    for formula in formulas:
+#        replace_text = formula_compute(formula, variables)
+#        try:
+#            new_prompt = new_prompt.replace(formula, replace_text)
+#        except Exception:
+#            print(f'Error happen formula {formula}')
+#    return new_prompt
+
 
 def set_reserved(keys):
     # 10 integer numbers
@@ -233,6 +244,9 @@ def prompt_multiple(prompts, appends, console_mode, mode='text', variables_mode=
                     new_prompt = prompt_replace(new_prompt, re_str[1:], var)
                 except ValueError:
                     new_prompt = prompt_replace(new_prompt, re_str, var)
+        
+        # new_prompt = prompt_formula(new_prompt, variables)
+
         if console_mode:
             print(new_prompt)
         if mode == 'text':
@@ -244,7 +258,7 @@ def prompt_multiple(prompts, appends, console_mode, mode='text', variables_mode=
                 else:
                     new_prompt['variables'] = variables
             output_text.append(new_prompt)
-    return output_text
+        return output_text
 
 
 def weight_calc(append, num, default_weight=0.1, weight_mode=True):
@@ -335,6 +349,8 @@ def prompt_random(prompts, appends, console_mode, max_number, weight_mode=False,
                 variables[var] = re_str[0]
             else:
                 variables[var] = re_str
+        # new_prompt = prompt_formula(new_prompt, variables)
+
         if console_mode:
             print(new_prompt)
         if mode == 'text':

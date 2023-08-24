@@ -25,8 +25,6 @@ class LogPrint():
 
     def setConfig(self, log_dir='./log', print_levels=['info'], logging_level='info', log_days=7):
         chenged = False
-        print('logger set config')
-        print(self.logging_level, self.log_dir, self.log_days)
 
         if log_dir != self.log_dir:
             self.log_dir = log_dir
@@ -46,7 +44,6 @@ class LogPrint():
         if log_days != self.log_days:
             self.log_days = log_days
             chenged = True
-        print(self.logging_level, self.log_dir, self.log_days)
         if chenged:
             self._initLogConfig()
             if not self.startMessage:

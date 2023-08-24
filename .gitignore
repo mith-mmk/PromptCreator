@@ -7,6 +7,6 @@ __pycache__
 test/
 plugins/**
 !plugins/curl
-plugins/curl/**
+plugins/curl/*
 !plugins/curl/*.py
 !plugins/plugin_modules_is_here.txt
