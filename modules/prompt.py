@@ -53,6 +53,9 @@ def get_appends(appends):
             append = []
             for item in items:
                 append.append(item_split(item))
+        if len(append) == 0:
+            print(f'Error happen append {key} is empty')
+            raise f'Error happen append {key} is empty'
         appends_result[key] = append
     return appends_result
 
