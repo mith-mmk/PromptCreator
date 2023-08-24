@@ -30,7 +30,7 @@ IMG2IMG_OUTPUR_DIR = './outputs/'
 CONFIG_BASE = './prompts/'
 
 # LOG
-LOG_PATH = './log/'
+LOG_PATH = './log/runloop.log'
 LOG_DAYS = 7
 
 # MODEL BASE model clone from nas, if exists

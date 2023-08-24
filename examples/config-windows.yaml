@@ -7,8 +7,9 @@ schedule:
   stop: 23
 # log setter
 log:
-  # log output folder path
-  path: f:/ai/logs/
+  # log output filename
+  # *** CHANGE FROM FOLDER TO FILENAME *** 
+  path: f:/ai/logs/run.log
   # remain days
   days: 7
   # logging level

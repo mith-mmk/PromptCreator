@@ -1,25 +1,8 @@
 from logging.handlers import TimedRotatingFileHandler
 import logging
 import os
-from datetime import datetime
-import glob
-import time
 
-
-class CustomTimedRotatingFileHandler(TimedRotatingFileHandler):
-    def __init__(self, filename, when='h', interval=1, backupCount=0, encoding=None, delay=False, utc=False):
-        super().__init__(filename, when, interval, backupCount, encoding, delay, utc)
-
-    def doRollover(self):
-        super().doRollover()
-        if self.stream:
-            self.stream.close()
-            self.stream = None
-
-    def _compute_fn(self, currentTime):
-        timestamp = self.toTime(currentTime)
-        return timestamp.strftime('%y%m%d.log')
-
+# *** LOGGER SEPC CHANGE *** 2023/08/24
 
 enum = {
     'debug': logging.DEBUG,
@@ -42,9 +25,16 @@ class LogPrint():
 
     def setConfig(self, log_dir='./log', print_levels=['info'], logging_level='info', log_days=7):
         chenged = False
+        print('logger set config')
+        print(self.logging_level, self.log_dir, self.log_days)
+
         if log_dir != self.log_dir:
             self.log_dir = log_dir
-            os.makedirs(log_dir, exist_ok=True)
+            logfile = self.log_dir
+            # split logfile for dircetory and filename
+            dirs = os.path.split(logfile)
+            if not os.path.exists(dirs[0]):
+                os.makedirs(dirs[0])
             chenged = True
         if print_levels != self.print_levels:
             self.print_levels = print_levels
@@ -56,6 +46,7 @@ class LogPrint():
         if log_days != self.log_days:
             self.log_days = log_days
             chenged = True
+        print(self.logging_level, self.log_dir, self.log_days)
         if chenged:
             self._initLogConfig()
             if not self.startMessage:
@@ -66,15 +57,14 @@ class LogPrint():
         print(self.logging_level)
         if self.logging_level is None:
             return
-        today = datetime.now().strftime('%Y%m%d')
-        logfile = os.path.join(self.log_dir, today + '.log')
-        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filename=logfile)
-        handler = CustomTimedRotatingFileHandler(logfile, when="D", interval=1, backupCount=7)
+        print(self.logging_level, self.log_dir, self.log_days)
+        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filename=self.log_dir)
+        # CHANGE 2023/08/24 rotate log file
+        handler = TimedRotatingFileHandler(filename=self.log_dir, when='midnight', backupCount=self.log_days)
         handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
         logger = logging.getLogger("run-loop")
         logger.setLevel(self.logging_level)
         logger.addHandler(handler)
-        self.log_remover()
    
     def setLogDirectory(self, log_dir):
         self.log_dir = log_dir
@@ -82,7 +72,6 @@ class LogPrint():
 
     def setLogDays(self, log_days):
         self.log_days = log_days
-        self.log_remover()
     
     def setPrintModes(self, print_levels):
         self.print_levels = print_levels
@@ -127,10 +116,3 @@ class LogPrint():
             print(*msg)
         if self.logging_level is not None:
             logging.critical(*msg)
-
-    def log_remover(self):
-        if self.logging_level is None or self.log_days is None or self.log_dir == 0:
-            return
-        for f in glob.glob(os.path.join(self.log_dir, '*.log')):
-            if os.path.getmtime(f) < time.time() - self.log_days * 24 * 60 * 60:
-                os.remove(f)
