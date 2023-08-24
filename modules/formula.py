@@ -1,4 +1,6 @@
 import re
+import random
+import time
 
 
 # debug_print
@@ -191,7 +193,7 @@ class FormulaCompute():
                 debug_print(token['value'])
                 stack.append(token)
             elif token['type'] == TOKENTYPE.COMMA:
-                print(stack)
+                debug_print(stack)
                 while len(stack) > 0:
                     if stack[-1]['type'] == TOKENTYPE.BRACKET:
                         break
@@ -317,7 +319,44 @@ class FormulaCompute():
                             start = stack.pop()
                             string = stack.pop()
                             stack.append(string[start:end])
-
+                        case 'random':  # random(start, end)
+                            end = stack.pop()
+                            start = stack.pop()
+                            stack.append(random.randint(start, end))
+                        case 'random_int':  # randomint(0, 2^64 -1)
+                            stack.append(random.randint(0, 2**64 - 1))
+                        case 'random_float':  # randomfloat(0, 1)
+                            stack.append(random.random())
+                        case 'random_string':  # randomstring(length)
+                            length = stack.pop()
+                            stack.append(''.join([random.choice('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789') for i in range(length)]))
+                        case 'uuid':  # uuid()
+                            import uuid
+                            stack.append(str(uuid.uuid4()))
+                        case 'time':  # time() as hh:mm:ss
+                            stack.append(time.strftime('%H:%M:%S'))
+                        case 'date':  # date() as yyyy-mm-dd
+                            stack.append(time.strftime('%Y-%m-%d'))
+                        case 'datetime':  # datetime() as yyyy-mm-dd hh:mm:ss
+                            stack.append(time.strftime('%Y-%m-%d %H:%M:%S'))
+                        case 'timestamp':  # timestamp() as yyyy-mm-dd hh:mm:ss
+                            stack.append(time.strftime('%Y-%m-%d %H:%M:%S'))
+                        case 'year':  # year() as yyyy
+                            stack.append(time.strftime('%Y'))
+                        case 'month':  # month() as mm
+                            stack.append(time.strftime('%m'))
+                        case 'day':  # day() as dd
+                            stack.append(time.strftime('%d'))
+                        case 'hour':  # hour() as hh
+                            stack.append(time.strftime('%H'))
+                        case 'minute':  # minute() as mm
+                            stack.append(time.strftime('%M'))
+                        case 'second':  # second() as ss
+                            stack.append(time.strftime('%S'))
+                        case 'weekday':  # weekday() as 0-6
+                            stack.append(time.strftime('%w'))
+                        case 'week':  # week() as 0-53
+                            stack.append(time.strftime('%U'))
                         case _:
                             self.setTokenError('Unknown function', self.token_start, self.token_end, TOKENTYPE.ERROR)
                             return False
