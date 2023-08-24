@@ -510,7 +510,7 @@ class FormulaCompute():
                 self.token_end = count + len(typeVariable2.match(current).group(0))
                 self.tokens.append({'type': TOKENTYPE.VARIABLE, 'value': typeVariable2.match(current).group(0)})
                 count += len(typeVariable2.match(current).group(0))
-            elif typeVariable2.match(current) or typeVariable1.match(current):
+            elif typeVariable1.match(current):
                 self.token_type = TOKENTYPE.VARIABLE
                 self.token_start = count
                 self.token_end = count + len(typeVariable1.match(current).group(0))
@@ -551,6 +551,7 @@ class FormulaCompute():
                 count += 1
             else:
                 self.setTokenError('Unknown token', self.token_start, self.token_end, TOKENTYPE.ERROR)
+                return False
         self.token_type = TOKENTYPE.END
         self.token_start = count
         self.token_end = count
