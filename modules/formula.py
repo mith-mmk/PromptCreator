@@ -1,8 +1,8 @@
 import re
 
 
-# debug
-def debug(*args):
+# debug_print
+def debug_print(*args):
     if __name__ == "__main__":
         print(*args)
 
@@ -45,13 +45,12 @@ class FormulaCompute():
         self.result = None
 
     def getCompute(self, formula=None, variables={}):
-        if formula is not None:
-            self.formula = formula
-            self.variables = variables
+        if formula is None:
             self.compute()
             return self.result
-        if self.reslut is None:
-            self.compute()
+        self.formula = formula
+        self.variables = variables
+        self.compute()
         return self.result
     
     def getError(self):
@@ -60,10 +59,10 @@ class FormulaCompute():
     def compute(self):
         self.result = None
         if not self.token():
-            debug('token error', self.token_error_message)
+            debug_print('token error', self.token_error_message)
             return False
         if not self.parse():
-            debug('parse error', self.token_error_message)
+            debug_print('parse error', self.token_error_message)
             return False
         if not self.reverce_polish_notation():
             return False
@@ -97,7 +96,7 @@ class FormulaCompute():
                     self.tokens[i]['value'] = value
                 else:
                     self.setTokenError('Unknown variable', self.token_start, self.token_end, TOKENTYPE.ERROR)
-                    debug('Unknown variable', var)
+                    debug_print('Unknown variable', var)
                     return False
             # number
             elif token['type'] == TOKENTYPE.NUMBER:
@@ -109,7 +108,7 @@ class FormulaCompute():
                         self.tokens[i]['value'] = int(token['value'])
                 except ValueError:
                     self.setTokenError('Unknown number', self.token_start, self.token_end, TOKENTYPE.ERROR)
-                    debug('Unknown number', token['value'])
+                    debug_print('Unknown number', token['value'])
                     return False
                 
             # string
@@ -127,17 +126,17 @@ class FormulaCompute():
             elif token['type'] == TOKENTYPE.SPACE:
                 pass
             elif token['type'] == TOKENTYPE.OTHER:
-                debug('Unknown token', token['value'])
+                debug_print('Unknown token', token['value'])
                 self.setTokenError('Unknown token', self.token_start, self.token_end, TOKENTYPE.ERROR)
                 return False
             elif token['type'] == TOKENTYPE.END:
                 break
             else:
-                debug('Unknown token', token['value'])
+                debug_print('Unknown token', token['value'])
                 self.setTokenError('Unknown token', self.token_start, self.token_end, TOKENTYPE.ERROR)
                 return False
 
-        debug(self.tokens)
+        debug_print(self.tokens)
         return True
     
     def reverce_polish_notation(self):
@@ -146,13 +145,19 @@ class FormulaCompute():
         # term       := <fomula> * <fomula>
         #               <fomula> / <fomula> |
         #               <fomula> % <fomula>
-        # factor       <fomula> ^ <fomula>
-        # function     <function>(<fomula>,<fomula>,...)
+        # factor    :=  <fomula> ^ <fomula>
+        # compare   :=  <fomula> > <fomula>
+        #               <fomula> < <fomula>
+        #               <fomula> >= <fomula>
+        #               <fomula> <= <fomula>
+        #               <fomula> == <fomula>
+        #               <fomula> != <fomula>
+        # function     <function>(<fomula> , <fomula>,...)
         # number       <number>
         # variable     <variable>
         # string       <string>
         # bracket      (<fomula>)
-        # fomula       <expression> | <term> | <factor> | <function> | <number> | <variable> | <string> | <bracket>
+        # fomula       <expression> | <term> | <factor> | <compare> | <function> | <number> | <variable> | <string> | <bracket>
 
         # 逆ポーランド記法に変換
         # 1. 数字はそのまま出力
@@ -177,15 +182,16 @@ class FormulaCompute():
 
         reversed_polish_notation = []
         stack = []
-        debug(self.tokens)
+        debug_print(self.tokens)
         for token in self.tokens:
-            debug(token)
+            debug_print(token)
             if token['type'] == TOKENTYPE.NUMBER or token['type'] == TOKENTYPE.STRING or token['type'] == TOKENTYPE.VARIABLE:
                 reversed_polish_notation.append(token)
             elif token['type'] == TOKENTYPE.FUNCTION:
-                debug(token['value'])
+                debug_print(token['value'])
                 stack.append(token)
             elif token['type'] == TOKENTYPE.COMMA:
+                print(stack)
                 while len(stack) > 0:
                     if stack[-1]['type'] == TOKENTYPE.BRACKET:
                         break
@@ -213,7 +219,7 @@ class FormulaCompute():
             elif token['type'] == TOKENTYPE.END:
                 pass
         stack.reverse()
-        debug(stack)
+        debug_print(stack)
         for token in stack:
             reversed_polish_notation.append(token)
         # 逆ポーランド記法を計算する
@@ -271,6 +277,47 @@ class FormulaCompute():
                         case 'lower':  # lower(string)
                             string = stack.pop()
                             stack.append(string.lower())
+                        case 'if':  # if(condition, true, false)
+                            false = stack.pop()
+                            true = stack.pop()
+                            condition = stack.pop()
+                            if condition == 1:
+                                stack.append(true)
+                            else:
+                                stack.append(false)
+                        case 'not':  # not(condition)
+                            condition = stack.pop()
+                            if condition == 1:
+                                stack.append(0)
+                            else:
+                                stack.append(1)
+                        case 'and':  # and(condition, condition)
+                            right = stack.pop()
+                            left = stack.pop()
+                            if right == 1 and left == 1:
+                                stack.append(1)
+                            else:
+                                stack.append(0)
+                        case 'or':  # or(condition, condition)
+                            right = stack.pop()
+                            left = stack.pop()
+                            if right == 1 or left == 1:
+                                stack.append(1)
+                            else:
+                                stack.append(0)
+                        case 'match':  # match(string, pattern)
+                            pattern = stack.pop()
+                            string = stack.pop()
+                            if re.match(pattern, string):
+                                stack.append(1)
+                            else:
+                                stack.append(0)
+                        case 'substring':  # substring(string, start, end)
+                            end = stack.pop()
+                            start = stack.pop()
+                            string = stack.pop()
+                            stack.append(string[start:end])
+
                         case _:
                             self.setTokenError('Unknown function', self.token_start, self.token_end, TOKENTYPE.ERROR)
                             return False
@@ -312,6 +359,46 @@ class FormulaCompute():
                             self.setTokenError('String is not suport power', self.token_start, self.token_end, TOKENTYPE.ERROR)
                             return False
                         stack.append(left ** right)
+                    elif token['value'] == '>':
+                        result = left > right
+                        if result:
+                            stack.append(1)
+                        else:
+                            stack.append(0)
+                    elif token['value'] == '<':
+                        result = left < right
+                        if result:
+                            stack.append(1)
+                        else:
+                            stack.append(0)
+                    elif token['value'] == '>=':
+                        result = left >= right
+                        if result:
+                            stack.append(1)
+                        else:
+                            stack.append(0)
+                    elif token['value'] == '<=':
+                        result = left <= right
+                        if result:
+                            stack.append(1)
+                        else:
+                            stack.append(0)
+                    elif token['value'] == '==':
+                        result = left == right
+                        if result:
+                            stack.append(1)
+                        else:
+                            stack.append(0)
+                    elif token['value'] == '!=':
+                        result = left != right
+                        if result:
+                            stack.append(1)
+                        else:
+                            stack.append(0)
+                    else:
+                        self.setTokenError('Unknown operator', self.token_start, self.token_end, TOKENTYPE.ERROR)
+                        return False
+
         self.result = stack.pop()
         return True
 
@@ -339,7 +426,7 @@ class FormulaCompute():
         # abc,1
         typeVariable3 = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*\,[0-9]+')
 
-        typeOperator = re.compile(r'^(\+|-|\*|/|%|\^)')
+        typeOperator = re.compile(r'^(\+|-|\*|/|%|\^|>|<|>=|<=|==|!=)')
         typeBracket = re.compile(r'^(\(|\))')
         typeFunction = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*\s*\(')
         typeComma = re.compile(r'^,')
@@ -360,7 +447,7 @@ class FormulaCompute():
                 self.token_start = count
                 self.token_end = count + len(typeFunction.match(current).group(0))
                 function = typeFunction.match(current).group(0)
-                debug(function)
+                debug_print(function)
                 function = function.replace(' ', '', 1)
                 function = function[:-1]
                 self.tokens.append({'type': TOKENTYPE.FUNCTION, 'value': function})
@@ -405,6 +492,7 @@ class FormulaCompute():
                 self.token_type = TOKENTYPE.COMMA
                 self.token_start = count
                 self.token_end = count + len(typeComma.match(current).group(0))
+                self.tokens.append({'type': TOKENTYPE.COMMA, 'value': typeComma.match(current).group(0)})
                 count += len(typeComma.match(current).group(0))
             elif typeString.match(current):
                 self.token_type = TOKENTYPE.STRING
@@ -432,10 +520,16 @@ class FormulaCompute():
 
 # test
 if __name__ == "__main__":
-    f = 'int (pow(aa,1, 3 * 2) / 1.5)'
-    variables = {'aa': [3]}
-    compute = FormulaCompute(f, variables)
-    if compute.compute():
-        debug(compute.getCompute())
+    import os
+    import json
+    args = os.sys.argv
+    if len(args) < 2:
+        f = 'if(1 + 1 == 2, "true", "false")'
     else:
-        debug(compute.getError())
+        f = args[1]
+    if len(args) < 3:
+        variables = {'aa': ["sd"]}
+    else:
+        variables = json.loads(args[2])
+    compute = FormulaCompute(f, variables)
+    debug_print(compute.getCompute())
