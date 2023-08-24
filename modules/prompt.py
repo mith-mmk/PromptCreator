@@ -248,8 +248,7 @@ def prompt_multiple(prompts, appends, console_mode, mode='text', variables_mode=
                 except ValueError:
                     new_prompt = prompt_replace(new_prompt, re_str, var)
         
-        # new_prompt = prompt_formula(new_prompt, variables)
-
+            # new_prompt = prompt_formula(new_prompt, variables)
         if console_mode:
             print(new_prompt)
         if mode == 'text':
@@ -261,7 +260,7 @@ def prompt_multiple(prompts, appends, console_mode, mode='text', variables_mode=
                 else:
                     new_prompt['variables'] = variables
             output_text.append(new_prompt)
-        return output_text
+    return output_text
 
 
 def weight_calc(append, num, default_weight=0.1, weight_mode=True):
