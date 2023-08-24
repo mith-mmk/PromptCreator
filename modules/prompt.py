@@ -6,19 +6,27 @@ import itertools as it
 import json
 import os
 import platform
+from modules.formula import FormulaCompute
 
 # randam prompt creator
 
-# def prompt_formula(new_prompt, variables):
-#    re.compile(r'\$\{\=(.+?)\}')
-#    formulas = re.findall(r'\$\{\=(.+?)\}', new_prompt)
-#    for formula in formulas:
-#        replace_text = formula_compute(formula, variables)
-#        try:
-#            new_prompt = new_prompt.replace(formula, replace_text)
-#        except Exception:
-#            print(f'Error happen formula {formula}')
-#    return new_prompt
+
+# in test
+def prompt_formula(new_prompt, variables):
+    compute = FormulaCompute()
+    re.compile(r'\$\{\=(.+?)\}')
+    formulas = re.findall(r'\$\{\=(.+?)\}', new_prompt)
+    for formula in formulas:
+        replace_text = compute.getCompute(formula, variables)
+        try:
+            if replace_text is not None:
+                new_prompt = new_prompt.replace(formula, replace_text)
+            else:
+                error = compute.getError()
+                raise f'formula error {error}'
+        except Exception:
+            print(f'Error happen formula {formula}')
+    return new_prompt
 
 
 def set_reserved(keys):
@@ -248,7 +256,7 @@ def prompt_multiple(prompts, appends, console_mode, mode='text', variables_mode=
                 except ValueError:
                     new_prompt = prompt_replace(new_prompt, re_str, var)
         
-            # new_prompt = prompt_formula(new_prompt, variables)
+        # new_prompt = prompt_formula(new_prompt, variables)
         if console_mode:
             print(new_prompt)
         if mode == 'text':
