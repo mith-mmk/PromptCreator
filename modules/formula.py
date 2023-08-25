@@ -14,14 +14,20 @@ class TOKENTYPE():
     NUMBER = 1
     VARIABLE = 2
     OPERATOR = 3
-    BRACKET = 4
-    FUNCTION = 5
-    COMMA = 6
-    SPACE = 7
-    STRING = 8
-    OTHER = 9
-    END = 10
-    ERROR = 11
+    EXPRESSION = 4
+    TERM = 5
+    FACTOR = 6
+    AND = 7
+    OR = 8
+    COMPARE = 9
+    BRACKET = 10
+    FUNCTION = 11
+    COMMA = 12
+    SPACE = 13
+    STRING = 14
+    OTHER = 15
+    END = 100
+    ERROR = 99
 
 
 def formula(formula, variables={}):
@@ -153,12 +159,24 @@ class FormulaCompute():
         return True
     
     def reverce_polish_notation(self):
+        # 演算順位
+        # 1. ()
+        # 2. ^
+        # 3. * / %
+        # 4. + -
+        # 5. > < >= <= == != && ||
+        # 6. ,
+        # 7. 関数
+        # 8. 数字
+        # 9. 文字列
         # expression := <fomula> + <fomula> |
         #               <fomula> - <fomula> |
         # term       := <fomula> * <fomula>
         #               <fomula> / <fomula> |
         #               <fomula> % <fomula>
         # factor    :=  <fomula> ^ <fomula>
+        # and       :=  <fomula> && <fomula>
+        # or        :=  <fomula> || <fomula>
         # compare   :=  <fomula> > <fomula>
         #               <fomula> < <fomula>
         #               <fomula> >= <fomula>
@@ -231,11 +249,12 @@ class FormulaCompute():
             elif token['type'] == TOKENTYPE.END:
                 pass
         stack.reverse()
-        debug_print(stack)
+        debug_print('reverce porlad:', stack, reversed_polish_notation)
         for token in stack:
             reversed_polish_notation.append(token)
         # 逆ポーランド記法を計算する
         for token in reversed_polish_notation:
+            debug_print(token, stack)
             match token['type']:
                 case TOKENTYPE.NUMBER:
                     stack.append(token)
@@ -244,6 +263,7 @@ class FormulaCompute():
                 case TOKENTYPE.VARIABLE:
                     stack.append(token)
                 case TOKENTYPE.FUNCTION:
+                    # TOKENから引数の数が分からないので、関数ごとに処理する 数が多いとバグる
                     function = token['value']
                     match function:
                         case 'pow':
@@ -470,6 +490,18 @@ class FormulaCompute():
                             stack.append({'type': TOKENTYPE.NUMBER, 'value': 1})
                         else:
                             stack.append({'type': TOKENTYPE.NUMBER, 'value': 0})
+                    elif token['value'] == '&&':
+                        result = left and right
+                        if result:
+                            stack.append({'type': TOKENTYPE.NUMBER, 'value': 1})
+                        else:
+                            stack.append({'type': TOKENTYPE.NUMBER, 'value': 0})
+                    elif token['value'] == '||':
+                        result = left or right
+                        if result:
+                            stack.append({'type': TOKENTYPE.NUMBER, 'value': 1})
+                        else:
+                            stack.append({'type': TOKENTYPE.NUMBER, 'value': 0})
                     else:
                         self.setTokenError('Unknown operator', self.token_start, self.token_end, TOKENTYPE.ERROR)
                         return False
@@ -500,8 +532,13 @@ class FormulaCompute():
         typeVariable2 = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*\:[a-zA-Z_][a-zA-Z0-9_]*')
         # abc,1
         typeVariable3 = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*\,[0-9]+')
-
-        typeOperator = re.compile(r'^(\+|-|\*|/|%|\^|>|<|>=|<=|==|!=)')
+        typeOperator = re.compile(r'^(\+|\-|\*|\/|\%|\^|>|<|>=|<=|==|!=|&&|\|\|)')
+        # typeExpression = re.compile(r'^\+|\-')
+        # tyepTerm = re.compile(r'^\*|\/|\%')
+        # typeFactor = re.compile(r'^\^')
+        # typeAnd = re.compile(r'^&&')
+        # typeOr = re.compile(r'^\|\|')
+        # typeCompare = re.compile(r'^>|<|>=|<=|==|!=')
         typeBracket = re.compile(r'^(\(|\))')
         typeFunction = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*\s*\(')
         typeComma = re.compile(r'^,')
