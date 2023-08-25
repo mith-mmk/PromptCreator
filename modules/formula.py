@@ -216,7 +216,11 @@ class FormulaCompute():
         debug_print(self.tokens)
         for token in self.tokens:
             debug_print(token)
-            if token['type'] == TOKENTYPE.NUMBER or token['type'] == TOKENTYPE.STRING or token['type'] == TOKENTYPE.VARIABLE:
+            if token['type'] == TOKENTYPE.OPERATOR and token['value'] == '-' and (len(reversed_polish_notation) == 0 or reversed_polish_notation[-1]['type'] == TOKENTYPE.OPERATOR or reversed_polish_notation[-1]['type'] == TOKENTYPE.BRACKET):
+                reversed_polish_notation.append({'type': TOKENTYPE.NUMBER, 'value': -1})
+                stack.append({'type': TOKENTYPE.OPERATOR, 'value': '*'})
+ 
+            elif token['type'] == TOKENTYPE.NUMBER or token['type'] == TOKENTYPE.STRING or token['type'] == TOKENTYPE.VARIABLE:
                 reversed_polish_notation.append(token)
             elif token['type'] == TOKENTYPE.FUNCTION:
                 debug_print(token['value'])
