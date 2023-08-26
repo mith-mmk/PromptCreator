@@ -4,9 +4,24 @@ import time
 
 
 # debug_print
-def debug_print(*args):
+def debug_print(*args, mode=None):
     if __name__ == "__main__":
-        print(*args)
+        if mode == 'value':
+            text = ''
+            for arg in args:
+                if type(arg) == dict:
+                    text += f'{arg["value"]} '
+                elif type(arg) == list:
+                    for i in arg:
+                        if type(i) == dict:
+                            text += f'{i["value"]} '
+                        else:
+                            text += f'{i} '
+                else:
+                    text += f'{arg} '
+            print(text)
+        else:
+            print(*args)
 
 
 class TOKENTYPE():
@@ -28,6 +43,59 @@ class TOKENTYPE():
     OTHER = 15
     END = 100
     ERROR = 99
+
+
+operator_order = {
+    # block literal
+    # 1: {}  := { <fomula> } (TOKEN.BLOCK) # ブロック # 実装しない
+    # 2: ()  := ( <fomula> ) (TOKEN.BRACKET)
+    # 2: []  := <variable> [ <fomula> ] (TOKEN.BRACKET) # 配列
+    # 2: .   := <variable>.<variable> (TOKEN.POINT) # オブジェクト # 実装しない
+    # 2: <function> := <function>(<fomula> , <fomula>,...) (TOKEN.FUNCTION)
+    # 単項演算子
+    # 3: ++  := ++<variable> (TOKEN.OPERATOR)
+    # 3: --  := --<variable> (TOKEN.OPERATOR)
+    # 4: !   := !<variable> (TOKEN.OPERATOR)
+    # 4: ~   := ~<variable> (TOKEN.OPERATOR)
+    'PLUS': 4,   # := + <variable> (TOKEN.OPERATOR) # 個別実装
+    'MINUS': 4,  # := - <variable> (TOKEN.OPERATOR) # 何もしない
+    # 2項演算子 2
+    '**': 5,   # べき乗
+    '*': 6,    # 乗算
+    '/': 6,    # 除算
+    '%': 6,    # 剰余
+    '+': 7,    # 加算
+    '-': 7,    # 減算
+    '<<': 9,   # 左シフト # 実装しない
+    '>>': 9,   # 右シフト # 実装しない
+    '>': 10,   # 大なり
+    '<': 10,   # 小なり
+    '>=': 10,  # 大なりイコール
+    '<=': 10,  # 小なりイコール
+    # 'in': 10,  # in # 配列の実装が先
+    '==': 11,  # イコール
+    '!=': 11,  # ノットイコール
+    # '&': 12,   # ビットAND # 実装しない
+    # '^': 13,   # ビットXOR # 実装しない
+    # '|': 14,   # ビットOR # 実装しない
+    '&&': 15,  # AND
+    '||': 16,  # OR
+    # 代入演算子
+    # '=': 17,   # 代入 # 内部変数は未実装
+    # '+=': 17,  # 加算代入 # 内部変数は未実装
+    # '-=': 17,  # 減算代入 # 内部変数は未実装
+    # '*=': 17,  # 乗算代入 # 内部変数は未実装
+    # '/=': 17,  # 除算代入 # 内部変数は未実装
+    # '%=': 17,  # 剰余代入 # 内部変数は未実装
+    # '**=': 17,  # べき乗代入 # 内部変数は未実装
+    # '<<=': 17,  # 左シフト代入 # 内部変数は未実装
+    # '>>=': 17,  # 右シフト代入 # 内部変数は未実装
+    # '&=': 17,   # ビットAND代入 # 内部変数は未実装
+    # '^=': 17,   # ビットXOR代入 # 内部変数は未実装
+    # '|=': 17,   # ビットOR代入 # 内部変数は未実装
+    # その他
+    # ',': 18,   # カンマ <fomula> , <fomula>,... # 代入の実装が先
+}
 
 
 def formula(formula, variables={}):
@@ -88,8 +156,10 @@ class FormulaCompute():
         self.token_error_type = type
     
     def parse(self):
+        parsed_tokens = []
         for i, token in enumerate(self.tokens):
             # variable -> number or string
+            parsed_token = {}
             if token['type'] == TOKENTYPE.VARIABLE:
                 if ',' in token['value']:
                     var, num = token['value'].split(',')
@@ -99,9 +169,9 @@ class FormulaCompute():
                     num = 0
                 if var in self.variables:
                     if type(self.variables[var]) == int or type(self.variables[var]) == float:
-                        self.tokens[i]['type'] = TOKENTYPE.NUMBER
+                        parsed_token['type'] = TOKENTYPE.NUMBER
                     elif type(self.variables[var]) == str:
-                        self.tokens[i]['type'] = TOKENTYPE.STRING
+                        parsed_token['type'] = TOKENTYPE.STRING
                     else:
                         self.setTokenError('Unknown variable type', self.token_start, self.token_end, TOKENTYPE.ERROR)
                     values = self.variables[var]
@@ -110,7 +180,7 @@ class FormulaCompute():
                         value = values[num]
                     else:
                         value = values
-                    self.tokens[i]['value'] = value
+                    parsed_token['value'] = value
                 else:
                     self.setTokenError('Unknown variable', self.token_start, self.token_end, TOKENTYPE.ERROR)
                     debug_print('Unknown variable', var)
@@ -120,9 +190,11 @@ class FormulaCompute():
                 # int or float
                 try:
                     if '.' in token['value']:
-                        self.tokens[i]['value'] = float(token['value'])
+                        parsed_token['type'] = TOKENTYPE.NUMBER
+                        parsed_token['value'] = float(token['value'])
                     else:
-                        self.tokens[i]['value'] = int(token['value'])
+                        parsed_token['type'] = TOKENTYPE.NUMBER
+                        parsed_token['value'] = int(token['value'])
                 except ValueError:
                     self.setTokenError('Unknown number', self.token_start, self.token_end, TOKENTYPE.ERROR)
                     debug_print('Unknown number', token['value'])
@@ -130,16 +202,16 @@ class FormulaCompute():
                 
             # string
             elif token['type'] == TOKENTYPE.STRING:
-                pass
+                parsed_token = token
             # function
             elif token['type'] == TOKENTYPE.FUNCTION:
-                pass
+                parsed_token = token
             elif token['type'] == TOKENTYPE.OPERATOR:
-                pass
+                parsed_token = token
             elif token['type'] == TOKENTYPE.BRACKET:
-                pass
+                parsed_token = token
             elif token['type'] == TOKENTYPE.COMMA:
-                pass
+                parsed_token = token
             elif token['type'] == TOKENTYPE.SPACE:
                 pass
             elif token['type'] == TOKENTYPE.OTHER:
@@ -147,14 +219,40 @@ class FormulaCompute():
                 self.setTokenError('Unknown token', self.token_start, self.token_end, TOKENTYPE.ERROR)
                 return False
             elif token['type'] == TOKENTYPE.END:
+                parsed_tokens.append(token)
                 break
             else:
                 value = token['value']
                 debug_print(f'Illegal syntax {value}')
                 self.setTokenError(f'Illegal syntax {value}', self.token_start, self.token_end, TOKENTYPE.ERROR)
-
                 return False
 
+            if parsed_token['type'] == TOKENTYPE.NUMBER:
+                j = len(parsed_tokens)
+                print('j', j)
+                try:
+                    print('head', parsed_tokens[0])
+                except Exception:
+                    pass
+                head = False
+                if j == 1 and parsed_tokens[j - 1]['type'] == TOKENTYPE.OPERATOR:
+                    ope = parsed_tokens[j - 1]['value']
+                    head = True
+                elif j >= 2 and parsed_tokens[j - 1]['type'] == TOKENTYPE.OPERATOR:
+                    ope = parsed_tokens[j - 1]['value']
+                    if parsed_tokens[j - 2]['type'] == TOKENTYPE.OPERATOR:
+                        head = True
+                    elif parsed_tokens[j - 2]['type'] == TOKENTYPE.BRACKET and parsed_tokens[j - 2]['value'] == '(':
+                        head = True
+                if head:
+                    if ope == '-':
+                        parsed_token['value'] = - parsed_token['value']
+                        parsed_tokens.pop()
+                    elif ope == '+':
+                        parsed_tokens.pop()
+            parsed_tokens.append(parsed_token)
+            print('parsed token', parsed_tokens)
+        self.tokens = parsed_tokens
         debug_print(self.tokens)
         return True
     
@@ -175,14 +273,14 @@ class FormulaCompute():
         #               <fomula> / <fomula> |
         #               <fomula> % <fomula>
         # factor    :=  <fomula> ^ <fomula>
-        # and       :=  <fomula> && <fomula>
-        # or        :=  <fomula> || <fomula>
         # compare   :=  <fomula> > <fomula>
         #               <fomula> < <fomula>
         #               <fomula> >= <fomula>
         #               <fomula> <= <fomula>
         #               <fomula> == <fomula>
         #               <fomula> != <fomula>
+        # and       :=  <fomula> && <fomula>
+        # or        :=  <fomula> || <fomula>
         # function     <function>(<fomula> , <fomula>,...)
         # number       <number>
         # variable     <variable>
@@ -211,17 +309,19 @@ class FormulaCompute():
         # fuction(1 + 1 , 2 + 1) -> 1 1 + 2 1 + function
         # fuction(1 + 1 , 2 + 1) + 1 -> 1 1 + 2 1 + function 1 +
 
-        reversed_polish_notation = []
+        reversed_polish = []
         stack = []
         debug_print(self.tokens)
         for token in self.tokens:
             debug_print(token)
-            if token['type'] == TOKENTYPE.OPERATOR and token['value'] == '-' and (len(reversed_polish_notation) == 0 or reversed_polish_notation[-1]['type'] == TOKENTYPE.OPERATOR or reversed_polish_notation[-1]['type'] == TOKENTYPE.BRACKET):
-                reversed_polish_notation.append({'type': TOKENTYPE.NUMBER, 'value': -1})
-                stack.append({'type': TOKENTYPE.OPERATOR, 'value': '*'})
- 
-            elif token['type'] == TOKENTYPE.NUMBER or token['type'] == TOKENTYPE.STRING or token['type'] == TOKENTYPE.VARIABLE:
-                reversed_polish_notation.append(token)
+            # if (len(reversed_polish) == 0 or reversed_polish[-1]['type'] == TOKENTYPE.OPERATOR):
+            #    if token['type'] == TOKENTYPE.OPERATOR and token['value'] == '-':
+            #        # ( -1 * <formula> ) として扱う
+            #        reversed_polish.append({'type': TOKENTYPE.NUMBER, 'value': -1})
+            #        stack.append({'type': TOKENTYPE.OPERATOR, 'value': '*'})
+            #        continue
+            if token['type'] == TOKENTYPE.NUMBER or token['type'] == TOKENTYPE.STRING or token['type'] == TOKENTYPE.VARIABLE:
+                reversed_polish.append(token)
             elif token['type'] == TOKENTYPE.FUNCTION:
                 debug_print(token['value'])
                 stack.append(token)
@@ -229,7 +329,7 @@ class FormulaCompute():
                 while len(stack) > 0:
                     if stack[-1]['type'] == TOKENTYPE.BRACKET:
                         break
-                    reversed_polish_notation.append(stack.pop())
+                    reversed_polish.append(stack.pop())
             elif token['type'] == TOKENTYPE.BRACKET:
                 if token['value'] == '(':
                     stack.append(token)
@@ -238,13 +338,18 @@ class FormulaCompute():
                         if stack[-1]['type'] == TOKENTYPE.BRACKET:
                             stack.pop()
                             break
-                        reversed_polish_notation.append(stack.pop())
+                        reversed_polish.append(stack.pop())
             elif token['type'] == TOKENTYPE.OPERATOR:
-                while len(stack) > 0:
-                    if stack[-1]['type'] == TOKENTYPE.BRACKET:
-                        break
-                    reversed_polish_notation.append(stack.pop())
+                if len(stack) > 0 and stack[-1]['type'] == TOKENTYPE.BRACKET:
+                    while len(stack) > 0:
+                        if stack[-1]['type'] == TOKENTYPE.BRACKET:
+                            break
+                        reversed_polish.append(stack.pop())
+
                 stack.append(token)
+                print('token', token['value'])
+                print('reverced polish', reversed_polish)
+                print('stack', stack)
             elif token['type'] == TOKENTYPE.SPACE:
                 pass
             elif token['type'] == TOKENTYPE.OTHER:
@@ -253,11 +358,11 @@ class FormulaCompute():
             elif token['type'] == TOKENTYPE.END:
                 pass
         stack.reverse()
-        debug_print('reverce porlad:', stack, reversed_polish_notation)
+        debug_print('reverce porlad:', reversed_polish, stack, mode='value')
         for token in stack:
-            reversed_polish_notation.append(token)
+            reversed_polish.append(token)
         # 逆ポーランド記法を計算する
-        for token in reversed_polish_notation:
+        for token in reversed_polish:
             debug_print(token, stack)
             match token['type']:
                 case TOKENTYPE.NUMBER:
@@ -421,94 +526,96 @@ class FormulaCompute():
                             return False
                     debug_print(stack)
                 case TOKENTYPE.OPERATOR:
-                    right = stack.pop()['value']
-                    left = stack.pop()['value']
-                    if token['value'] == '+':
-                        # string + string
-                        if type(left) == str or type(right) == str:
-                            stack.append({'type': TOKENTYPE.STRING, 'value': str(left) + str(right)})
+                    # 2項演算子 ['**', '*', '/', '%', '+', '-', '<<', '>>', '>', '<', '>=', '<=', '==', '!=', '&', '^', '|', '&&', '||']
+                    if token['value'] in ['**', '*', '/', '%', '+', '-', '<<', '>>', '>', '<', '>=', '<=', '==', '!=', '&', '^', '|', '&&', '||']:
+                        right = stack.pop()['value']
+                        left = stack.pop()['value']
+                        if token['value'] == '+':
+                            # string + string
+                            if type(left) == str or type(right) == str:
+                                stack.append({'type': TOKENTYPE.STRING, 'value': str(left) + str(right)})
+                            else:
+                                stack.append({'type': TOKENTYPE.NUMBER, 'value': left + right})
+                        elif token['value'] == '-':
+                            # string is error
+                            if type(left) == str or type(right) == str:
+                                self.setTokenError('String is not suport minus', self.token_start, self.token_end, TOKENTYPE.ERROR)
+                                return False
+                            stack.append({'type': TOKENTYPE.NUMBER, 'value': left - right})
+                        elif token['value'] == '*':
+                            # string * number
+                            if type(left) == str and type(right) == int:
+                                stack.append({'type': TOKENTYPE.STRING, 'value': left * right})
+                            elif type(left) == str or type(right) == str:
+                                self.setTokenError('String is not suport multiply', self.token_start, self.token_end, TOKENTYPE.ERROR)
+                                return False
+                            stack.append({'type': TOKENTYPE.NUMBER, 'value': left * right})
+                        elif token['value'] == '/':
+                            if type(left) == str or type(right) == str:
+                                self.setTokenError('String is not suport divide', self.token_start, self.token_end, TOKENTYPE.ERROR)
+                                return False
+                            stack.append({'type': TOKENTYPE.NUMBER, 'value': left / right})
+                        elif token['value'] == '%':
+                            if type(left) == str or type(right) == str:
+                                self.setTokenError('String is not suport modulo', self.token_start, self.token_end, TOKENTYPE.ERROR)
+                                return False
+                            stack.append({'type': TOKENTYPE.NUMBER, 'value': left % right})
+                        elif token['value'] == '^':
+                            if type(left) == str or type(right) == str:
+                                self.setTokenError('String is not suport power', self.token_start, self.token_end, TOKENTYPE.ERROR)
+                                return False
+                            stack.append({'type': TOKENTYPE.NUMBER, 'value': left ** right})
+                        elif token['value'] == '>':
+                            result = left > right
+                            if result:
+                                stack.append({'type': TOKENTYPE.NUMBER, 'value': 1})
+                            else:
+                                stack.append({'type': TOKENTYPE.NUMBER, 'value': 0})
+                        elif token['value'] == '<':
+                            result = left < right
+                            if result:
+                                stack.append({'type': TOKENTYPE.NUMBER, 'value': 1})
+                            else:
+                                stack.append({'type': TOKENTYPE.NUMBER, 'value': 0})
+                        elif token['value'] == '>=':
+                            result = left >= right
+                            if result:
+                                stack.append({'type': TOKENTYPE.NUMBER, 'value': 1})
+                            else:
+                                stack.append({'type': TOKENTYPE.NUMBER, 'value': 0})
+                        elif token['value'] == '<=':
+                            result = left <= right
+                            if result:
+                                stack.append({'type': TOKENTYPE.NUMBER, 'value': 1})
+                            else:
+                                stack.append({'type': TOKENTYPE.NUMBER, 'value': 0})
+                        elif token['value'] == '==':
+                            result = left == right
+                            if result:
+                                stack.append({'type': TOKENTYPE.NUMBER, 'value': 1})
+                            else:
+                                stack.append(0)
+                        elif token['value'] == '!=':
+                            result = left != right
+                            if result:
+                                stack.append({'type': TOKENTYPE.NUMBER, 'value': 1})
+                            else:
+                                stack.append({'type': TOKENTYPE.NUMBER, 'value': 0})
+                        elif token['value'] == '&&':
+                            result = left and right
+                            if result:
+                                stack.append({'type': TOKENTYPE.NUMBER, 'value': 1})
+                            else:
+                                stack.append({'type': TOKENTYPE.NUMBER, 'value': 0})
+                        elif token['value'] == '||':
+                            result = left or right
+                            if result:
+                                stack.append({'type': TOKENTYPE.NUMBER, 'value': 1})
+                            else:
+                                stack.append({'type': TOKENTYPE.NUMBER, 'value': 0})
                         else:
-                            stack.append({'type': TOKENTYPE.NUMBER, 'value': left + right})
-                    elif token['value'] == '-':
-                        # string is error
-                        if type(left) == str or type(right) == str:
-                            self.setTokenError('String is not suport minus', self.token_start, self.token_end, TOKENTYPE.ERROR)
+                            self.setTokenError('Unknown operator', self.token_start, self.token_end, TOKENTYPE.ERROR)
                             return False
-                        stack.append({'type': TOKENTYPE.NUMBER, 'value': left - right})
-                    elif token['value'] == '*':
-                        # string * number
-                        if type(left) == str and type(right) == int:
-                            stack.append({'type': TOKENTYPE.STRING, 'value': left * right})
-                        elif type(left) == str or type(right) == str:
-                            self.setTokenError('String is not suport multiply', self.token_start, self.token_end, TOKENTYPE.ERROR)
-                            return False
-                        stack.append({'type': TOKENTYPE.NUMBER, 'value': left * right})
-                    elif token['value'] == '/':
-                        if type(left) == str or type(right) == str:
-                            self.setTokenError('String is not suport divide', self.token_start, self.token_end, TOKENTYPE.ERROR)
-                            return False
-                        stack.append({'type': TOKENTYPE.NUMBER, 'value': left / right})
-                    elif token['value'] == '%':
-                        if type(left) == str or type(right) == str:
-                            self.setTokenError('String is not suport modulo', self.token_start, self.token_end, TOKENTYPE.ERROR)
-                            return False
-                        stack.append({'type': TOKENTYPE.NUMBER, 'value': left % right})
-                    elif token['value'] == '^':
-                        if type(left) == str or type(right) == str:
-                            self.setTokenError('String is not suport power', self.token_start, self.token_end, TOKENTYPE.ERROR)
-                            return False
-                        stack.append({'type': TOKENTYPE.NUMBER, 'value': left ** right})
-                    elif token['value'] == '>':
-                        result = left > right
-                        if result:
-                            stack.append({'type': TOKENTYPE.NUMBER, 'value': 1})
-                        else:
-                            stack.append({'type': TOKENTYPE.NUMBER, 'value': 0})
-                    elif token['value'] == '<':
-                        result = left < right
-                        if result:
-                            stack.append({'type': TOKENTYPE.NUMBER, 'value': 1})
-                        else:
-                            stack.append({'type': TOKENTYPE.NUMBER, 'value': 0})
-                    elif token['value'] == '>=':
-                        result = left >= right
-                        if result:
-                            stack.append({'type': TOKENTYPE.NUMBER, 'value': 1})
-                        else:
-                            stack.append({'type': TOKENTYPE.NUMBER, 'value': 0})
-                    elif token['value'] == '<=':
-                        result = left <= right
-                        if result:
-                            stack.append({'type': TOKENTYPE.NUMBER, 'value': 1})
-                        else:
-                            stack.append({'type': TOKENTYPE.NUMBER, 'value': 0})
-                    elif token['value'] == '==':
-                        result = left == right
-                        if result:
-                            stack.append({'type': TOKENTYPE.NUMBER, 'value': 1})
-                        else:
-                            stack.append(0)
-                    elif token['value'] == '!=':
-                        result = left != right
-                        if result:
-                            stack.append({'type': TOKENTYPE.NUMBER, 'value': 1})
-                        else:
-                            stack.append({'type': TOKENTYPE.NUMBER, 'value': 0})
-                    elif token['value'] == '&&':
-                        result = left and right
-                        if result:
-                            stack.append({'type': TOKENTYPE.NUMBER, 'value': 1})
-                        else:
-                            stack.append({'type': TOKENTYPE.NUMBER, 'value': 0})
-                    elif token['value'] == '||':
-                        result = left or right
-                        if result:
-                            stack.append({'type': TOKENTYPE.NUMBER, 'value': 1})
-                        else:
-                            stack.append({'type': TOKENTYPE.NUMBER, 'value': 0})
-                    else:
-                        self.setTokenError('Unknown operator', self.token_start, self.token_end, TOKENTYPE.ERROR)
-                        return False
 
         self.result = stack.pop()['value']
         return True
