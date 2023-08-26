@@ -739,7 +739,7 @@ def loop(config_file):
                     case 'custom-compare':
                         (plugin, plugin_config) = prepare_custom(config, args)
                         if plugin:
-                            logger.info(f'custom compare {plugin}')
+                            logger.info(f'custom compare {plugin} : {args}')
                             next = run_plugin(plugin, plugin_config, args)
                         else:
                             continue
