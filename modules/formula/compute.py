@@ -335,7 +335,7 @@ class FormulaCompute():
                     break
         debug_print('end', stack)
         if len(stack) != 1:
-            self.setTokenError('Formula error function argments over?', self.token_start, self.token_end, TOKENTYPE.ERROR)
+            self.setTokenError('Formula error function argments too many?', self.token_start, self.token_end, TOKENTYPE.ERROR)
             return False
         self.result = stack.pop()['value']
         return True
