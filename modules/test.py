@@ -15,7 +15,10 @@ if __name__ == "__main__":
         exit()
 
     formulas = [
-        {'f': 'if("aa" == aa, "true", "false")', 'var': {'aa': ["sd"]}, 'result': 'false'},
+        {'f': 'if("aa" == aa, "true", "false")', 'var': {'aa': ["sd", "aa"]}, 'result': 'false'},
+        {'f': 'if("aa" == aa,2, "true", "false")', 'var': {'aa': ["sd", "aa"]}, 'result': 'true'},
+        {'f': 'if("aa,1" == aa,2, "true", "false")', 'var': {'aa': ["sd", "aa"]}, 'result': 'false'},
+        {'f': 'if("aa,1" != aa,2, "true", "false")', 'var': {'aa': ["sd", "aa"]}, 'result': 'true'},
         {'f': '2 * 3 + 2', 'var': {}, 'result': 8},
         {'f': '2 + 3 * 2', 'var': {}, 'result': 8},
         {'f': '(2 + 3) * 2', 'var': {}, 'result': 10},
@@ -24,11 +27,12 @@ if __name__ == "__main__":
         {'f': '2 - 3', 'var': {}, 'result': -1},
         {'f': '2 - 3 - 1', 'var': {}, 'result': -2},
         {'f': '- 2 + 3', 'var': {}, 'result': 1},
-        {'f': '- 2 + 3 / -1', 'var': {}, 'result': 5},
+        {'f': 'int(- 2 + 3 / -1)', 'var': {}, 'result': -5},
         {'f': '"abc" + "bcd"', 'var': {}, 'result': 'abcbcd'},
         {'f': 'int("12") + "bcd"', 'var': {}, 'result': '12bcd'},
         {'f': 'int("12") + int("24")', 'var': {}, 'result': 36},
-        {'f': 'aa + "bcd"', 'var': {'aa': [4, 5]}, 'result': '4bcd'},
+        {'f': 'aa[2] + "bcd"', 'var': {'aa': [4, 5]}, 'result': '5bcd'},
+        {'f': 'aa[2] + aa[1]', 'var': {'aa': [4, 5]}, 'result': 9},
     ]
 
     for formula in formulas:
@@ -40,3 +44,5 @@ if __name__ == "__main__":
             print(error)
         else:
             print('result', res, formula['result'])
+            if res != formula['result']:
+                assert False

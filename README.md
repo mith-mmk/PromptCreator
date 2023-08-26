@@ -165,7 +165,22 @@ command:
  - $PYTHON_VERSION
  - $HOSTNAME
  - todo
-    
+
+### formula
+ \$\{= \<formula\>\} is calculate forula after relpace variables, using variable is $SYSTEM variables and variable and info:\<variable> (set --info option)
+
+```yaml
+    building:
+        - a castle
+        - a temple
+
+command:
+    info: ${= buling} # nearly equal ${building}
+    width: ${= info:width }
+    seed: ${= int(random_int() / 100)}
+
+````
+
 ### mutiply mode
   Prompts is made by a round robin.
 

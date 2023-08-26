@@ -172,6 +172,22 @@ command:
  - $HOSTNAME
  - ...
 
+### 式
+ \$\{= \<formula\>\} で計算式を挿入できます。変数モードの後に実行されます。変数には、appendsで定義した変数と、--infoで指定した変数(info:で指定)と予約語が使えます。配列は variable,1 記法と variable[1]が使えます（現時点では配列内に式は入れられません。正の整数のみ）
+
+```yaml
+appends:
+    building:
+        - a castle
+        - a temple
+
+command:
+    info: ${= buling} # nearly equal ${building}
+    width: ${= info:width }
+    seed: ${= int(random_int() / 100)}
+
+```
+
 ### 乱数モード
 
 　呪文を自動生成します。
