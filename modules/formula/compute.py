@@ -312,8 +312,6 @@ class FormulaCompute():
         reversed_polish.extend(stack)
         stack = []
         debug_print('reverce porlad:', reversed_polish, stack, mode='value', debug=self.debug)
-        for token in stack:
-            reversed_polish.append(token)
         # 逆ポーランド記法を計算する
         for token in reversed_polish:
             debug_print(token, stack, debug=self.debug)
