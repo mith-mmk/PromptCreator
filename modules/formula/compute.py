@@ -363,7 +363,7 @@ class FormulaCompute():
         typeFunction = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*\s*\(')
         typeComma = re.compile(r'^,')
         # " \" "
-        typeString = re.compile(r'^("([^\\]|\\.)*"|\'([^\\]|\\.)*\')')
+        typeString = re.compile(r'^("([^\\]|\\.)*?"|\'([^\\]|\\.)*?\')')
         typeEnd = re.compile(r'^$')
 
         count = 0
@@ -432,6 +432,7 @@ class FormulaCompute():
                 self.token_end = count + len(typeString.match(current).group(0))
                 string = typeString.match(current).group(0)
                 # remove start and end "
+                debug_print(string, debug=self.debug)
                 string = string[1:-1]
                 # replace escpcial char
                 string = string.replace('\\"', '"')
