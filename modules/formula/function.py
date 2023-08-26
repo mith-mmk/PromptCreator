@@ -4,64 +4,8 @@ import random
 import time
 import math
 
-ALL = 0
-
-functions = {
-    'pow': {'accept': [TOKENTYPE.NUMBER, TOKENTYPE.STRING], 'return': TOKENTYPE.NUMBER},
-    'sqrt': {'accept': [TOKENTYPE.NUMBER], 'return': TOKENTYPE.NUMBER},
-    'abs': {'accept': [TOKENTYPE.NUMBER], 'return': TOKENTYPE.NUMBER},
-    'ceil': {'accept': [TOKENTYPE.NUMBER], 'return': TOKENTYPE.NUMBER},
-    'floor': {'accept': [TOKENTYPE.NUMBER], 'return': TOKENTYPE.NUMBER},
-    'round': {'accept': [TOKENTYPE.NUMBER], 'return': TOKENTYPE.NUMBER},
-    'trunc': {'accept': [TOKENTYPE.NUMBER], 'return': TOKENTYPE.NUMBER},
-    'int': {'accept': [ALL], 'return': TOKENTYPE.NUMBER},
-    'float': {'accept': [ALL], 'return': TOKENTYPE.NUMBER},
-    'str': {'accept': [ALL], 'return': TOKENTYPE.STRING},
-    'len': {'accept': [TOKENTYPE.STRING], 'return': TOKENTYPE.NUMBER},
-    'max': {'accept': [ALL, ALL], 'match': True, 'return': ALL},
-    'min': {'accept': [ALL, ALL], 'match': True, 'return': ALL},
-    'replace': {'accept': [TOKENTYPE.STRING, TOKENTYPE.STRING, TOKENTYPE.STRING], 'return': TOKENTYPE.STRING},
-    'split': {'accept': [TOKENTYPE.STRING, TOKENTYPE.STRING], 'return': TOKENTYPE.STRING},
-    'upper': {'accept': [TOKENTYPE.STRING], 'return': TOKENTYPE.STRING},
-    'lower': {'accept': [TOKENTYPE.STRING], 'return': TOKENTYPE.STRING},
-    'if': {'accept': [TOKENTYPE.NUMBER, ALL, ALL], 'return': ALL},
-    'not': {'accept': [TOKENTYPE.NUMBER], 'return': TOKENTYPE.NUMBER},
-    'and': {'accept': [TOKENTYPE.NUMBER, TOKENTYPE.NUMBER], 'return': TOKENTYPE.NUMBER},
-    'or': {'accept': [TOKENTYPE.NUMBER, TOKENTYPE.NUMBER], 'return': TOKENTYPE.NUMBER},
-    'match': {'accept': [TOKENTYPE.STRING, TOKENTYPE.STRING], 'return': TOKENTYPE.NUMBER},
-    'substring': {'accept': [TOKENTYPE.STRING, TOKENTYPE.NUMBER, TOKENTYPE.NUMBER], 'return': TOKENTYPE.STRING},
-    'random': {'accept': [TOKENTYPE.NUMBER, TOKENTYPE.NUMBER], 'return': TOKENTYPE.NUMBER},
-    'random_int': {'accept': [], 'return': TOKENTYPE.NUMBER},
-    'random_float': {'accept': [], 'return': TOKENTYPE.NUMBER},
-    'random_string': {'accept': [TOKENTYPE.NUMBER], 'return': TOKENTYPE.STRING},
-    'uuid': {'accept': [], 'return': TOKENTYPE.STRING},
-    'time': {'accept': [], 'return': TOKENTYPE.STRING},
-    'date': {'accept': [], 'return': TOKENTYPE.STRING},
-    'datetime': {'accept': [], 'return': TOKENTYPE.STRING},
-    'timestamp': {'accept': [], 'return': TOKENTYPE.NUMBER},
-    'year': {'accept': [], 'return': TOKENTYPE.NUMBER},
-    'month': {'accept': [], 'return': TOKENTYPE.NUMBER},
-    'day': {'accept': [], 'return': TOKENTYPE.NUMBER},
-    'hour': {'accept': [], 'return': TOKENTYPE.NUMBER},
-    'minute': {'accept': [], 'return': TOKENTYPE.NUMBER},
-    'second': {'accept': [], 'return': TOKENTYPE.NUMBER},
-    'weekday': {'accept': [], 'return': TOKENTYPE.NUMBER},
-    'week': {'accept': [], 'return': TOKENTYPE.NUMBER},
-}
-
 
 def callFunction(compute, function, stack):
-    if function in functions:
-        function_order = functions[function]
-        if len(stack) < len(function_order['accept']):
-            compute.setTokenError('Function parameter error', compute.token_start, compute.token_end, TOKENTYPE.ERROR)
-            return False
-        for i in range(len(function_order['accept'])):
-            if function_order['accept'][i] != ALL:
-                if function_order['accept'][i] != stack[-1]['type']:
-                    compute.setTokenError('Function parameter error', compute.token_start, compute.token_end, TOKENTYPE.ERROR)
-                    return False
- 
     match function:
         case 'pow':
             right = stack.pop()

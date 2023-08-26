@@ -33,6 +33,8 @@ if __name__ == "__main__":
         {'f': 'int("12") + int("24")', 'var': {}, 'result': 36},
         {'f': 'aa[2] + "bcd"', 'var': {'aa': [4, 5]}, 'result': '5bcd'},
         {'f': 'aa[2] + aa[1]', 'var': {'aa': [4, 5]}, 'result': 9},
+        {'f': '"aa\\"\" == "aa\\"\"', 'var': {'aa': [4, 5]}, 'result': 1},
+        {'f': '"aa\\"" == \'aa"\'', 'var': {'aa': [4, 5]}, 'result': 1},
     ]
 
     for formula in formulas:

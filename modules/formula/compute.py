@@ -358,7 +358,7 @@ class FormulaCompute():
         typeVariable2 = re.compile(r'^([a-zA-Z_$][a-zA-Z0-9__$]*\:)*[a-zA-Z_\-$][a-zA-Z0-9_$]*(\[([0-9]+|\*)\])*')
         # abc,1
         typeVariable3 = re.compile(r'^[a-zA-Z_$][a-zA-Z0-9_]*\,[0-9]+')
-        typeOperator = re.compile(r'^(\+|\-|\*|\/|\%|\^|>|<|>=|<=|==|!=|&&|\|\|)')
+        typeOperator = re.compile(r'^(\+|\-|\*{1,2}|\/|\%|\^|>|<|>=|<=|==|!=|&&|\|\|)')
         typeBracket = re.compile(r'^(\(|\))')
         typeFunction = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*\s*\(')
         typeComma = re.compile(r'^,')
