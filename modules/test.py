@@ -5,7 +5,7 @@ if __name__ == "__main__":
     args = os.sys.argv
     if len(args) > 1:
         formula = args[1]
-        compute = FormulaCompute(formula)
+        compute = FormulaCompute(formula, variables={}, debug=True)
         res = compute.getCompute()
         if res is None:
             error = compute.getError()
@@ -28,7 +28,7 @@ if __name__ == "__main__":
         {'f': '"abc" + "bcd"', 'var': {}, 'result': 'abcbcd'},
         {'f': 'int("12") + "bcd"', 'var': {}, 'result': '12bcd'},
         {'f': 'int("12") + int("24")', 'var': {}, 'result': 36},
-        {'f': 'aa + "bcd"', 'var': {'aa': [4, 5]}, 'result': '9bcd'},
+        {'f': 'aa + "bcd"', 'var': {'aa': [4, 5]}, 'result': '4bcd'},
     ]
 
     for formula in formulas:
@@ -39,4 +39,4 @@ if __name__ == "__main__":
             error = compute.getError()
             print(error)
         else:
-            print(res)
+            print('result', res, formula['result'])
