@@ -363,7 +363,7 @@ class FormulaCompute():
         typeFunction = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*\s*\(')
         typeComma = re.compile(r'^,')
         # " \" "
-        typeString = re.compile(r'^("[^"]*"|\'[^\']*\')')
+        typeString = re.compile(r'^("([^\\]|\\.)*"|\'([^\\]|\\.)*\')')
         typeEnd = re.compile(r'^$')
 
         count = 0
@@ -433,6 +433,13 @@ class FormulaCompute():
                 string = typeString.match(current).group(0)
                 # remove start and end "
                 string = string[1:-1]
+                # replace escpcial char
+                string = string.replace('\\"', '"')
+                string = string.replace("\\'", "'")
+                string = string.replace('\\n', '\n')
+                string = string.replace('\\r', '\r')
+                string = string.replace('\\t', '\t')
+                string = string.replace('\\\\', '\\')
                 self.tokens.append({'type': TOKENTYPE.STRING, 'value': string})
                 count += len(typeString.match(current).group(0))
             elif typeEnd.match(current):
