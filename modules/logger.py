@@ -91,42 +91,42 @@ class LogPrint():
         if 'info' in self.print_levels:
             print(*msg)
         if self.logging_level is not None:
-            if self.logging_level <= 20:
+            if self.logging_level >= 20:
                 self.write('info', *msg)
 
     def verbose(self, *msg):
         if 'verbose' in self.print_levels:
             print(*msg)
         if self.logging_level is not None:
-            if self.logging_level <= 15:
+            if self.logging_level >= 15:
                 self.write('verbose', *msg)
     
     def debug(self, *msg):
         if 'debug' in self.print_levels:
             print(*msg)
         if self.logging_level is not None:
-            if self.logging_level <= 10:
+            if self.logging_level >= 10:
                 self.write('debug', *msg)
     
     def error(self, *msg):
         if 'error' in self.print_levels:
             print(*msg)
         if self.logging_level is not None:
-            if self.logging_level <= 40:
+            if self.logging_level >= 40:
                 self.write('error', *msg)
     
     def warning(self, *msg):
         if 'warning' in self.print_levels:
             print(*msg)
         if self.logging_level is not None:
-            if self.logging_level <= 30:
+            if self.logging_level >= 30:
                 self.write('warning', *msg)
 
     def critical(self, *msg):
         if 'critical' in self.print_levels:
             print(*msg)
         if self.logging_level is not None:
-            if self.logging_level <= 50:
+            if self.logging_level >= 50:
                 self.write('critical', *msg)
     
     def write(self, logging_level, *msg):
