@@ -1,27 +1,38 @@
-from logging.handlers import TimedRotatingFileHandler
-import logging
 import os
+import datetime
 
 # *** LOGGER SEPC CHANGE *** 2023/08/24
 
+global Logger
+Logger = None
+
 enum = {
-    'debug': logging.DEBUG,
-    'info': logging.INFO,
-    'warning': logging.WARNING,
-    'error': logging.ERROR,
-    'critical': logging.CRITICAL,
-    'notset': logging.NOTSET,
+    'debug': 10,
+    'verbose': 15,  # 'verbose' is not in 'logging' module
+    'info': 20,
+    'warning': 30,
+    'error': 40,
+    'critical': 50,
+    'notset': 60,
     'none': None
 }
 
 
 class LogPrint():
-    def __init__(self):
+    def __init__(self, service_name='service'):
+        global Logger
+        self.service_name = service_name
         self.log_dir = None
         self.print_levels = None
         self.logging_level = None
         self.log_days = None
         self.startMessage = False
+        self.startDay = datetime.datetime.now()
+        self.f = None
+        if Logger is None:
+            Logger = {}
+        if self.service_name not in Logger:
+            Logger[self.service_name] = self
 
     def setConfig(self, log_dir='./log', print_levels=['info'], logging_level='info', log_days=7):
         chenged = False
@@ -55,13 +66,13 @@ class LogPrint():
         if self.logging_level is None:
             return
         print(self.logging_level, self.log_dir, self.log_days)
-        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filename=self.log_dir)
-        # CHANGE 2023/08/24 rotate log file
-        handler = TimedRotatingFileHandler(filename=self.log_dir, when='midnight', backupCount=self.log_days)
-        handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
-        logger = logging.getLogger("run-loop")
-        logger.setLevel(self.logging_level)
-        logger.addHandler(handler)
+        # self.log_dir ファイルがなければ作成
+        logfile = self.log_dir
+        dirs = os.path.split(logfile)
+        if not os.path.exists(dirs[0]):
+            os.makedirs(dirs[0])
+        if not os.path.exists(logfile):
+            open(logfile, 'w').close()
    
     def setLogDirectory(self, log_dir):
         self.log_dir = log_dir
@@ -74,42 +85,115 @@ class LogPrint():
         self.print_levels = print_levels
     
     def setFileMode(self, logging_level):
-        self.logging_level = enum.get(logging_level) or logging.INFO
-        logger = logging.getLogger("run-loop")
-        logger.setLevel(self.logging_level)
-    
+        self.logging_level = enum.get(logging_level) or 20
+
     def info(self, *msg):
         if 'info' in self.print_levels:
             print(*msg)
         if self.logging_level is not None:
-            logging.info(*msg)
+            if self.logging_level <= 20:
+                self.write('info', *msg)
 
     def verbose(self, *msg):
         if 'verbose' in self.print_levels:
             print(*msg)
         if self.logging_level is not None:
-            logging.debug(*msg)
+            if self.logging_level <= 15:
+                self.write('verbose', *msg)
     
     def debug(self, *msg):
         if 'debug' in self.print_levels:
             print(*msg)
         if self.logging_level is not None:
-            logging.debug(*msg)
+            if self.logging_level <= 10:
+                self.write('debug', *msg)
     
     def error(self, *msg):
         if 'error' in self.print_levels:
             print(*msg)
         if self.logging_level is not None:
-            logging.error(*msg)
+            if self.logging_level <= 40:
+                self.write('error', *msg)
     
     def warning(self, *msg):
         if 'warning' in self.print_levels:
             print(*msg)
         if self.logging_level is not None:
-            logging.warning(*msg)
+            if self.logging_level <= 30:
+                self.write('warning', *msg)
 
     def critical(self, *msg):
         if 'critical' in self.print_levels:
             print(*msg)
         if self.logging_level is not None:
-            logging.critical(*msg)
+            if self.logging_level <= 50:
+                self.write('critical', *msg)
+    
+    def write(self, logging_level, *msg):
+        if self.logging_level is None:
+            return
+        #  logging_level -> key
+        for key, value in enum.items():
+            if value == logging_level:
+                logging_level = key
+                break
+        now = datetime.datetime.now()
+        now = now.strftime('%Y-%m-%d %H:%M:%S')
+        string = f'{now}:{self.service_name} [{logging_level}] '
+        if self.f is None:
+            f = open(self.log_dir, 'a')
+            self.f = f
+        if type(msg) is tuple:
+            msg = list(msg)
+        if type(msg) is list:
+            msg = [str(i) for i in msg]
+            msg = format(' '.join(msg))
+        else:
+            msg = str(msg)
+        try:
+            self.f.write(string + msg + '\n')
+            self.f.flush()
+        except Exception as e:
+            print(e)
+            f = open(self.log_dir, 'a')
+            f.write(string + msg + '\n')
+            self.f = f
+            self.f.flush()
+        self.log_rotate()
+    
+    def log_rotate(self):
+        if self.logging_level is None:
+            return
+        now = datetime.datetime.now()
+        i = self.log_days
+        while i > 0:
+            # 日付をまたいでいない場合はreturn
+            if self.startDay - datetime.timedelta(days=i) < now:
+                return
+            # log_dir + '.' + str(i) は削除
+            try:
+                self.close()
+            except Exception:
+                pass
+            final_logfile = self.log_dir + '.' + str(i)
+            if os.path.exists(final_logfile):
+                os.remove(final_logfile)
+            # log_dir + '.' + str(i-1) は log_dir + '.' + str(i) にrename
+            logfile = self.log_dir + '.' + str(i - 1)
+            if os.path.exists(logfile):
+                os.rename(logfile, final_logfile)
+            i -= 1
+        # log_dir は log_dir + '.' + str(1) にrename
+        logfile = self.log_dir
+        if os.path.exists(logfile):
+            os.rename(logfile, self.log_dir + '.' + str(1))
+        # log_dir は新規作成
+        dirs = os.path.split(logfile)
+        if not os.path.exists(dirs[0]):
+            os.makedirs(dirs[0])
+        open(logfile, 'w').close()
+        # update startDay
+        self.startDay = now
+
+
+LogPrint('service')

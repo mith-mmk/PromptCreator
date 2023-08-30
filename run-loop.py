@@ -77,7 +77,7 @@ ABORT_MATRIX = {
     'SKIP': None
 }
 
-logger = LogPrint()
+logger = LogPrint('run-loop')
 
 
 def load_models_csv(filename):
