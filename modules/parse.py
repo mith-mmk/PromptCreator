@@ -2,6 +2,7 @@ import os
 import base64
 from PIL import Image
 import modules.api as api
+import re
 
 
 # parsing json from metadata in an image
@@ -14,13 +15,18 @@ def create_parameters(parameters_text):
     neg = 'Negative prompt: '
     if para[1][:len(neg)] == neg:
         parameters['negative_prompt'] = para[1].replace(neg, '')
-        options = para[2].split(',')
+        params = para[2]
     else:
-        options = para[1].split(',')
+        params = para[1]
 
+    regex = r'".+?"'
+    matches = re.findall(regex, params)
+    for match in matches:
+        params = params.replace(match, match.replace(',', ':'))
+    options = params.split(',')
     for option in options:
         keyvalue = option.split(': ')
-        if len(keyvalue) == 2:
+        if len(keyvalue) >= 2:
             key = keyvalue[0].strip().replace(' ', '_').lower()
             if key == 'size':
                 wh = keyvalue[1].split('x')
@@ -40,10 +46,17 @@ def create_parameters(parameters_text):
                 parameters['eta_noise_seed_delta'] = int(keyvalue[1])
             elif key == 'model_hash':
                 parameters['model_hash'] = keyvalue[1]
+            elif key == 'ti_hashes':
+                values = {}
+                for i in range(1, len(keyvalue), 2):
+                    values[keyvalue[i].replace('"', '')] = keyvalue[i + 1].replace('"', '')
+                parameters['ti_hashes'] = values
+            elif key == 'vae_hash':
+                parameters['vae_hash'] = keyvalue[1]
             else:
                 parameters[key] = keyvalue[1]
         else:
-            print('unknow', option)
+            print('unknow', keyvalue)
     return parameters
 
 

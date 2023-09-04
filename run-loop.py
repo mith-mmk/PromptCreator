@@ -237,15 +237,15 @@ def load_config(config_file):
                 clone['dest'] = clone_config['dest']
             if 'folders' in clone:
                 clone['folders'] = clone_config['folders']
- 
+
         if 'txt2img' in yaml_config:
             txt_config = yaml_config['txt2img']
         else:
             txt_config = {}
-        
+
         if 'output' in txt_config:
             txt2img['output'] = txt_config['output']
-        
+
         if 'overrides' in txt_config:
             txt2img['overrides'] = txt_config['overrides']
 
@@ -274,7 +274,7 @@ def load_config(config_file):
 
         if 'folder_suffix' in yaml_config:
             config['folder_suffix'] = yaml_config['folder_suffix']
-    
+
         if 'prefix' in txt_config:
             prefix = txt_config['prefix']
             if 'default' in prefix:
@@ -539,7 +539,7 @@ def txt2img(config):
             logger.info(f'SKIP {model_name} {vae} {mode}')
         else:
             break
-    
+
     coef = 1.0
     if mode in coef_matrix:
         coef = coef_matrix[mode]
@@ -709,13 +709,13 @@ def loop(config_file):
                             args = args[1:]
                         except Exception:
                             sleep_time = 5
-                        
+
                         try:
                             max_count = int(args[0])
                             args = args[1:]
                         except Exception:
                             max_count = 0
-                       
+
                         logger.info(args)
                         (plugin, plugin_config) = prepare_custom(config, args)
                         if plugin:
@@ -787,7 +787,7 @@ def main(config_file=CONFIG):
             logger.info('Wait 60 seconds...')
             time.sleep(60)
             continue
-        
+
         if config['clone']['clone']:
             clone = config['clone']
             print('clone')
