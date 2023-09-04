@@ -73,17 +73,17 @@ class LogPrint():
             os.makedirs(dirs[0])
         if not os.path.exists(logfile):
             open(logfile, 'w').close()
-   
+
     def setLogDirectory(self, log_dir):
         self.log_dir = log_dir
         self._initLogConfig()
 
     def setLogDays(self, log_days):
         self.log_days = log_days
-    
+
     def setPrintModes(self, print_levels):
         self.print_levels = print_levels
-    
+
     def setFileMode(self, logging_level):
         self.logging_level = enum.get(logging_level) or 20
 
@@ -100,21 +100,21 @@ class LogPrint():
         if self.logging_level is not None:
             if self.logging_level <= 15:
                 self.write('verbose', *msg)
-    
+
     def debug(self, *msg):
         if 'debug' in self.print_levels:
             print(*msg)
         if self.logging_level is not None:
             if self.logging_level <= 10:
                 self.write('debug', *msg)
-    
+
     def error(self, *msg):
         if 'error' in self.print_levels:
             print(*msg)
         if self.logging_level is not None:
             if self.logging_level <= 40:
                 self.write('error', *msg)
-    
+
     def warning(self, *msg):
         if 'warning' in self.print_levels:
             print(*msg)
@@ -128,7 +128,7 @@ class LogPrint():
         if self.logging_level is not None:
             if self.logging_level <= 50:
                 self.write('critical', *msg)
-    
+
     def write(self, logging_level, *msg):
         if self.logging_level is None:
             return
@@ -138,8 +138,8 @@ class LogPrint():
                 logging_level = key
                 break
         now = datetime.datetime.now()
-        now = now.strftime('%Y-%m-%d %H:%M:%S')
-        string = f'{now}:{self.service_name} [{logging_level}] '
+        now = now.strftime('%Y-%m-%d %H:%M:%S,%f')
+        string = f'{now}:[{logging_level}] {self.service_name}: '
         if self.f is None:
             f = open(self.log_dir, 'a')
             self.f = f
@@ -155,26 +155,33 @@ class LogPrint():
             self.f.flush()
         except Exception as e:
             print(e)
-            f = open(self.log_dir, 'a')
-            f.write(string + msg + '\n')
-            self.f = f
-            self.f.flush()
+            try:
+                f = open(self.log_dir, 'a')
+                f.write(string + msg + '\n')
+                self.f = f
+                self.f.flush()
+            except Exception as e:
+                print(e)
+                self.f = None
+                return
         self.log_rotate()
-    
+
     def log_rotate(self):
         if self.logging_level is None:
             return
         now = datetime.datetime.now()
+        # 日付をまたいでいない場合はreturn
+        now = now.strftime('%Y%m%d')
+        start = self.startDay.strftime('%Y%m%d')
+        if now <= start:
+            return
+        # log_dir + '.' + str(i) は削除
+        try:
+            self.close()
+        except Exception:
+            pass
         i = self.log_days
         while i > 0:
-            # 日付をまたいでいない場合はreturn
-            if self.startDay - datetime.timedelta(days=i) < now:
-                return
-            # log_dir + '.' + str(i) は削除
-            try:
-                self.close()
-            except Exception:
-                pass
             final_logfile = self.log_dir + '.' + str(i)
             if os.path.exists(final_logfile):
                 os.remove(final_logfile)
@@ -186,7 +193,7 @@ class LogPrint():
         # log_dir は log_dir + '.' + str(1) にrename
         logfile = self.log_dir
         if os.path.exists(logfile):
-            os.rename(logfile, self.log_dir + '.' + str(1))
+            os.rename(logfile, logfile + '.' + str(1))
         # log_dir は新規作成
         dirs = os.path.split(logfile)
         if not os.path.exists(dirs[0]):
