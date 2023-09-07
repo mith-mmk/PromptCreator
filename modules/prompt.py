@@ -13,14 +13,14 @@ from modules.formula import FormulaCompute
 
 def text_formula(text, variables):
     compute = FormulaCompute()
-    formulas = re.findall(r'\$\{\=(.+?)\}', text)
+    formulas = re.findall(r"\$\{\=(.+?)\}", text)
     for formula in formulas:
         replace_text = compute.getCompute(formula, variables)
         if replace_text is not None:
-            text = text.replace('${=' + formula + '}', str(replace_text))
+            text = text.replace("${=" + formula + "}", str(replace_text))
         else:
             error = compute.getError()
-            print(f'Error happen formula {formula}, {error}')
+            print(f"Error happen formula {formula}, {error}")
     return text
 
 
@@ -29,7 +29,7 @@ def prompt_formula(new_prompt, variables, info=None):
     try:
         if info is not None:
             for key, item in info.items():
-                variables[f'info:{key}'] = item
+                variables[f"info:{key}"] = item
     except Exception as e:
         print(e)
         print(info)
@@ -44,22 +44,23 @@ def prompt_formula(new_prompt, variables, info=None):
                 for key2 in new_prompt[key]:
                     if type(new_prompt[key][key2]) is str:
                         new_prompt[key][key2] = text_formula(
-                            new_prompt[key][key2], variables)
+                            new_prompt[key][key2], variables
+                        )
     return new_prompt
 
 
 def set_reserved(keys):
     # 10 integer numbers
-    keys['$RANDOM'] = []
+    keys["$RANDOM"] = []
     for _ in range(0, 10):
-        keys['$RANDOM'].append(str(random.randint(0, 2**31 - 1)))
-    keys['$SYSTEM'] = ['1.0;' + platform.system()]
-    keys['$ARCHITECTURE'] = ['1.0;' + platform.architecture()[0]]
-    keys['$VERSION'] = ['1.0;' + platform.version()]
-    keys['$MACHINE'] = ['1.0;' + platform.machine()]
-    keys['$PROCESSOR'] = ['1.0;' + platform.processor()]
-    keys['$PYTHON_VERSION'] = ['1.0;' + platform.python_version()]
-    keys['$HOSTNAME'] = ['1.0;' + platform.node()]
+        keys["$RANDOM"].append(str(random.randint(0, 2**31 - 1)))
+    keys["$SYSTEM"] = ["1.0;" + platform.system()]
+    keys["$ARCHITECTURE"] = ["1.0;" + platform.architecture()[0]]
+    keys["$VERSION"] = ["1.0;" + platform.version()]
+    keys["$MACHINE"] = ["1.0;" + platform.machine()]
+    keys["$PROCESSOR"] = ["1.0;" + platform.processor()]
+    keys["$PYTHON_VERSION"] = ["1.0;" + platform.python_version()]
+    keys["$HOSTNAME"] = ["1.0;" + platform.node()]
 
     return keys
 
@@ -81,15 +82,19 @@ def get_appends(appends):
             for item in items:
                 append.append(item_split(item))
         if len(append) == 0:
-            print(f'Error happen append {key} is empty')
-            raise f'Error happen append {key} is empty'
+            print(f"Error happen append {key} is empty")
+            raise f"Error happen append {key} is empty"
         appends_result[key] = append
     return appends_result
 
 
 def update_nested_dict(original_dict, new_dict):
     for key, value in new_dict.items():
-        if isinstance(value, dict) and key in original_dict and isinstance(original_dict[key], dict):
+        if (
+            isinstance(value, dict)
+            and key in original_dict
+            and isinstance(original_dict[key], dict)
+        ):
             update_nested_dict(original_dict[key], value)
         else:
             original_dict[key] = value
@@ -97,57 +102,57 @@ def update_nested_dict(original_dict, new_dict):
 
 
 def recursive_yaml_load(filename, override=None, info=None):
-    with open(filename, encoding='utf-8') as f:
+    with open(filename, encoding="utf-8") as f:
         yml = yaml.safe_load(f)
-    if 'base_yaml' in yml:
-        base_yaml = recursive_yaml_load(yml['base_yaml'])
-        del yml['base_yaml']
+    if "base_yaml" in yml:
+        base_yaml = recursive_yaml_load(yml["base_yaml"])
+        del yml["base_yaml"]
         yml = update_nested_dict(base_yaml, yml)
     return yml
 
 
-def yaml_parse(filename, mode='text', override=None, info=None):
+def yaml_parse(filename, mode="text", override=None, info=None):
     try:
         yml = recursive_yaml_load(filename)
-#        with open(filename, encoding='utf-8') as f:
-#            yml = yaml.safe_load(f)
+    #        with open(filename, encoding='utf-8') as f:
+    #            yml = yaml.safe_load(f)
     except FileNotFoundError:
-        print(f'File {filename} is not found')
+        print(f"File {filename} is not found")
         raise FileNotFoundError
-    if 'command' not in yml:
-        yml['command'] = {}
-    if 'info' not in yml:
-        yml['info'] = {}
-    if 'options' in yml and 'json' in yml['options'] and yml['options']['json']:
-        mode = 'json'
+    if "command" not in yml:
+        yml["command"] = {}
+    if "info" not in yml:
+        yml["info"] = {}
+    if "options" in yml and "json" in yml["options"] and yml["options"]["json"]:
+        mode = "json"
 
-    command = yml['command']
+    command = yml["command"]
 
     if override is not None:
         for key, item in override.items():
             command[key] = item
 
-    if 'before_multiple' in yml:
-        yml['before_multiple'] = get_appends(yml['before_multiple'])
-    if 'appends' in yml:
-        appends = get_appends(yml['appends'])
-    if 'appends_multiple' in yml:
-        yml['appends_multiple'] = get_appends(yml['appends_multiple'])
+    if "before_multiple" in yml:
+        yml["before_multiple"] = get_appends(yml["before_multiple"])
+    if "appends" in yml:
+        appends = get_appends(yml["appends"])
+    if "appends_multiple" in yml:
+        yml["appends_multiple"] = get_appends(yml["appends_multiple"])
 
     if info is not None:
         for key, item in info.items():
-            yml['info'][key] = item
-        appends['$INFO'] = info
+            yml["info"][key] = item
+        appends["$INFO"] = info
 
-    prompts = ''
+    prompts = ""
 
-    if mode == 'text':
+    if mode == "text":
         for key, item in command.items():
             if type(item) is str:
-                prompts = prompts + '--' + key + ' "' + item + '" '
+                prompts = prompts + "--" + key + ' "' + item + '" '
             else:
-                prompts = prompts + '--' + key + ' ' + str(item) + ' '
-    elif mode == 'json':
+                prompts = prompts + "--" + key + " " + str(item) + " "
+    elif mode == "json":
         prompts = command
     return (prompts, appends, yml, mode)
 
@@ -157,17 +162,17 @@ def read_file(filename):
     filenames = filename.split()
     for filename in filenames:
         try:
-            with open(filename, 'r', encoding='utf_8') as f:
+            with open(filename, "r", encoding="utf_8") as f:
                 for i, item in enumerate(f.readlines()):
-                    if re.match(r'^\s*#.*', item) or re.match(r'^\s*$', item):
+                    if re.match(r"^\s*#.*", item) or re.match(r"^\s*$", item):
                         continue
-                    item = re.sub(r'\s*#.*$', '', item)
+                    item = re.sub(r"\s*#.*$", "", item)
                     try:
                         strs.append(item_split(item))
                     except Exception:
-                        print(f'Error happen line {filename} {i} {item}')
+                        print(f"Error happen line {filename} {i} {item}")
         except FileNotFoundError:
-            print(f'{filename} is not found')
+            print(f"{filename} is not found")
             raise FileNotFoundError
     return strs
 
@@ -175,12 +180,12 @@ def read_file(filename):
 def item_split(item):
     if type(item) is not str:
         return [str(item)]
-    item = item.replace('\n', ' ').strip().replace(r'\;', r'${semicolon}')
-    split = item.split(';')
+    item = item.replace("\n", " ").strip().replace(r"\;", r"${semicolon}")
+    split = item.split(";")
 
     if type(split) is list:
         for i in range(0, len(split)):
-            split[i] = split[i].replace(r'${semicolon}', ';')
+            split[i] = split[i].replace(r"${semicolon}", ";")
     return split
 
 
@@ -194,43 +199,42 @@ def prompt_replace(string, replace_texts, var):
 
     rep = replace_texts[0]
     if type(string) is str:
-        string = string.replace('${%s}' % (var), rep)
+        string = string.replace("${%s}" % (var), rep)
     elif type(string) is dict:
         for key in string:
             if type(string[key]) is str:
-                string[key] = string[key].replace('${%s}' % (var), rep)
+                string[key] = string[key].replace("${%s}" % (var), rep)
 
     for j in range(0, len(replace_texts)):
         rep = replace_texts[j]
         k = j + 1
         if type(string) is str:
-            string = string.replace('${%s,%d}' % (var, k), rep)
+            string = string.replace("${%s,%d}" % (var, k), rep)
         elif type(string) is dict:
             for key in string:
                 if type(string[key]) is str:
-                    string[key] = string[key].replace(
-                        '${%s,%d}' % (var, k), rep)
+                    string[key] = string[key].replace("${%s,%d}" % (var, k), rep)
 
     if type(string) is str:
-        string = re.sub(r'\$\{%s,\d+\}' % (var), '', string)
-        string = string.replace('${%s}' % (var), '')
+        string = re.sub(r"\$\{%s,\d+\}" % (var), "", string)
+        string = string.replace("${%s}" % (var), "")
     else:
         for key in string:
             if type(string[key]) is str:
-                string[key] = re.sub(r'\$\{%s,\d+\}' % (var), '', string[key])
-                string[key] = string[key].replace('${%s}' % (var), '')
+                string[key] = re.sub(r"\$\{%s,\d+\}" % (var), "", string[key])
+                string[key] = string[key].replace("${%s}" % (var), "")
 
     return string
 
 
-def prompt_multiple(prompts, appends, console_mode, mode='text', variables_mode=False):
-    if mode == 'text':
-        output_text = ''
-    elif mode == 'json':
+def prompt_multiple(prompts, appends, console_mode, mode="text", variables_mode=False):
+    if mode == "text":
+        output_text = ""
+    elif mode == "json":
         output_text = []
-    info = appends.get('$INFO')
+    info = appends.get("$INFO")
     if info is not None:
-        del appends['$INFO']
+        del appends["$INFO"]
 
     array = list(appends.values())
     keys = list(appends.keys())
@@ -246,7 +250,7 @@ def prompt_multiple(prompts, appends, console_mode, mode='text', variables_mode=
             j = [i]
         else:
             j = list(i)
-        for _ in (range(2, len(array))):
+        for _ in range(2, len(array)):
             if len(j) == 2:
                 a, b = j[0]
                 if type(a) is int:
@@ -277,18 +281,18 @@ def prompt_multiple(prompts, appends, console_mode, mode='text', variables_mode=
                     new_prompt = prompt_replace(new_prompt, re_str[1:], var)
                 except ValueError:
                     new_prompt = prompt_replace(new_prompt, re_str, var)
-        
+
         new_prompt = prompt_formula(new_prompt, variables)
         if console_mode:
             print(new_prompt)
-        if mode == 'text':
-            output_text = output_text + new_prompt + '\n'
-        elif mode == 'json':
+        if mode == "text":
+            output_text = output_text + new_prompt + "\n"
+        elif mode == "json":
             if variables_mode:
-                if 'variables' in new_prompt:
-                    new_prompt['variables'].update(variables)
+                if "variables" in new_prompt:
+                    new_prompt["variables"].update(variables)
                 else:
-                    new_prompt['variables'] = variables
+                    new_prompt["variables"] = variables
             output_text.append(new_prompt)
     return output_text
 
@@ -307,34 +311,44 @@ def weight_calc(append, num, default_weight=0.1, weight_mode=True):
                 else:
                     weight = max_value + default_weight
             except ValueError:
-                print(f'float convert error append {num + 1} line {i} {item} use default')
+                print(
+                    f"float convert error append {num + 1} line {i} {item} use default"
+                )
                 weight = max_value + default_weight
             finally:
                 text = item[1:]
 
-        weight_txt = {'weight': weight, 'text': text}
+        weight_txt = {"weight": weight, "text": text}
 
-        max_value = weight_txt['weight']
+        max_value = weight_txt["weight"]
         weight_append.append(weight_txt)
     return (weight_append, max_value)
 
 
-def prompt_random(prompts, appends, console_mode, max_number, weight_mode=False, default_weight=0.1, mode='text', variables_mode=True):
-    if mode == 'text':
-        output_text = ''
-    elif mode == 'json':
+def prompt_random(
+    prompts,
+    appends,
+    console_mode,
+    max_number,
+    weight_mode=False,
+    default_weight=0.1,
+    mode="text",
+    variables_mode=True,
+):
+    if mode == "text":
+        output_text = ""
+    elif mode == "json":
         output_text = []
-    info = appends.get('$INFO')
+    info = appends.get("$INFO")
     if info is not None:
-        del appends['$INFO']
+        del appends["$INFO"]
 
     keys = list(appends.keys())
     appends = list(appends.values())
     weight_appends = []
     for num, append in enumerate(appends):
-        weighted = weight_calc(
-            append, num, default_weight, weight_mode=weight_mode)
-#           print(weighted)
+        weighted = weight_calc(append, num, default_weight, weight_mode=weight_mode)
+        #           print(weighted)
         weight_appends.append(weighted)
     for _ in range(0, max_number):
         new_prompt = copy.deepcopy(prompts)
@@ -347,12 +361,12 @@ def prompt_random(prompts, appends, console_mode, max_number, weight_mode=False,
             pos = int(len(append) / 2)
             cnt = int((len(append) + 1) / 2)
             while True:
-                w = append[pos]['weight']
-#                   print (cnt,pos,n,w)
+                w = append[pos]["weight"]
+                #                   print (cnt,pos,n,w)
                 if n < w:
                     if pos == 0:
                         break
-                    if n >= append[pos - 1]['weight']:
+                    if n >= append[pos - 1]["weight"]:
                         #                           print ('break')
                         break
                     pos = pos - cnt
@@ -367,7 +381,7 @@ def prompt_random(prompts, appends, console_mode, max_number, weight_mode=False,
                     if pos == len(append) - 1:
                         break
                     if n < w:
-                        if n >= append[pos - 1]['weight']:
+                        if n >= append[pos - 1]["weight"]:
                             break
                     pos = pos + cnt
                     cnt = int((cnt + 1) / 2)
@@ -375,10 +389,10 @@ def prompt_random(prompts, appends, console_mode, max_number, weight_mode=False,
                         pos = len(append) - 1
                     if cnt == 0:
                         break
-#               print (n,pos)
+            #               print (n,pos)
             var = keys[i]
-            re_str = append[pos]['text']
-#               print(var, re_str)
+            re_str = append[pos]["text"]
+            #               print(var, re_str)
             new_prompt = prompt_replace(new_prompt, re_str, var)
             if type(re_str) is list:
                 variables[var] = re_str[0]
@@ -388,14 +402,14 @@ def prompt_random(prompts, appends, console_mode, max_number, weight_mode=False,
 
         if console_mode:
             print(new_prompt)
-        if mode == 'text':
-            output_text = output_text + new_prompt + '\n'
-        elif mode == 'json':
+        if mode == "text":
+            output_text = output_text + new_prompt + "\n"
+        elif mode == "json":
             if variables_mode:
-                if 'variables' in new_prompt:
-                    new_prompt['variables'].update(variables)
+                if "variables" in new_prompt:
+                    new_prompt["variables"].update(variables)
                 else:
-                    new_prompt['variables'] = variables
+                    new_prompt["variables"] = variables
             output_text.append(new_prompt)
     return output_text
 
@@ -405,10 +419,10 @@ def expand_arg(args):
     if args is not None:
         array = {}
         for arg in args:
-            for col in arg.split(','):
-                items = col.split('=')
+            for col in arg.split(","):
+                items = col.split("=")
                 key = items[0].strip()
-                item = '='.join(items[1:]).strip()
+                item = "=".join(items[1:]).strip()
                 array[key] = item
     return array
 
@@ -417,25 +431,27 @@ def create_text(args):
     override = expand_arg(args.override)
     info = expand_arg(args.info)
     if args.json or args.api_mode:
-        mode = 'json'
+        mode = "json"
     else:
-        mode = 'text'
+        mode = "text"
     current = args.append_dir
     prompt_file = args.input
     output = args.output
     ext = os.path.splitext(prompt_file)[-1:][0]
     yml = None
-    if ext == '.yaml' or ext == '.yml':
+    if ext == ".yaml" or ext == ".yml":
         # yaml mode
-        prompts, appends, yml, mode = yaml_parse(prompt_file, mode=mode, override=override, info=info)
+        prompts, appends, yml, mode = yaml_parse(
+            prompt_file, mode=mode, override=override, info=info
+        )
     else:
         # text mode
         appends = []
-        prompts = ''
+        prompts = ""
         try:
             dirs = os.listdir(current)
         except FileNotFoundError:
-            print(f'Directory {current} is not found')
+            print(f"Directory {current} is not found")
             raise FileNotFoundError
 
         sorted(dirs)
@@ -444,110 +460,150 @@ def create_text(args):
             if os.path.isfile(path):
                 appends.append(read_file(path))
         try:
-            with open(prompt_file, 'r', encoding='utf_8') as f:
+            with open(prompt_file, "r", encoding="utf_8") as f:
                 for line in f.readlines():
-                    prompts = prompts + ' ' + line.replace('\n', '')
+                    prompts = prompts + " " + line.replace("\n", "")
         except FileNotFoundError:
-            print(f'{prompt_file} is not found')
+            print(f"{prompt_file} is not found")
             raise FileNotFoundError
     appends = set_reserved(appends)
 
-    if yml is not None and 'options' in yml and yml['options'] is not None:
-        options = yml['options']
+    if yml is not None and "options" in yml and yml["options"] is not None:
+        options = yml["options"]
     else:
         options = {}
-    if 'info' in yml:
-        keys = list(yml['info'].keys())
+    if "info" in yml:
+        keys = list(yml["info"].keys())
         for key in keys:
             if key not in info:
-                appends[f'info:{key}'] = yml['info'][key]
+                appends[f"info:{key}"] = yml["info"][key]
 
     console_mode = False
     if output is None and args.api_mode is False:
-        if options.get('output'):
-            output = options['output']
+        if options.get("output"):
+            output = options["output"]
         else:
             console_mode = True
 
-    if args.api_input_json is None and options.get('method') == 'random':
+    if args.api_input_json is None and options.get("method") == "random":
         max_number = 100
         default_weight = 0.1
         weight_mode = False
         if options is not None:
-            if 'number' in options:
-                max_number = options['number']
+            if "number" in options:
+                max_number = options["number"]
 
             if args.max_number != -1:
                 max_number = args.max_number
 
-            if 'weight' in options:
-                weight_mode = options['weight']
-            if 'default_weight' in options:
-                default_weight = options['default_weight']
+            if "weight" in options:
+                weight_mode = options["weight"]
+            if "default_weight" in options:
+                default_weight = options["default_weight"]
 
-        if 'before_multiple' in yml:
+        if "before_multiple" in yml:
             output_text = prompt_multiple(
-                prompts, yml['before_multiple'], console_mode=False, mode=mode, variables_mode=args.api_filename_variable)
+                prompts,
+                yml["before_multiple"],
+                console_mode=False,
+                mode=mode,
+                variables_mode=args.api_filename_variable,
+            )
             if type(output_text) is list:
                 multiple_text = []
                 for prompts in output_text:
-                    result = prompt_random(prompts, appends, console_mode, max_number, weight_mode=weight_mode,
-                                           default_weight=default_weight, mode=mode, variables_mode=args.api_filename_variable)
+                    result = prompt_random(
+                        prompts,
+                        appends,
+                        console_mode,
+                        max_number,
+                        weight_mode=weight_mode,
+                        default_weight=default_weight,
+                        mode=mode,
+                        variables_mode=args.api_filename_variable,
+                    )
                     for item in result:
                         multiple_text.append(item)
             else:
-                multiple_text = ''
-                for prompts in output_text.split('\n'):
-                    multiple_text += prompt_random(prompts, appends, console_mode, max_number, weight_mode=weight_mode,
-                                                   default_weight=default_weight, mode=mode, variables_mode=args.api_filename_variable)
+                multiple_text = ""
+                for prompts in output_text.split("\n"):
+                    multiple_text += prompt_random(
+                        prompts,
+                        appends,
+                        console_mode,
+                        max_number,
+                        weight_mode=weight_mode,
+                        default_weight=default_weight,
+                        mode=mode,
+                        variables_mode=args.api_filename_variable,
+                    )
             output_text = multiple_text
         else:
-            if 'appends_multiple' in yml:
-                output_text = prompt_random(prompts, appends, False, max_number, weight_mode=weight_mode,
-                                            default_weight=default_weight, mode=mode, variables_mode=args.api_filename_variable,
-                                            )
+            if "appends_multiple" in yml:
+                output_text = prompt_random(
+                    prompts,
+                    appends,
+                    False,
+                    max_number,
+                    weight_mode=weight_mode,
+                    default_weight=default_weight,
+                    mode=mode,
+                    variables_mode=args.api_filename_variable,
+                )
             else:
-                output_text = prompt_random(prompts, appends, console_mode, max_number, weight_mode=weight_mode,
-                                            default_weight=default_weight, mode=mode, variables_mode=args.api_filename_variable,
-                                            )
-        if 'appends_multiple' in yml:
+                output_text = prompt_random(
+                    prompts,
+                    appends,
+                    console_mode,
+                    max_number,
+                    weight_mode=weight_mode,
+                    default_weight=default_weight,
+                    mode=mode,
+                    variables_mode=args.api_filename_variable,
+                )
+        if "appends_multiple" in yml:
             if type(output_text) is list:
                 multiple_text = []
                 for prompts in output_text:
                     result = prompt_multiple(
-                        prompts, yml['appends_multiple'], console_mode, mode=mode, variables_mode=args.api_filename_variable)
+                        prompts,
+                        yml["appends_multiple"],
+                        console_mode,
+                        mode=mode,
+                        variables_mode=args.api_filename_variable,
+                    )
                     for item in result:
                         multiple_text.append(item)
             else:
-                multiple_text = ''
-                for prompts in output_text.split('\n'):
+                multiple_text = ""
+                for prompts in output_text.split("\n"):
                     multiple_text += prompt_multiple(
-                        prompts, yml['appends_multiple'], console_mode, mode=mode, variables_mode=args.api_filename_variable)
+                        prompts,
+                        yml["appends_multiple"],
+                        console_mode,
+                        mode=mode,
+                        variables_mode=args.api_filename_variable,
+                    )
             output_text = multiple_text
     else:
-        output_text = prompt_multiple(
-            prompts, appends, console_mode, mode=mode)
+        output_text = prompt_multiple(prompts, appends, console_mode, mode=mode)
 
     if output is not None:
-        with open(output, 'w', encoding='utf-8', newline='\n') as fw:
+        with open(output, "w", encoding="utf-8", newline="\n") as fw:
             if type(output_text) is str:
                 fw.write(output_text)
             else:
                 json.dump(output_text, fp=fw, indent=2)
-    result = {
-        'options': options,
-        'yml': yml,
-        'output_text': output_text
-    }
+    result = {"options": options, "yml": yml, "output_text": output_text}
     return result
 
 
 # test
-'''
+"""
 if __name__ == '__main__':
     (prompts, yml, append, mode) = yaml_parse('./prompts/prompts-girls-santa.yaml')
     print(prompts)
     print(yml)
     print(append)
     print(mode)
-'''
+"""

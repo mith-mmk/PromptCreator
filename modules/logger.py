@@ -7,19 +7,19 @@ global Logger
 Logger = None
 
 enum = {
-    'debug': 10,
-    'verbose': 15,  # 'verbose' is not in 'logging' module
-    'info': 20,
-    'warning': 30,
-    'error': 40,
-    'critical': 50,
-    'notset': 60,
-    'none': None
+    "debug": 10,
+    "verbose": 15,  # 'verbose' is not in 'logging' module
+    "info": 20,
+    "warning": 30,
+    "error": 40,
+    "critical": 50,
+    "notset": 60,
+    "none": None,
 }
 
 
-class LogPrint():
-    def __init__(self, service_name='service'):
+class LogPrint:
+    def __init__(self, service_name="service"):
         global Logger
         self.service_name = service_name
         self.log_dir = None
@@ -34,7 +34,9 @@ class LogPrint():
         if self.service_name not in Logger:
             Logger[self.service_name] = self
 
-    def setConfig(self, log_dir='./log', print_levels=['info'], logging_level='info', log_days=7):
+    def setConfig(
+        self, log_dir="./log", print_levels=["info"], logging_level="info", log_days=7
+    ):
         chenged = False
 
         if log_dir != self.log_dir:
@@ -58,7 +60,7 @@ class LogPrint():
         if chenged:
             self._initLogConfig()
             if not self.startMessage:
-                self.debug('LogPrint logging start')
+                self.debug("LogPrint logging start")
             self.startMessage = True
 
     def _initLogConfig(self):
@@ -72,7 +74,7 @@ class LogPrint():
         if not os.path.exists(dirs[0]):
             os.makedirs(dirs[0])
         if not os.path.exists(logfile):
-            open(logfile, 'w').close()
+            open(logfile, "w").close()
 
     def setLogDirectory(self, log_dir):
         self.log_dir = log_dir
@@ -88,46 +90,46 @@ class LogPrint():
         self.logging_level = enum.get(logging_level) or 20
 
     def info(self, *msg):
-        if 'info' in self.print_levels:
+        if "info" in self.print_levels:
             print(*msg)
         if self.logging_level is not None:
             if self.logging_level <= 20:
-                self.write('info', *msg)
+                self.write("info", *msg)
 
     def verbose(self, *msg):
-        if 'verbose' in self.print_levels:
+        if "verbose" in self.print_levels:
             print(*msg)
         if self.logging_level is not None:
             if self.logging_level <= 15:
-                self.write('verbose', *msg)
+                self.write("verbose", *msg)
 
     def debug(self, *msg):
-        if 'debug' in self.print_levels:
+        if "debug" in self.print_levels:
             print(*msg)
         if self.logging_level is not None:
             if self.logging_level <= 10:
-                self.write('debug', *msg)
+                self.write("debug", *msg)
 
     def error(self, *msg):
-        if 'error' in self.print_levels:
+        if "error" in self.print_levels:
             print(*msg)
         if self.logging_level is not None:
             if self.logging_level <= 40:
-                self.write('error', *msg)
+                self.write("error", *msg)
 
     def warning(self, *msg):
-        if 'warning' in self.print_levels:
+        if "warning" in self.print_levels:
             print(*msg)
         if self.logging_level is not None:
             if self.logging_level <= 30:
-                self.write('warning', *msg)
+                self.write("warning", *msg)
 
     def critical(self, *msg):
-        if 'critical' in self.print_levels:
+        if "critical" in self.print_levels:
             print(*msg)
         if self.logging_level is not None:
             if self.logging_level <= 50:
-                self.write('critical', *msg)
+                self.write("critical", *msg)
 
     def write(self, logging_level, *msg):
         if self.logging_level is None:
@@ -138,26 +140,26 @@ class LogPrint():
                 logging_level = key
                 break
         now = datetime.datetime.now()
-        now = now.strftime('%Y-%m-%d %H:%M:%S,%f')
-        string = f'{now}:[{logging_level}] {self.service_name}: '
+        now = now.strftime("%Y-%m-%d %H:%M:%S,%f")
+        string = f"{now}:[{logging_level}] {self.service_name}: "
         if self.f is None:
-            f = open(self.log_dir, 'a')
+            f = open(self.log_dir, "a")
             self.f = f
         if type(msg) is tuple:
             msg = list(msg)
         if type(msg) is list:
             msg = [str(i) for i in msg]
-            msg = format(' '.join(msg))
+            msg = format(" ".join(msg))
         else:
             msg = str(msg)
         try:
-            self.f.write(string + msg + '\n')
+            self.f.write(string + msg + "\n")
             self.f.flush()
         except Exception as e:
             print(e)
             try:
-                f = open(self.log_dir, 'a')
-                f.write(string + msg + '\n')
+                f = open(self.log_dir, "a")
+                f.write(string + msg + "\n")
                 self.f = f
                 self.f.flush()
             except Exception as e:
@@ -171,8 +173,8 @@ class LogPrint():
             return
         now = datetime.datetime.now()
         # 日付をまたいでいない場合はreturn
-        now = now.strftime('%Y%m%d')
-        start = self.startDay.strftime('%Y%m%d')
+        now = now.strftime("%Y%m%d")
+        start = self.startDay.strftime("%Y%m%d")
         if now <= start:
             return
         # log_dir + '.' + str(i) は削除
@@ -182,25 +184,25 @@ class LogPrint():
             pass
         i = self.log_days
         while i > 0:
-            final_logfile = self.log_dir + '.' + str(i)
+            final_logfile = self.log_dir + "." + str(i)
             if os.path.exists(final_logfile):
                 os.remove(final_logfile)
             # log_dir + '.' + str(i-1) は log_dir + '.' + str(i) にrename
-            logfile = self.log_dir + '.' + str(i - 1)
+            logfile = self.log_dir + "." + str(i - 1)
             if os.path.exists(logfile):
                 os.rename(logfile, final_logfile)
             i -= 1
         # log_dir は log_dir + '.' + str(1) にrename
         logfile = self.log_dir
         if os.path.exists(logfile):
-            os.rename(logfile, logfile + '.' + str(1))
+            os.rename(logfile, logfile + "." + str(1))
         # log_dir は新規作成
         dirs = os.path.split(logfile)
         if not os.path.exists(dirs[0]):
             os.makedirs(dirs[0])
-        open(logfile, 'w').close()
+        open(logfile, "w").close()
         # update startDay
         self.startDay = now
 
 
-LogPrint('service')
+LogPrint("service")
