@@ -175,6 +175,24 @@ def get_sd_model(base_url='http://127.0.0.1:7860', sd_model=None):
     return None
 
 
+def get_vae(base_url='http://127.0.0.1:7860', vae=None):
+    headers = {
+        'Content-Type': 'application/json',
+    }
+    base_url = normalize_base_url(base_url)
+    model_url = (base_url + '/sdapi/v1/sd-vae')
+    try:
+        res = httpx.get(model_url, headers=headers,
+                        timeout=(share.get('timeout')))
+        # automatic1111 1.6 <- no yet hash support but use metadata?
+        for model in res.json():
+            if model['model_name'] == vae or model['hash'] == vae or model['title'] == vae:
+                return model
+    except Exception:
+        pass
+    return None
+
+
 def set_sd_model(sd_model, base_url='http://127.0.0.1:7860', sd_vae='Automatic'):
     print(f'Try change sd model to {sd_model}')
     headers = {

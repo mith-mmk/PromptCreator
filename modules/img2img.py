@@ -61,9 +61,13 @@ def img2img(imagefiles, overrides=None, base_url='http://127.0.0.1:8760', output
                 override = overrides
             override_settings = {}
             if 'model' in override:
-                model = api.set_sd_model(sd_model=override['model'], base_url=base_url, sd_vae=None)
+                model = api.get_sd_model(sd_model=override['model'], base_url=base_url, sd_vae=None)
                 del override['model']
                 override_settings['sd_model_checkpoint'] = model.title
+            if 'vae' in override:
+                vae = api.get_vae(base_url=base_url, vae=override['vae'])
+                del override['vae']
+                override_settings['sd_vae'] = vae.title
             if 'clip_skip' in override:
                 override_settings['CLIP_stop_at_last_layers'] = override['clip_skip']
                 del override['clip_skip']
