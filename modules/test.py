@@ -1,5 +1,6 @@
 from formula import FormulaCompute
 
+# commandline
 if __name__ == "__main__":
     import os
 
@@ -15,6 +16,8 @@ if __name__ == "__main__":
             print(res)
         exit()
 
+
+def test():
     formulas = [
         {
             "f": 'if("aa" == aa, "true", "false")',
@@ -56,12 +59,4 @@ if __name__ == "__main__":
 
     for formula in formulas:
         compute = FormulaCompute(formula["f"], variables=formula["var"])
-        res = compute.getCompute()
-        print(f'formula: {formula["f"]}, var: {formula["var"]}')
-        if res is None:
-            error = compute.getError()
-            print(error)
-        else:
-            print("result", res, formula["result"])
-            if res != formula["result"]:
-                assert False
+        assert compute.getCompute() == formula["result"]
