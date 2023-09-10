@@ -1,5 +1,5 @@
-import os
 import datetime
+import os
 
 # *** LOGGER SEPC CHANGE *** 2023/08/24
 
@@ -179,30 +179,31 @@ class LogPrint:
             return
         # log_dir + '.' + str(i) は削除
         try:
-            self.close()
+            self.f.close()
         except Exception:
-            pass
+            print("log file close error")
         i = self.log_days
-        while i > 0:
+        if i > 0:
             final_logfile = self.log_dir + "." + str(i)
             if os.path.exists(final_logfile):
                 os.remove(final_logfile)
-            # log_dir + '.' + str(i-1) は log_dir + '.' + str(i) にrename
-            logfile = self.log_dir + "." + str(i - 1)
+            while i > 0:
+                # log_dir + '.' + str(i-1) は log_dir + '.' + str(i) にrename
+                logfile = self.log_dir + "." + str(i - 1)
+                if os.path.exists(logfile):
+                    os.rename(logfile, final_logfile)
+                final_logfile = logfile
+                i -= 1
+            # log_dir は log_dir + '.' + str(1) にrename
+            logfile = self.log_dir
             if os.path.exists(logfile):
-                os.rename(logfile, final_logfile)
-            i -= 1
-        # log_dir は log_dir + '.' + str(1) にrename
-        logfile = self.log_dir
-        if os.path.exists(logfile):
-            os.rename(logfile, logfile + "." + str(1))
-        # log_dir は新規作成
-        dirs = os.path.split(logfile)
-        if not os.path.exists(dirs[0]):
-            os.makedirs(dirs[0])
-        open(logfile, "w").close()
-        # update startDay
-        self.startDay = now
+                try:
+                    os.rename(logfile, logfile + "." + str(1))
+                except Exception as e:
+                    print(e)
+            open(logfile, "w").close()
+            # update startDay
+            self.startDay = now
 
 
 LogPrint("service")
