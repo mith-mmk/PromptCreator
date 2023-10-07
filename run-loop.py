@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
-import os
-import time
-import datetime
-import random
-import subprocess
-import shutil
-import glob
 import csv
+import datetime
+import glob
+import os
+import random
+import shutil
+import subprocess
+import time
+
 import yaml
+
+import create_prompts
 
 # import logging
 import img2img
-import create_prompts
 from modules.logger import LogPrint
 
 # from modules.logger import Print
@@ -248,7 +250,7 @@ def load_config(config_file):
             txt2img["overrides"] = txt_config["overrides"]
 
         if "prompts" in txt_config:
-            if type(txt_config["prompts"]) == str:
+            if type(txt_config["prompts"]) is str:
                 txt2img["prompts"] = load_prompts_csv(txt_config["prompts"])
             else:
                 prompts = []
@@ -287,7 +289,7 @@ def load_config(config_file):
                 txt2img["prefix"]["suffix"] = prefix["suffix"]
 
         if "models" in txt_config:
-            if type(txt_config["models"]) == str:
+            if type(txt_config["models"]) is str:
                 txt2img["models"] = load_models_csv(txt_config["models"])
             else:
                 list = txt_config["models"]
@@ -531,10 +533,10 @@ def txt2img(config):
     prefix = config["prefix"]
     folder_suffix = config["folder_suffix"]
     overrides = config["overrides"]
-    if type(overrides) == str:
+    if type(overrides) is str:
         overrides = escape_split(overrides, " ")
         logger.debug(f"overrides string {overrides}")
-    elif type(overrides) == list:
+    elif type(overrides) is list:
         logger.debug(f"overrides list {overrides}")
     else:
         logger.debug("overrides is None")
