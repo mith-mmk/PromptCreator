@@ -168,6 +168,14 @@ def load_config(config_file):
         "file_pattern": "[num]-[seed]",
         "dir": image_dirs,
     }
+    img2txt2img = {
+        "models": None,
+        "overrides": "",
+        "input": INPUT_DIR,
+        "output": OUTPUT_DIR,
+        "folder_suffix": FOLDER_SUFFIX,
+        "overrides": "",
+    }
     log = {
         "path": LOG_PATH,
         "days": LOG_DAYS,
@@ -351,6 +359,18 @@ def load_config(config_file):
                     image_dirs["folder_suffix"] = dirs["folder_suffix"]
                 logger.debug(image_dirs)
             config["img2img"] = img2img
+        if "img2txt2img" in yaml_config:
+            if "overrides" in yaml_config["img2txt2img"]:
+                img2txt2img["overrides"] = yaml_config["img2txt2img"]["overrides"]
+            if "input" in yaml_config["img2txt2img"]:
+                img2txt2img["input"] = yaml_config["img2txt2img"]["input"]
+            if "output" in yaml_config["img2txt2img"]:
+                img2txt2img["output"] = yaml_config["img2txt2img"]["output"]
+            if "folder_suffix" in yaml_config["img2txt2img"]:
+                img2txt2img["folder_suffix"] = yaml_config["img2txt2img"][
+                    "folder_suffix"
+                ]
+            config["img2txt2img"] = img2txt2img
         if "custom" in yaml_config:
             config["custom"] = yaml_config["custom"]
     return config
