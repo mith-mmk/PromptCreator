@@ -90,11 +90,14 @@ class LogPrint:
         self.logging_level = enum.get(logging_level) or 20
 
     def info(self, *msg):
-        if "info" in self.print_levels:
+        try:
+            if "info" in self.print_levels:
+                print(*msg)
+            if self.logging_level is not None:
+                if self.logging_level <= 20:
+                    self.write("info", *msg)
+        except Exception:
             print(*msg)
-        if self.logging_level is not None:
-            if self.logging_level <= 20:
-                self.write("info", *msg)
 
     def verbose(self, *msg):
         if "verbose" in self.print_levels:

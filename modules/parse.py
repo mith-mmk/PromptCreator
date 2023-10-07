@@ -1,8 +1,10 @@
-import os
 import base64
-from PIL import Image
-import modules.api as api
+import os
 import re
+
+from PIL import Image
+
+import modules.api as api
 
 
 # parsing json from metadata in an image
@@ -67,8 +69,8 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None, base_url
     schema = [
         "enable_hr",
         "denoising_strength",
-        "firstphase_width",  # obusolete
-        "firstphase_height",  # obusolete
+        # "firstphase_width",  # obusolete
+        # "firstphase_height",  # obusolete
         "hires_upscale",
         "prompt",
         "styles",
@@ -171,6 +173,98 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None, base_url
                 json_raw["inpaint_full_res_padding"] = 0
                 json_raw["inpainting_mask_invert"] = 0
 
+    override_settings = {}
+
+    sampler_index = None
+    # override settings only return sd_model_checkpoint and CLIP_stop_at_last_layers
+    # Automatic1111 2023/07/25 verion do not support VAE tag
+    for key, value in parameters.items():
+        if key in schema:
+            json_raw[key] = value
+        elif key == "sampler_index":
+            sampler_index = value
+        elif key == "model_hash":
+            override_settings["sd_model_checkpoint"] = value
+        elif key == "CLIP_stop_at_last_layers":
+            override_settings[key] = value
+    if ("sampler" not in json_raw) and sampler_index is not None:
+        json_raw["sampler_index"] = sampler_index
+
+    json_raw["override_settings"] = override_settings
+    return json_raw
+
+
+# parsing json from image's metadata
+def create_img2params(imagefile):
+    schema = [
+        "enable_hr",
+        "denoising_strength",
+        "hires_upscale",
+        "prompt",
+        "styles",
+        "seed",
+        "subseed",
+        "subseed_strength",
+        "seed_resize_from_h",
+        "seed_resize_from_w",
+        "batch_size",
+        "n_iter",
+        "steps",
+        "cfg_scale",
+        "width",
+        "height",
+        "restore_faces",
+        "tiling",
+        "negative_prompt",
+        "eta",
+        "s_churn",
+        "s_tmax",
+        "s_tmin",
+        "s_noise",
+        "sampler",
+    ]
+
+    image = Image.open(imagefile)
+    image.load()
+    # if png?
+    if imagefile.lower().endswith(".png"):
+        if "parameters" in image.info and image.info["parameters"] is not None:
+            parameter_text = image.info["parameters"]
+            parameters = create_parameters(parameter_text)
+        else:
+            parameters = {"width": image.width, "height": image.height}
+    elif imagefile.lower().endswith(".jpg"):
+        tiff = image.getexif()
+        parameters = {"width": image.width, "height": image.height}
+        if tiff is not None:
+            endien = "LE" if tiff.endian == "<" else "BE"
+            exif = tiff.get_ifd(0x8769)
+            if exif:
+                if 37510 in exif.get_ifd(0x8769):
+                    user_comment = exif.get_ifd(0x8769)[37510]
+                    code = user_comment[:8]
+                    parameter_text = None
+                    if code == b"ASCII\x00\x00\x00":
+                        parameter_text = user_comment[8:].decode("ascii")
+                    elif code == b"UNICODE\x00":
+                        if endien == "LE":
+                            parameter_text = user_comment[8:].decode("utf-16le")
+                        else:
+                            parameter_text = user_comment[8:].decode("utf-16be")
+                    if parameter_text is not None:
+                        parameters = create_parameters(parameter_text)
+            # if 0x9C9C in tiff:
+            #     extend = tiff[0x9C9C].decode('utf-16le')
+            #     extend = json.loads(extend)
+
+    # workaround for hires.fix spec change
+    parameters["width"] = image.width
+    parameters["height"] = image.height
+    if "hires_upscale" in parameters:
+        parameters["hr_upscale"] = parameters["hires_upscale"]
+        del parameters["hires_upscale"]
+
+    json_raw = {}
     override_settings = {}
 
     sampler_index = None
