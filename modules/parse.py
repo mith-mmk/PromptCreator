@@ -121,8 +121,8 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None, base_url
             endien = "LE" if tiff.endian == "<" else "BE"
             exif = tiff.get_ifd(0x8769)
             if exif:
-                if 37510 in exif.get_ifd(0x8769):
-                    user_comment = exif.get_ifd(0x8769)[37510]
+                if 37510 in exif:
+                    user_comment = exif[37510]
                     code = user_comment[:8]
                     parameter_text = None
                     if code == b"ASCII\x00\x00\x00":
@@ -240,8 +240,8 @@ def create_img2params(imagefile):
             endien = "LE" if tiff.endian == "<" else "BE"
             exif = tiff.get_ifd(0x8769)
             if exif:
-                if 37510 in exif.get_ifd(0x8769):
-                    user_comment = exif.get_ifd(0x8769)[37510]
+                if 37510 in exif:
+                    user_comment = exif[37510]
                     code = user_comment[:8]
                     parameter_text = None
                     if code == b"ASCII\x00\x00\x00":
