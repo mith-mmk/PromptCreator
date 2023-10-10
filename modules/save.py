@@ -1,14 +1,16 @@
 import asyncio
-import io
-import sys
-import re
-import os
 import base64
+import io
 import json
-from hashlib import sha256
+import os
+import re
+import sys
 from datetime import datetime
+from hashlib import sha256
 from zoneinfo import ZoneInfo
+
 from PIL import Image, PngImagePlugin
+
 import modules.api as api
 from modules.parse import create_parameters
 
@@ -133,12 +135,12 @@ def save_img(r, opt={"dir": "./outputs"}):
 
     if "info" in opt:
         for key, value in opt["info"].items():
-            if type(key) == str:
+            if type(key) is str:
                 filename_pattern["info:" + key] = value
 
     if "command" in opt:
         for key, value in opt["command"].items():
-            if type(key) == str:
+            if type(key) is str:
                 filename_pattern["command:" + key] = value
 
     for n, i in enumerate(r["images"]):

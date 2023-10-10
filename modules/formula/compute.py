@@ -1,9 +1,9 @@
 import re
-from .util import debug_print
-from .token import TOKENTYPE
+
 from .function import callFunction
 from .operator import operation
-
+from .token import TOKENTYPE
+from .util import debug_print
 
 operator_order = {
     # block literal
@@ -17,29 +17,29 @@ operator_order = {
     # 3: --  := --<variable> (TOKEN.OPERATOR)
     # 4: !   := !<variable> (TOKEN.OPERATOR)
     # 4: ~   := ~<variable> (TOKEN.OPERATOR)
-    'PLUS': 4,   # := + <variable> (TOKEN.OPERATOR) # 個別実装
-    'MINUS': 4,  # := - <variable> (TOKEN.OPERATOR) # 何もしない
+    "PLUS": 4,  # := + <variable> (TOKEN.OPERATOR) # 個別実装
+    "MINUS": 4,  # := - <variable> (TOKEN.OPERATOR) # 何もしない
     # 2項演算子 2
-    '**': 5,   # べき乗
-    '*': 6,    # 乗算
-    '/': 6,    # 除算
-    '%': 6,    # 剰余
-    '+': 7,    # 加算
-    '-': 7,    # 減算
-    '<<': 9,   # 左シフト # 実装しない
-    '>>': 9,   # 右シフト # 実装しない
-    '>': 10,   # 大なり
-    '<': 10,   # 小なり
-    '>=': 10,  # 大なりイコール
-    '<=': 10,  # 小なりイコール
+    "**": 5,  # べき乗
+    "*": 6,  # 乗算
+    "/": 6,  # 除算
+    "%": 6,  # 剰余
+    "+": 7,  # 加算
+    "-": 7,  # 減算
+    "<<": 9,  # 左シフト # 実装しない
+    ">>": 9,  # 右シフト # 実装しない
+    ">": 10,  # 大なり
+    "<": 10,  # 小なり
+    ">=": 10,  # 大なりイコール
+    "<=": 10,  # 小なりイコール
     # 'in': 10,  # in # 配列の実装が先
-    '==': 11,  # イコール
-    '!=': 11,  # ノットイコール
+    "==": 11,  # イコール
+    "!=": 11,  # ノットイコール
     # '&': 12,   # ビットAND # 実装しない
     # '^': 13,   # ビットXOR # 実装しない
     # '|': 14,   # ビットOR # 実装しない
-    '&&': 15,  # AND
-    '||': 16,  # OR
+    "&&": 15,  # AND
+    "||": 16,  # OR
     # 代入演算子
     # '=': 17,   # 代入 # 内部変数は未実装
     # '+=': 17,  # 加算代入 # 内部変数は未実装
@@ -58,13 +58,13 @@ operator_order = {
 }
 
 
-class FormulaCompute():
-    def __init__(self, formula='', variables={}, debug=False):
+class FormulaCompute:
+    def __init__(self, formula="", variables={}, debug=False):
         self.formula = formula
         self.variables = variables
         self.reslut = None
         self.debug = debug
-        self.mode = 'init'
+        self.mode = "init"
 
     def setDebug(self, debug):
         self.debug = debug
@@ -79,7 +79,7 @@ class FormulaCompute():
 
     def getCompute(self, formula=None, variables={}):
         if formula is None:
-            debug_print(f'formula: {formula}', debug=self.debug)
+            debug_print(f"formula: {formula}", debug=self.debug)
             self.compute()
             return self.result
         self.formula = formula
@@ -91,21 +91,23 @@ class FormulaCompute():
         return self.token_error_message
 
     def compute(self):
-        self.mode = 'compute'
+        self.mode = "compute"
         self.result = None
         res = self.token()
         if not res:
-            debug_print('token error', self.token_error_message, debug=self.debug)
+            debug_print("token error", self.token_error_message, debug=self.debug)
             return False
         if not self.parse():
-            debug_print('parse error', self.token_error_message, debug=self.debug)
+            debug_print("parse error", self.token_error_message, debug=self.debug)
             return False
         try:
             if not self.reverce_polish_notation():
                 return False
         except Exception as e:
             debug_print(e, debug=self.debug)
-            self.setTokenError('Unknown error', self.token_start, self.token_end, TOKENTYPE.ERROR)
+            self.setTokenError(
+                "Unknown error", self.token_start, self.token_end, TOKENTYPE.ERROR
+            )
             return False
         return True
 
@@ -116,108 +118,136 @@ class FormulaCompute():
         self.token_error_end = end
         self.token_error_type = type
         if self.debug:
-            debug_print(f'Error: {mode}: {message} start: {start} end: {end} type: {type}', debug=self.debug)
+            debug_print(
+                f"Error: {mode}: {message} start: {start} end: {end} type: {type}",
+                debug=self.debug,
+            )
 
     def parse(self):
-        self.mode = 'parse'
+        self.mode = "parse"
         parsed_tokens = []
         # 単項演算子と変数の処理
         for token in self.tokens:
             # variable -> number or string
             parsed_token = {}
-            debug_print('token :', token, debug=self.debug)
-            if token['type'] == TOKENTYPE.VARIABLE:
-                if ',' in token['value']:
-                    var, num = token['value'].split(',')
+            debug_print("token :", token, debug=self.debug)
+            if token["type"] == TOKENTYPE.VARIABLE:
+                if "," in token["value"]:
+                    var, num = token["value"].split(",")
                     num = int(num) - 1
                 else:
-                    var = token['value']
+                    var = token["value"]
                     num = 0
-                array = re.compile(r'(.*)\[([0-9]+)\]')
+                array = re.compile(r"(.*)\[([0-9]+)\]")
                 if array.match(var):
                     var, num = array.match(var).groups()
                     num = int(num) - 1
-                    debug_print('array', var, num, debug=self.debug)
+                    debug_print("array", var, num, debug=self.debug)
                 if var in self.variables:
                     values = self.variables[var]
-                    if type(values) == list:
+                    if type(values) is list:
                         value = values[num]
                     else:
                         value = values
-                    if type(value) == int or type(value) == float:
-                        parsed_token['type'] = TOKENTYPE.NUMBER
-                    elif type(value) == str:
-                        parsed_token['type'] = TOKENTYPE.STRING
+                    if type(value) is int or type(value) is float:
+                        parsed_token["type"] = TOKENTYPE.NUMBER
+                    elif type(value) is str:
+                        parsed_token["type"] = TOKENTYPE.STRING
                     else:
-                        self.setTokenError('Unknown variable type', self.token_start, self.token_end, TOKENTYPE.ERROR)
-                    parsed_token['value'] = value
-                    debug_print('value', parsed_token, debug=self.debug)
+                        self.setTokenError(
+                            "Unknown variable type",
+                            self.token_start,
+                            self.token_end,
+                            TOKENTYPE.ERROR,
+                        )
+                    parsed_token["value"] = value
+                    debug_print("value", parsed_token, debug=self.debug)
                 else:
-                    self.setTokenError('Unknown variable', self.token_start, self.token_end, TOKENTYPE.ERROR)
-                    debug_print('Unknown variable', var, debug=self.debug)
+                    self.setTokenError(
+                        "Unknown variable",
+                        self.token_start,
+                        self.token_end,
+                        TOKENTYPE.ERROR,
+                    )
+                    debug_print("Unknown variable", var, debug=self.debug)
                     return False
             # number
-            elif token['type'] == TOKENTYPE.NUMBER:
+            elif token["type"] == TOKENTYPE.NUMBER:
                 # int or float
                 try:
-                    if '.' in token['value']:
-                        parsed_token['type'] = TOKENTYPE.NUMBER
-                        parsed_token['value'] = float(token['value'])
+                    if "." in token["value"]:
+                        parsed_token["type"] = TOKENTYPE.NUMBER
+                        parsed_token["value"] = float(token["value"])
                     else:
-                        parsed_token['type'] = TOKENTYPE.NUMBER
-                        parsed_token['value'] = int(token['value'])
+                        parsed_token["type"] = TOKENTYPE.NUMBER
+                        parsed_token["value"] = int(token["value"])
                 except ValueError:
-                    self.setTokenError('Unknown number', self.token_start, self.token_end, TOKENTYPE.ERROR)
-                    debug_print('Unknown number', token['value'], debug=self.debug)
+                    self.setTokenError(
+                        "Unknown number",
+                        self.token_start,
+                        self.token_end,
+                        TOKENTYPE.ERROR,
+                    )
+                    debug_print("Unknown number", token["value"], debug=self.debug)
                     return False
 
             # string
-            elif token['type'] == TOKENTYPE.STRING:
+            elif token["type"] == TOKENTYPE.STRING:
                 parsed_token = token
             # function
-            elif token['type'] == TOKENTYPE.FUNCTION:
+            elif token["type"] == TOKENTYPE.FUNCTION:
                 parsed_token = token
-            elif token['type'] == TOKENTYPE.OPERATOR:
+            elif token["type"] == TOKENTYPE.OPERATOR:
                 parsed_token = token
-            elif token['type'] == TOKENTYPE.BRACKET:
+            elif token["type"] == TOKENTYPE.BRACKET:
                 parsed_token = token
-            elif token['type'] == TOKENTYPE.COMMA:
+            elif token["type"] == TOKENTYPE.COMMA:
                 parsed_token = token
-            elif token['type'] == TOKENTYPE.SPACE:
+            elif token["type"] == TOKENTYPE.SPACE:
                 pass
-            elif token['type'] == TOKENTYPE.OTHER:
-                debug_print('Unknown token', token['value'], debug=self.debug)
-                self.setTokenError('Unknown token', self.token_start, self.token_end, TOKENTYPE.ERROR)
+            elif token["type"] == TOKENTYPE.OTHER:
+                debug_print("Unknown token", token["value"], debug=self.debug)
+                self.setTokenError(
+                    "Unknown token", self.token_start, self.token_end, TOKENTYPE.ERROR
+                )
                 return False
-            elif token['type'] == TOKENTYPE.END:
+            elif token["type"] == TOKENTYPE.END:
                 parsed_tokens.append(token)
                 break
             else:
-                value = token['value']
-                debug_print(f'Illegal syntax {value}', debug=self.debug)
-                self.setTokenError(f'Illegal syntax {value}', self.token_start, self.token_end, TOKENTYPE.ERROR)
+                value = token["value"]
+                debug_print(f"Illegal syntax {value}", debug=self.debug)
+                self.setTokenError(
+                    f"Illegal syntax {value}",
+                    self.token_start,
+                    self.token_end,
+                    TOKENTYPE.ERROR,
+                )
                 return False
 
-            if parsed_token['type'] == TOKENTYPE.NUMBER:
+            if parsed_token["type"] == TOKENTYPE.NUMBER:
                 j = len(parsed_tokens)
                 head = False
-                if j == 1 and parsed_tokens[j - 1]['type'] == TOKENTYPE.OPERATOR:
-                    ope = parsed_tokens[j - 1]['value']
+                if j == 1 and parsed_tokens[j - 1]["type"] == TOKENTYPE.OPERATOR:
+                    ope = parsed_tokens[j - 1]["value"]
                     head = True
-                elif j >= 2 and parsed_tokens[j - 1]['type'] == TOKENTYPE.OPERATOR:
-                    ope = parsed_tokens[j - 1]['value']
-                    if parsed_tokens[j - 2]['type'] == TOKENTYPE.OPERATOR:
+                elif j >= 2 and parsed_tokens[j - 1]["type"] == TOKENTYPE.OPERATOR:
+                    ope = parsed_tokens[j - 1]["value"]
+                    if parsed_tokens[j - 2]["type"] == TOKENTYPE.OPERATOR:
                         head = True
-                    elif parsed_tokens[j - 2]['type'] == TOKENTYPE.BRACKET and parsed_tokens[j - 2]['value'] == '(':
+                    elif (
+                        parsed_tokens[j - 2]["type"] == TOKENTYPE.BRACKET
+                        and parsed_tokens[j - 2]["value"] == "("
+                    ):
                         head = True
                 if head:
-                    if ope == '-':
-                        parsed_token['value'] = - parsed_token['value']
+                    if ope == "-":
+                        parsed_token["value"] = -parsed_token["value"]
                         parsed_tokens.pop()
-                    elif ope == '+':
+                    elif ope == "+":
                         parsed_tokens.pop()
             parsed_tokens.append(parsed_token)
-            debug_print('parsed token', parsed_tokens)
+            debug_print("parsed token", parsed_tokens)
         self.tokens = parsed_tokens
         debug_print(self.tokens, debug=self.debug)
         return True
@@ -227,12 +257,12 @@ class FormulaCompute():
 
     def booleanToNumber(self, boolean):
         if boolean:
-            return {'type': TOKENTYPE.NUMBER, 'value': 1}
+            return {"type": TOKENTYPE.NUMBER, "value": 1}
         else:
-            return {'type': TOKENTYPE.NUMBER, 'value': 0}
+            return {"type": TOKENTYPE.NUMBER, "value": 0}
 
     def reverce_polish_notation(self):
-        self.mode = 'reverce_polish_notation'
+        self.mode = "reverce_polish_notation"
         # 演算順位　=> operator_order
         # expression := <fomula> + <fomula> |
         #               <fomula> - <fomula> |
@@ -260,40 +290,63 @@ class FormulaCompute():
         debug_print(self.tokens, debug=self.debug)
         for token in self.tokens:
             debug_print(token, debug=self.debug)
-            if token['type'] == TOKENTYPE.NUMBER or token['type'] == TOKENTYPE.STRING or token['type'] == TOKENTYPE.VARIABLE:
+            if (
+                token["type"] == TOKENTYPE.NUMBER
+                or token["type"] == TOKENTYPE.STRING
+                or token["type"] == TOKENTYPE.VARIABLE
+            ):
                 reversed_polish.append(token)
-            elif token['type'] == TOKENTYPE.FUNCTION:
-                debug_print(token['value'], debug=self.debug)
+            elif token["type"] == TOKENTYPE.FUNCTION:
+                debug_print(token["value"], debug=self.debug)
                 stack.append(token)
-            elif token['type'] == TOKENTYPE.COMMA:
+            elif token["type"] == TOKENTYPE.COMMA:
                 while len(stack) > 0:
-                    if stack[-1]['type'] == TOKENTYPE.BRACKET:
+                    if stack[-1]["type"] == TOKENTYPE.BRACKET:
                         break
                     reversed_polish.append(stack.pop())
-            elif token['type'] == TOKENTYPE.BRACKET:
-                if token['value'] == '(':
+            elif token["type"] == TOKENTYPE.BRACKET:
+                if token["value"] == "(":
                     stack.append(token)
                 else:
                     while len(stack) > 0:
-                        if stack[-1]['type'] == TOKENTYPE.BRACKET:
+                        if stack[-1]["type"] == TOKENTYPE.BRACKET:
                             stack.pop()
                             break
                         reversed_polish.append(stack.pop())
-            elif token['type'] == TOKENTYPE.OPERATOR:
-                if len(stack) > 0 and stack[-1]['type'] == TOKENTYPE.BRACKET:
+            elif token["type"] == TOKENTYPE.OPERATOR:
+                if len(stack) > 0 and stack[-1]["type"] == TOKENTYPE.BRACKET:
                     while len(stack) > 0:
-                        if stack[-1]['type'] == TOKENTYPE.BRACKET:
+                        if stack[-1]["type"] == TOKENTYPE.BRACKET:
                             break
                         reversed_polish.append(stack.pop())
                     stack.append(token)
                 else:
-                    if len(stack) > 0 and stack[-1]['type'] == TOKENTYPE.FUNCTION \
-                            and token['value'] in ['+', '-', '*', '/', '%', '**', '>', '<', '>=', '<=', '==', '!=', '&&', '||']:
+                    if (
+                        len(stack) > 0
+                        and stack[-1]["type"] == TOKENTYPE.FUNCTION
+                        and token["value"]
+                        in [
+                            "+",
+                            "-",
+                            "*",
+                            "/",
+                            "%",
+                            "**",
+                            ">",
+                            "<",
+                            ">=",
+                            "<=",
+                            "==",
+                            "!=",
+                            "&&",
+                            "||",
+                        ]
+                    ):
                         reversed_polish.append(stack.pop())
                         stack.append(token)
-                    elif len(stack) > 0 and stack[-1]['type'] == TOKENTYPE.OPERATOR:
-                        order = operator_order[token['value']]
-                        preoder = operator_order[stack[-1]['value']]
+                    elif len(stack) > 0 and stack[-1]["type"] == TOKENTYPE.OPERATOR:
+                        order = operator_order[token["value"]]
+                        preoder = operator_order[stack[-1]["value"]]
                         if order < preoder:
                             stack.append(token)
                         else:
@@ -301,21 +354,25 @@ class FormulaCompute():
                             stack.append(token)
                     else:
                         stack.append(token)
-            elif token['type'] == TOKENTYPE.SPACE:
+            elif token["type"] == TOKENTYPE.SPACE:
                 pass
-            elif token['type'] == TOKENTYPE.OTHER:
-                self.setTokenError('Unknown token', self.token_start, self.token_end, TOKENTYPE.ERROR)
+            elif token["type"] == TOKENTYPE.OTHER:
+                self.setTokenError(
+                    "Unknown token", self.token_start, self.token_end, TOKENTYPE.ERROR
+                )
                 return False
-            elif token['type'] == TOKENTYPE.END:
+            elif token["type"] == TOKENTYPE.END:
                 pass
         stack.reverse()
         reversed_polish.extend(stack)
         stack = []
-        debug_print('reverce porlad:', reversed_polish, stack, mode='value', debug=self.debug)
+        debug_print(
+            "reverce porlad:", reversed_polish, stack, mode="value", debug=self.debug
+        )
         # 逆ポーランド記法を計算する
         for token in reversed_polish:
             debug_print(token, stack, debug=self.debug)
-            match token['type']:
+            match token["type"]:
                 case TOKENTYPE.NUMBER:
                     stack.append(token)
                 case TOKENTYPE.STRING:
@@ -324,47 +381,54 @@ class FormulaCompute():
                     stack.append(token)
                 case TOKENTYPE.FUNCTION:
                     # TOKENから引数の数が分からないので、関数ごとに処理する
-                    function = token['value']
+                    function = token["value"]
                     callFunction(self, function, stack)
                     debug_print(stack, debug=self.debug)
                 case TOKENTYPE.OPERATOR:
                     operation(self, token, stack)
                 case TOKENTYPE.END:
                     break
-        debug_print('end', stack)
+        debug_print("end", stack)
         if len(stack) != 1:
-            self.setTokenError('Formula error function argments too many?', self.token_start, self.token_end, TOKENTYPE.ERROR)
+            self.setTokenError(
+                "Formula error function argments too many?",
+                self.token_start,
+                self.token_end,
+                TOKENTYPE.ERROR,
+            )
             return False
-        self.result = stack.pop()['value']
+        self.result = stack.pop()["value"]
         return True
 
     def token(self):
-        self.mode = 'token'
+        self.mode = "token"
         self.tokens = []
-        self.token = ''
+        self.token = ""
         self.token_type = TOKENTYPE.NONE
         self.token_start = 0
         self.token_end = 0
         self.token_error = False
-        self.token_error_message = ''
+        self.token_error_message = ""
         self.token_error_start = 0
         self.token_error_end = 0
         self.token_error_type = 0
         count = 0
-        typeSpace = re.compile(r'^\s+')
-        typeNumber = re.compile(r'^[0-9]+(\.[0-9]+)?')
-        typeVariable1 = re.compile(r'^[a-zA-Z_$][a-zA-Z0-9_$]*')
+        typeSpace = re.compile(r"^\s+")
+        typeNumber = re.compile(r"^[0-9]+(\.[0-9]+)?")
+        typeVariable1 = re.compile(r"^[a-zA-Z_$][a-zA-Z0-9_$]*")
         # info:abc[1]
-        typeVariable2 = re.compile(r'^([a-zA-Z_$][a-zA-Z0-9__$]*\:)*[a-zA-Z_\-$][a-zA-Z0-9_$]*(\[([0-9]+|\*)\])*')
+        typeVariable2 = re.compile(
+            r"^([a-zA-Z_$][a-zA-Z0-9__$]*\:)*[a-zA-Z_\-$][a-zA-Z0-9_$]*(\[([0-9]+|\*)\])*"
+        )
         # abc,1
-        typeVariable3 = re.compile(r'^[a-zA-Z_$][a-zA-Z0-9_]*\,[0-9]+')
-        typeOperator = re.compile(r'^(\+|\-|\*{1,2}|\/|\%|\^|>|<|>=|<=|==|!=|&&|\|\|)')
-        typeBracket = re.compile(r'^(\(|\))')
-        typeFunction = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*\s*\(')
-        typeComma = re.compile(r'^,')
+        typeVariable3 = re.compile(r"^[a-zA-Z_$][a-zA-Z0-9_]*\,[0-9]+")
+        typeOperator = re.compile(r"^(\+|\-|\*{1,2}|\/|\%|\^|>|<|>=|<=|==|!=|&&|\|\|)")
+        typeBracket = re.compile(r"^(\(|\))")
+        typeFunction = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*\s*\(")
+        typeComma = re.compile(r"^,")
         # " \" "
         typeString = re.compile(r'^("([^\\]|\\.)*?"|\'([^\\]|.)*?\')')
-        typeEnd = re.compile(r'^$')
+        typeEnd = re.compile(r"^$")
 
         count = 0
         while count < len(self.formula):
@@ -380,51 +444,86 @@ class FormulaCompute():
                 self.token_end = count + len(typeFunction.match(current).group(0))
                 function = typeFunction.match(current).group(0)
                 debug_print(function, debug=self.debug)
-                function = function.replace(' ', '', 1)
+                function = function.replace(" ", "", 1)
                 function = function[:-1]
-                self.tokens.append({'type': TOKENTYPE.FUNCTION, 'value': function})
+                self.tokens.append({"type": TOKENTYPE.FUNCTION, "value": function})
                 count += len(typeFunction.match(current).group(0)) - 1
             elif typeNumber.match(current):
                 self.token_type = TOKENTYPE.NUMBER
                 self.token_start = count
                 self.token_end = count + len(typeNumber.match(current).group(0))
-                self.tokens.append({'type': TOKENTYPE.NUMBER, 'value': typeNumber.match(current).group(0)})
+                self.tokens.append(
+                    {
+                        "type": TOKENTYPE.NUMBER,
+                        "value": typeNumber.match(current).group(0),
+                    }
+                )
                 count += len(typeNumber.match(current).group(0))
             elif typeOperator.match(current):
                 self.token_type = TOKENTYPE.OPERATOR
                 self.token_start = count
                 self.token_end = count + len(typeOperator.match(current).group(0))
-                self.tokens.append({'type': TOKENTYPE.OPERATOR, 'value': typeOperator.match(current).group(0)})
+                self.tokens.append(
+                    {
+                        "type": TOKENTYPE.OPERATOR,
+                        "value": typeOperator.match(current).group(0),
+                    }
+                )
                 count += len(typeOperator.match(current).group(0))
             elif typeVariable3.match(current):
                 self.token_type = TOKENTYPE.VARIABLE
                 self.token_start = count
                 self.token_end = count + len(typeVariable3.match(current).group(0))
-                self.tokens.append({'type': TOKENTYPE.VARIABLE, 'value': typeVariable3.match(current).group(0)})
+                self.tokens.append(
+                    {
+                        "type": TOKENTYPE.VARIABLE,
+                        "value": typeVariable3.match(current).group(0),
+                    }
+                )
                 count += len(typeVariable3.match(current).group(0))
             elif typeVariable2.match(current):
                 self.token_type = TOKENTYPE.VARIABLE
                 self.token_start = count
                 self.token_end = count + len(typeVariable2.match(current).group(0))
-                self.tokens.append({'type': TOKENTYPE.VARIABLE, 'value': typeVariable2.match(current).group(0)})
+                self.tokens.append(
+                    {
+                        "type": TOKENTYPE.VARIABLE,
+                        "value": typeVariable2.match(current).group(0),
+                    }
+                )
                 count += len(typeVariable2.match(current).group(0))
             elif typeVariable1.match(current):
                 self.token_type = TOKENTYPE.VARIABLE
                 self.token_start = count
                 self.token_end = count + len(typeVariable1.match(current).group(0))
-                self.tokens.append({'type': TOKENTYPE.VARIABLE, 'value': typeVariable1.match(current).group(0)})
+                self.tokens.append(
+                    {
+                        "type": TOKENTYPE.VARIABLE,
+                        "value": typeVariable1.match(current).group(0),
+                    }
+                )
                 count += len(typeVariable1.match(current).group(0))
             elif typeBracket.match(current):
                 self.token_type = TOKENTYPE.BRACKET
                 self.token_start = count
                 self.token_end = count + len(typeBracket.match(current).group(0))
-                self.tokens.append({'type': TOKENTYPE.BRACKET, 'value': typeBracket.match(current).group(0)})
+                self.tokens.append(
+                    {
+                        "type": TOKENTYPE.BRACKET,
+                        "value": typeBracket.match(current).group(0),
+                    }
+                )
                 count += len(typeBracket.match(current).group(0))
             elif typeComma.match(current):
                 self.token_type = TOKENTYPE.COMMA
                 self.token_start = count
                 self.token_end = count + len(typeComma.match(current).group(0))
-                self.tokens.append({'type': TOKENTYPE.COMMA, 'value': typeComma.match(current).group(0)})
+                self.tokens.append(
+                    {
+                        "type": TOKENTYPE.COMMA,
+                        "value": typeComma.match(current).group(0),
+                    }
+                )
                 count += len(typeComma.match(current).group(0))
             elif typeString.match(current):
                 self.token_type = TOKENTYPE.STRING
@@ -437,27 +536,33 @@ class FormulaCompute():
                 # replace escpcial char
                 string = string.replace('\\"', '"')
                 string = string.replace("\\'", "'")
-                string = string.replace('\\n', '\n')
-                string = string.replace('\\r', '\r')
-                string = string.replace('\\t', '\t')
-                string = string.replace('\\\\', '\\')
-                self.tokens.append({'type': TOKENTYPE.STRING, 'value': string})
+                string = string.replace("\\n", "\n")
+                string = string.replace("\\r", "\r")
+                string = string.replace("\\t", "\t")
+                string = string.replace("\\\\", "\\")
+                self.tokens.append({"type": TOKENTYPE.STRING, "value": string})
                 count += len(typeString.match(current).group(0))
             elif typeEnd.match(current):
                 break
             else:
-                self.setTokenError(f'Syntax error {current}', self.token_start, self.token_end, TOKENTYPE.ERROR)
+                self.setTokenError(
+                    f"Syntax error {current}",
+                    self.token_start,
+                    self.token_end,
+                    TOKENTYPE.ERROR,
+                )
                 return False
         self.token_type = TOKENTYPE.END
         self.token_start = count
         self.token_end = count
-        self.tokens.append({'type': TOKENTYPE.END, 'value': ''})
+        self.tokens.append({"type": TOKENTYPE.END, "value": ""})
         return True
 
     # 静的関数
     @staticmethod
     def calculate(formula, variables={}, debug=False):
         from .compute import FormulaCompute
+
         compute = FormulaCompute(formula, variables, debug=debug)
         if compute.compute():
             return compute.getCompute()
@@ -467,6 +572,7 @@ class FormulaCompute():
     @staticmethod
     def calculate_debug(formula, variables={}):
         from .compute import FormulaCompute
+
         compute = FormulaCompute(formula, variables, debug=True)
         if compute.compute():
             return compute.getCompute(), None

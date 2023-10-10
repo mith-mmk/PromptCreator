@@ -1,11 +1,13 @@
-import yaml
 import copy
-import random
-import re
 import itertools as it
 import json
 import os
 import platform
+import random
+import re
+
+import yaml
+
 from modules.formula import FormulaCompute
 
 # randam prompt creator
@@ -257,7 +259,7 @@ def prompt_multiple(prompts, appends, console_mode, mode="text", variables_mode=
                     j = [a, b, j[1]]
                 else:
                     j = [a[0], a[1], b, j[1]]
-            elif type(j[0]) != int:
+            elif type(j[0]) is not int:
                 a, b = j[0]
                 j2 = j[1:]
                 if type(a) is int:

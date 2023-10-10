@@ -1,236 +1,320 @@
-from .token import TOKENTYPE
-import re
-import random
-import time
 import math
+import random
+import re
+import time
+
+from .token import TOKENTYPE
 
 
 def callFunction(compute, function, stack):
     match function:
-        case 'pow':
+        case "pow":
             right = stack.pop()
-            right = right['value']
+            right = right["value"]
             left = stack.pop()
-            left = left['value']
+            left = left["value"]
             # どちらかが文字列ならエラー
-            if type(left) == str or type(right) == str:
-                compute.setTokenError('String is not suport power', compute.token_start, compute.token_end, TOKENTYPE.ERROR)
+            if type(left) is str or type(right) is str:
+                compute.setTokenError(
+                    "String is not suport power",
+                    compute.token_start,
+                    compute.token_end,
+                    TOKENTYPE.ERROR,
+                )
                 return False
-            stack.append({'type': TOKENTYPE.NUMBER, 'value': left ** right})
-        case 'sqrt':
+            stack.append({"type": TOKENTYPE.NUMBER, "value": left**right})
+        case "sqrt":
             value = stack.pop()
-            value = value['value']
+            value = value["value"]
             # 文字列ならエラー
-            if type(value) == str:
-                compute.setTokenError('String is not suport sqrt', compute.token_start, compute.token_end, TOKENTYPE.ERROR)
+            if type(value) is str:
+                compute.setTokenError(
+                    "String is not suport sqrt",
+                    compute.token_start,
+                    compute.token_end,
+                    TOKENTYPE.ERROR,
+                )
                 return False
-            stack.append({'type': TOKENTYPE.NUMBER, 'value': value ** 0.5})
-        case 'abs':
+            stack.append({"type": TOKENTYPE.NUMBER, "value": value**0.5})
+        case "abs":
             value = stack.pop()
-            value = value['value']
+            value = value["value"]
             # 文字列ならエラー
-            if type(value) == str:
-                compute.setTokenError('String is not suport abs', compute.token_start, compute.token_end, TOKENTYPE.ERROR)
+            if type(value) is str:
+                compute.setTokenError(
+                    "String is not suport abs",
+                    compute.token_start,
+                    compute.token_end,
+                    TOKENTYPE.ERROR,
+                )
                 return False
-            stack.append({'type': TOKENTYPE.NUMBER, 'value': abs(value)})
-        case 'ceil':
+            stack.append({"type": TOKENTYPE.NUMBER, "value": abs(value)})
+        case "ceil":
             value = stack.pop()
-            value = value['value']
+            value = value["value"]
             # 文字列ならエラー
-            if type(value) == str:
-                compute.setTokenError('String is not suport ceil', compute.token_start, compute.token_end, TOKENTYPE.ERROR)
+            if type(value) is str:
+                compute.setTokenError(
+                    "String is not suport ceil",
+                    compute.token_start,
+                    compute.token_end,
+                    TOKENTYPE.ERROR,
+                )
                 return False
-            stack.append({'type': TOKENTYPE.NUMBER, 'value': math.ceil(value)})
-        case 'floor':
+            stack.append({"type": TOKENTYPE.NUMBER, "value": math.ceil(value)})
+        case "floor":
             value = stack.pop()
-            value = value['value']
+            value = value["value"]
             # 文字列ならエラー
-            if type(value) == str:
-                compute.setTokenError('String is not suport floor', compute.token_start, compute.token_end, TOKENTYPE.ERROR)
+            if type(value) is str:
+                compute.setTokenError(
+                    "String is not suport floor",
+                    compute.token_start,
+                    compute.token_end,
+                    TOKENTYPE.ERROR,
+                )
                 return False
-            stack.append({'type': TOKENTYPE.NUMBER, 'value': math.floor(value)})
-        case 'round':
+            stack.append({"type": TOKENTYPE.NUMBER, "value": math.floor(value)})
+        case "round":
             value = stack.pop()
-            value = value['value']
+            value = value["value"]
             # 文字列ならエラー
-            if type(value) == str:
-                compute.setTokenError('String is not suport round', compute.token_start, compute.token_end, TOKENTYPE.ERROR)
+            if type(value) is str:
+                compute.setTokenError(
+                    "String is not suport round",
+                    compute.token_start,
+                    compute.token_end,
+                    TOKENTYPE.ERROR,
+                )
                 return False
-            stack.append({'type': TOKENTYPE.NUMBER, 'value': round(value)})
-        case 'trunc':
+            stack.append({"type": TOKENTYPE.NUMBER, "value": round(value)})
+        case "trunc":
             value = stack.pop()
-            value = value['value']
+            value = value["value"]
             # 文字列ならエラー
-            if type(value) == str:
-                compute.setTokenError('String is not suport trunc', compute.token_start, compute.token_end, TOKENTYPE.ERROR)
+            if type(value) is str:
+                compute.setTokenError(
+                    "String is not suport trunc",
+                    compute.token_start,
+                    compute.token_end,
+                    TOKENTYPE.ERROR,
+                )
                 return False
-            stack.append({'type': TOKENTYPE.NUMBER, 'value': math.trunc(value)})
-        case 'int':
+            stack.append({"type": TOKENTYPE.NUMBER, "value": math.trunc(value)})
+        case "int":
             value = stack.pop()
-            stack.append({'type': TOKENTYPE.NUMBER, 'value': int(value['value'])})
-        case 'float':
+            stack.append({"type": TOKENTYPE.NUMBER, "value": int(value["value"])})
+        case "float":
             value = stack.pop()
-            stack.append({'type': TOKENTYPE.NUMBER, 'value': float(value['value'])})
-        case 'str':
+            stack.append({"type": TOKENTYPE.NUMBER, "value": float(value["value"])})
+        case "str":
             value = stack.pop()
-            stack.append({'type': TOKENTYPE.STRING, 'value': str(value['value'])})
-        case 'len':
+            stack.append({"type": TOKENTYPE.STRING, "value": str(value["value"])})
+        case "len":
             value = stack.pop()
-            stack.append({'type': TOKENTYPE.NUMBER, 'value': len(value['value'])})
-        case 'max':
+            stack.append({"type": TOKENTYPE.NUMBER, "value": len(value["value"])})
+        case "max":
             right = stack.pop()
-            right = right['value']
+            right = right["value"]
             left = stack.pop()
-            left = left['value']
-            if type(right) == str or type(left) == str:
+            left = left["value"]
+            if type(right) is str or type(left) is str:
                 tokentype = TOKENTYPE.STRING
             else:
                 tokentype = TOKENTYPE.NUMBER
-            stack.append({'type': tokentype, 'value': max(right, left)})
-        case 'min':
+            stack.append({"type": tokentype, "value": max(right, left)})
+        case "min":
             right = stack.pop()
-            right = right['value']
+            right = right["value"]
             left = stack.pop()
-            left = left['value']
+            left = left["value"]
             tokentype = TOKENTYPE.NUMBER
-            if type(right) == str or type(left) == str:
+            if type(right) is str or type(left) is str:
                 tokentype = TOKENTYPE.STRING
             else:
                 tokentype = TOKENTYPE.NUMBER
-            stack.append({'type': tokentype, 'value': min(right, left)})
-        case 'replace':  # replace(string, old, new)
+            stack.append({"type": tokentype, "value": min(right, left)})
+        case "replace":  # replace(string, old, new)
             new = stack.pop()
-            new = str(new['value'])
+            new = str(new["value"])
             old = stack.pop()
-            old = str(old['value'])
+            old = str(old["value"])
             string = stack.pop()
-            string = str(string['value'])
-            stack.append({'type': TOKENTYPE.STRING, 'value': string.replace(old, new)})
-        case 'split':  # split(string, separator)
+            string = str(string["value"])
+            stack.append({"type": TOKENTYPE.STRING, "value": string.replace(old, new)})
+        case "split":  # split(string, separator)
             separator = stack.pop()
-            separator = str(separator['value'])
+            separator = str(separator["value"])
             string = stack.pop()
-            string = str(string['value'])
-            stack.append({'type': TOKENTYPE.STRING, 'value': string.split(separator)})
-        case 'upper':  # upper(string)
+            string = str(string["value"])
+            stack.append({"type": TOKENTYPE.STRING, "value": string.split(separator)})
+        case "upper":  # upper(string)
             string = stack.pop()
-            stack.append({'type': TOKENTYPE.STRING, 'value': str(string['value']).upper()})
-        case 'lower':  # lower(string)
+            stack.append(
+                {"type": TOKENTYPE.STRING, "value": str(string["value"]).upper()}
+            )
+        case "lower":  # lower(string)
             string = stack.pop()
-            stack.append({'type': TOKENTYPE.STRING, 'value': str(string['value']).lower()})
-        case 'if':  # if(condition, true, false)
+            stack.append(
+                {"type": TOKENTYPE.STRING, "value": str(string["value"]).lower()}
+            )
+        case "if":  # if(condition, true, false)
             false = stack.pop()
             true = stack.pop()
             condition = stack.pop()
-            condition = condition['value']
+            condition = condition["value"]
             if condition == 1:
                 stack.append(true)
             else:
                 stack.append(false)
-        case 'not':  # not(condition)
+        case "not":  # not(condition)
             condition = stack.pop()
-            condition = condition['value']
+            condition = condition["value"]
             if condition == 1:
-                stack.append({'type': TOKENTYPE.NUMBER, 'value': 0})
+                stack.append({"type": TOKENTYPE.NUMBER, "value": 0})
             else:
-                stack.append({'type': TOKENTYPE.NUMBER, 'value': 1})
-        case 'and':  # and(condition, condition)
+                stack.append({"type": TOKENTYPE.NUMBER, "value": 1})
+        case "and":  # and(condition, condition)
             right = stack.pop()
-            right = right['value']
+            right = right["value"]
             left = stack.pop()
-            left = left['value']
+            left = left["value"]
             if right == 1 and left == 1:
-                stack.append({'type': TOKENTYPE.NUMBER, 'value': 1})
+                stack.append({"type": TOKENTYPE.NUMBER, "value": 1})
             else:
-                stack.append({'type': TOKENTYPE.NUMBER, 'value': 0})
-        case 'or':  # or(condition, condition)
+                stack.append({"type": TOKENTYPE.NUMBER, "value": 0})
+        case "or":  # or(condition, condition)
             right = stack.pop()
-            right = right['value']
+            right = right["value"]
             left = stack.pop()
-            left = left['value']
+            left = left["value"]
             if right == 1 or left == 1:
-                stack.append({'type': TOKENTYPE.NUMBER, 'value': 1})
+                stack.append({"type": TOKENTYPE.NUMBER, "value": 1})
             else:
-                stack.append({'type': TOKENTYPE.NUMBER, 'value': 0})
-        case 'match':  # match(string, pattern)
+                stack.append({"type": TOKENTYPE.NUMBER, "value": 0})
+        case "match":  # match(string, pattern)
             pattern = stack.pop()
-            pattern = pattern['value']
+            pattern = pattern["value"]
             string = stack.pop()
-            string = string['value']
+            string = string["value"]
             if re.match(pattern, string):
-                stack.append({'type': TOKENTYPE.NUMBER, 'value': 1})
+                stack.append({"type": TOKENTYPE.NUMBER, "value": 1})
             else:
-                stack.append({'type': TOKENTYPE.NUMBER, 'value': 0})
-        case 'substring':  # substring(string, start, end)
+                stack.append({"type": TOKENTYPE.NUMBER, "value": 0})
+        case "substring":  # substring(string, start, end)
             end = stack.pop()
-            end = end['value']
+            end = end["value"]
             start = stack.pop()
-            start = start['value']
+            start = start["value"]
             string = stack.pop()
-            string = string['value']
-            stack.append({'type': TOKENTYPE.STRING, 'value': string[start:end]})
-        case 'random':  # random(start, end)
+            string = string["value"]
+            stack.append({"type": TOKENTYPE.STRING, "value": string[start:end]})
+        case "random":  # random(start, end)
             end = stack.pop()
-            end = end['value']
+            end = end["value"]
             start = stack.pop()
-            start = start['value']
+            start = start["value"]
             if start > end:
-                compute.setTokenError('Random error start > end', compute.token_start, compute.token_end, TOKENTYPE.ERROR)
+                compute.setTokenError(
+                    "Random error start > end",
+                    compute.token_start,
+                    compute.token_end,
+                    TOKENTYPE.ERROR,
+                )
                 return False
             try:
-                if type(start) == float or type(end) == float:
-                    stack.append({'type': TOKENTYPE.NUMBER, 'value': random.uniform(start, end)})
+                if type(start) is float or type(end) is float:
+                    stack.append(
+                        {"type": TOKENTYPE.NUMBER, "value": random.uniform(start, end)}
+                    )
                 else:
-                    stack.append({'type': TOKENTYPE.NUMBER, 'value': random.randint(start, end)})
+                    stack.append(
+                        {"type": TOKENTYPE.NUMBER, "value": random.randint(start, end)}
+                    )
             except ValueError:
-                compute.setTokenError('Random error must number', compute.token_start, compute.token_end, TOKENTYPE.ERROR)
+                compute.setTokenError(
+                    "Random error must number",
+                    compute.token_start,
+                    compute.token_end,
+                    TOKENTYPE.ERROR,
+                )
                 return False
-        case 'random_int':  # randomint(0, 2^64 -1)
+        case "random_int":  # randomint(0, 2^64 -1)
             try:
-                stack.append({'type': TOKENTYPE.NUMBER, 'value': random.randint(0, 2**64 - 1)})
+                stack.append(
+                    {"type": TOKENTYPE.NUMBER, "value": random.randint(0, 2**64 - 1)}
+                )
             except ValueError:
-                compute.setTokenError('Random error', compute.token_start, compute.token_end, TOKENTYPE.ERROR)
+                compute.setTokenError(
+                    "Random error",
+                    compute.token_start,
+                    compute.token_end,
+                    TOKENTYPE.ERROR,
+                )
                 return False
-        case 'random_float':  # randomfloat(0, 1)
+        case "random_float":  # randomfloat(0, 1)
             try:
-                stack.append({'type': TOKENTYPE.NUMBER, 'value': random.random()})
+                stack.append({"type": TOKENTYPE.NUMBER, "value": random.random()})
             except ValueError:
-                compute.setTokenError('Random error', compute.token_start, compute.token_end, TOKENTYPE.ERROR)
+                compute.setTokenError(
+                    "Random error",
+                    compute.token_start,
+                    compute.token_end,
+                    TOKENTYPE.ERROR,
+                )
                 return False
-        case 'random_string':  # randomstring(length)
+        case "random_string":  # randomstring(length)
             length = stack.pop()
-            length = length['value']
-            stack.append({'type': TOKENTYPE.STRING,
-                          'value':
-                          ''.join([random.choice('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789') for i in range(length)])})
-        case 'uuid':  # uuid()
+            length = length["value"]
+            stack.append(
+                {
+                    "type": TOKENTYPE.STRING,
+                    "value": "".join(
+                        [
+                            random.choice(
+                                "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+                            )
+                            for i in range(length)
+                        ]
+                    ),
+                }
+            )
+        case "uuid":  # uuid()
             import uuid
-            stack.append({'type': TOKENTYPE.STRING, 'value': str(uuid.uuid4())})
-        case 'time':  # time() as hh:mm:ss
-            stack.append({'type': TOKENTYPE.STRING, 'value': time.strftime('%H:%M:%S')})
-        case 'date':  # date() as yyyy-mm-dd
-            stack.append({'type': TOKENTYPE.STRING, 'value': time.strftime('%Y-%m-%d')})
-        case 'datetime':  # datetime() as yyyy-mm-dd hh:mm:ss
-            stack.append({'type': TOKENTYPE.STRING, 'value': time.strftime('%Y-%m-%d %H:%M:%S')})
-        case 'timestamp':  # timestamp() as yyyy-mm-dd hh:mm:ss
-            stack.append({'type': TOKENTYPE.NUMBER, 'value': int(time.time())})
-        case 'year':  # year() as yyyy
-            stack.append({'type': TOKENTYPE.NUMBER, 'value': int(time.strftime('%Y'))})
-        case 'month':  # month() as mm
-            stack.append({'type': TOKENTYPE.NUMBER, 'value': int(time.strftime('%m'))})
-        case 'day':  # day() as dd
-            stack.append({'type': TOKENTYPE.NUMBER, 'value': int(time.strftime('%d'))})
-        case 'hour':  # hour() as hh
-            stack.append({'type': TOKENTYPE.NUMBER, 'value': int(time.strftime('%H'))})
-        case 'minute':  # minute() as mm
-            stack.append({'type': TOKENTYPE.NUMBER, 'value': int(time.strftime('%M'))})
-        case 'second':  # second() as ss
-            stack.append({'type': TOKENTYPE.NUMBER, 'value': int(time.strftime('%S'))})
-        case 'weekday':  # weekday() as 0-6
-            stack.append({'type': TOKENTYPE.NUMBER, 'value': int(time.strftime('%w'))})
-        case 'week':  # week() as 0-53
-            stack.append({'type': TOKENTYPE.NUMBER, 'value': int(time.strftime('%W'))})
+
+            stack.append({"type": TOKENTYPE.STRING, "value": str(uuid.uuid4())})
+        case "time":  # time() as hh:mm:ss
+            stack.append({"type": TOKENTYPE.STRING, "value": time.strftime("%H:%M:%S")})
+        case "date":  # date() as yyyy-mm-dd
+            stack.append({"type": TOKENTYPE.STRING, "value": time.strftime("%Y-%m-%d")})
+        case "datetime":  # datetime() as yyyy-mm-dd hh:mm:ss
+            stack.append(
+                {"type": TOKENTYPE.STRING, "value": time.strftime("%Y-%m-%d %H:%M:%S")}
+            )
+        case "timestamp":  # timestamp() as yyyy-mm-dd hh:mm:ss
+            stack.append({"type": TOKENTYPE.NUMBER, "value": int(time.time())})
+        case "year":  # year() as yyyy
+            stack.append({"type": TOKENTYPE.NUMBER, "value": int(time.strftime("%Y"))})
+        case "month":  # month() as mm
+            stack.append({"type": TOKENTYPE.NUMBER, "value": int(time.strftime("%m"))})
+        case "day":  # day() as dd
+            stack.append({"type": TOKENTYPE.NUMBER, "value": int(time.strftime("%d"))})
+        case "hour":  # hour() as hh
+            stack.append({"type": TOKENTYPE.NUMBER, "value": int(time.strftime("%H"))})
+        case "minute":  # minute() as mm
+            stack.append({"type": TOKENTYPE.NUMBER, "value": int(time.strftime("%M"))})
+        case "second":  # second() as ss
+            stack.append({"type": TOKENTYPE.NUMBER, "value": int(time.strftime("%S"))})
+        case "weekday":  # weekday() as 0-6
+            stack.append({"type": TOKENTYPE.NUMBER, "value": int(time.strftime("%w"))})
+        case "week":  # week() as 0-53
+            stack.append({"type": TOKENTYPE.NUMBER, "value": int(time.strftime("%W"))})
         case _:
-            compute.setTokenError('Unknown function', compute.token_start, compute.token_end, TOKENTYPE.ERROR)
+            compute.setTokenError(
+                "Unknown function",
+                compute.token_start,
+                compute.token_end,
+                TOKENTYPE.ERROR,
+            )
             return False
     return True

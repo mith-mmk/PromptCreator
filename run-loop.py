@@ -810,9 +810,11 @@ def loop(config_file):
                         break
                     case _:
                         logger.info(f"unknown command {command}")
-
+            except AttributeError as e:
+                logger.error(f"command error {command} {e}")
+                exit(1)
             except Exception as e:
-                logger.info(type(e))
+                logger.info("run-loop error", e)
                 continue
             config = load_config(config_file)
             if not config["loop"]["mode"]:
@@ -838,7 +840,7 @@ def main(config_file=CONFIG):
                     time.sleep(5)
             config = load_config(config_file)
         except Exception as e:
-            logger.info(type(e))
+            logger.info("load config error", e)
             logger.info("Please check config.yaml")
             logger.info("Wait 60 seconds...")
             time.sleep(60)
@@ -851,13 +853,19 @@ def main(config_file=CONFIG):
         logger.info("txt2img")
         try:
             txt2img(config)
+        except AttributeError as e:  # if this error is happned reboot
+            logger.error(f"Attribute Error in txt2img {e}")
+            exit(1)
         except Exception as e:
-            logger.error(type(e))
+            logger.error("txt2img running error", e)
         logger.info("img2img")
         try:
             run_img2img(config)
+        except AttributeError as e:  # if this error is happned reboot
+            logger.error(f"Attribute Error in img2img {e}")
+            exit(1)
         except Exception as e:
-            logger.error(type(e))
+            logger.error("img2img running error", e)
         time.sleep(1)
 
 

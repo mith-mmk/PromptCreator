@@ -199,20 +199,22 @@ def create_img2params(imagefile):
     schema = [
         "enable_hr",
         "denoising_strength",
-        "hires_upscale",
+        "hr_upscaler",
+        "hr_upscale",
+        "hr_steps",
+        "hr_resize_x",
+        "hr_resize_y",
         "prompt",
         "styles",
         "seed",
         "subseed",
         "subseed_strength",
-        "seed_resize_from_h",
-        "seed_resize_from_w",
         "batch_size",
         "n_iter",
         "steps",
         "cfg_scale",
-        "width",
-        "height",
+        "firstphase_width",
+        "firstphase_height",
         "restore_faces",
         "tiling",
         "negative_prompt",
@@ -260,12 +262,47 @@ def create_img2params(imagefile):
     # workaround for hires.fix spec change
     parameters["width"] = image.width
     parameters["height"] = image.height
+
     if "hires_upscale" in parameters:
         parameters["hr_upscale"] = parameters["hires_upscale"]
         del parameters["hires_upscale"]
-
+    if "hires_steps" in parameters:
+        parameters["hr_steps"] = parameters["hires_steps"]
+        del parameters["hires_steps"]
+    if "hires_upscaler" in parameters:
+        parameters["hr_upscaler"] = parameters["hires_upscaler"]
+        del parameters["hires_upscaler"]
+    if "hires_resize" in parameters:
+        h = image.height
+        w = image.width
+        parameters["hr_resize_x"] = h
+        parameters["hr_resize_y"] = w
+        del parameters["hires_resize"]
+        if h > w:
+            scale = float(h) / float(w)
+            w = 512
+            h = int((h * scale + 63) / 64) * 64
+            parameters["firstphase_width"] = w
+            parameters["firstphase_height"] = h
+        else:
+            scale = float(w) / float(h)
+            h = 512
+            w = int(int(h * scale + 63) / 64) * 64
+            parameters["firstphase_width"] = w
+            parameters["firstphase_height"] = h
+    if "hr_upscale" in parameters:
+        parameters["firstphase_width"] = int(
+            float(parameters["width"]) / float(parameters["hr_upscale"])
+        )
+        parameters["firstphase_height"] = int(
+            float(parameters["height"]) / float(parameters["hr_upscale"])
+        )
+        del parameters["width"]
+        del parameters["height"]
     json_raw = {}
     override_settings = {}
+    print(schema)
+    print(parameters)
 
     sampler_index = None
     # override settings only return sd_model_checkpoint and CLIP_stop_at_last_layers

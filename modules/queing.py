@@ -1,4 +1,5 @@
 import asyncio
+
 import logger as Logger
 
 
@@ -30,7 +31,7 @@ class BackgroundWorker:
         # work
         while True:
             work = await self._queue.get()
-            if type(work) == str:
+            if type(work) is str:
                 work = work.split()
             if work[0] == "done":
                 for i in range(self.max_tasks):
