@@ -1,14 +1,23 @@
 import asyncio
-import time
 import base64
-import httpx
-import sys
 import json
+import sys
+import time
+
+import httpx
 
 # shared function for api
 
 
 share = {"timeout": 5, "max_timeout": 1000}
+
+
+def set_timeout(timeout):
+    share["timeout"] = timeout
+
+
+def set_max_timeout(timeout):
+    share["max_timeout"] = timeout
 
 
 def init():
@@ -46,6 +55,9 @@ async def async_post(url, data, userpass=None):
             return None
 
 
+isRunning = False
+
+
 async def progress_writer(url, data, progress_url, userpass=None):
     headers = {
         "Content-Type": "application/json",
@@ -53,6 +65,7 @@ async def progress_writer(url, data, progress_url, userpass=None):
     if userpass:
         headers["Authorization"] = "Basic " + base64.b64encode(userpass.encode())
     result = None
+
     async with httpx.AsyncClient() as client:
 
         async def write_progress(result, start_time):
@@ -73,9 +86,7 @@ async def progress_writer(url, data, progress_url, userpass=None):
                 right = -right
                 sharp = "#" * int(right / 2)
                 space = " " * (50 - len(sharp))
-                string = (
-                    f"\033[KWeb UI interrupts using resource [{sharp}{space}] {string}"
-                )
+                string = f"\033[KWeb UI interrupts using resource [{sharp}{space}] {string} {isRunning}"
             print(string, end="\r")
             return elapsed_time
 
@@ -85,36 +96,39 @@ async def progress_writer(url, data, progress_url, userpass=None):
                 headers["Authorization"] = "Basic " + base64.b64encode(
                     userpass.encode()
                 )
-            async with httpx.AsyncClient() as client:
-                retry = 0
-                start_time = time.time()
-                response = await client.get(progress_url, headers=headers)
-                result = response.json()
-                right = 1.0
+            retry = 0
+            start_time = time.time()
+            response = await client.get(progress_url, headers=headers)
+            result = response.json()
+            right = 1.0
+            elapsed_time = await write_progress(result, start_time)
+            await asyncio.sleep(0.5)  # initializing wait
+            while right != 0.0 and elapsed_time <= share.get("max_timeout"):
+                await asyncio.sleep(0.2)
+                try:
+                    response = await client.get(progress_url, timeout=1)
+                    retry = 0
+                    result = response.json()
+                    right = result["progress"]
+                    elapsed_time = await write_progress(result, start_time)
+                    if not isRunning:
+                        break
+                except Exception:
+                    retry += 1
+                    if retry >= 20:
+                        print("Progress is unknown", file=sys.stderr)
+                        return
 
-                elapsed_time = await write_progress(result, start_time)
-                await asyncio.sleep(0.5)  # initializing wait
-                while right != 0.0 and elapsed_time <= share.get("max_timeout"):
-                    await asyncio.sleep(0.2)
-                    try:
-                        response = await client.get(progress_url)
-                        retry = 0
-                        result = response.json()
-                        right = result["progress"]
-                        elapsed_time = await write_progress(result, start_time)
-                    except Exception:
-                        retry += 1
-                        if retry >= 10:
-                            print("Progress is unknown", file=sys.stderr)
-                            return
+        async def post_wrapper(url, data, headers, timeout):
+            result = await client.post(url, data=data, headers=headers, timeout=timeout)
+            global isRunning
+            isRunning = False
+            return result
 
+        global isRunning
+        isRunning = True
         tasks = [
-            client.post(
-                url,
-                data=data,
-                headers=headers,
-                timeout=(share.get("timeout"), share.get("max_timeout")),
-            ),
+            post_wrapper(url, data, headers, (share.get("timeout"), None)),
             progress_get(progress_url, userpass),
         ]
         result = await asyncio.gather(*tasks, return_exceptions=False)
