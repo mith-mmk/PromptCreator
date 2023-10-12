@@ -18,7 +18,10 @@ from modules.parse import create_parameters
 
 
 def save_images(r, opt={"dir": "./outputs"}):
-    return asyncio.run(save_img_wrapper(r, opt))
+    return save_img(r, opt=opt)
+
+
+#    return asyncio.run(save_img_wrapper(r, opt))
 
 
 async def save_img_wrapper(r, opt):
