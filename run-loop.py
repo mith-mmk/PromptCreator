@@ -11,7 +11,6 @@ import time
 import yaml
 
 import create_prompts
-
 # import logging
 import img2img
 from modules.logger import LogPrint
@@ -546,6 +545,7 @@ def escape_split(str, split):
 
 
 def txt2img(config):
+    host = config["host"]
     config = config["txt2img"]
     output_dir = config["output"]
     models = config["models"]
@@ -615,7 +615,7 @@ def txt2img(config):
             args = [
                 "--api-mode",
                 "--api-base",
-                HOST,
+                host,
                 "--api-set-sd-model",
                 model_name,
                 "--api-set-sd-vae",
