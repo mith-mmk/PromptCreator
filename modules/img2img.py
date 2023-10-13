@@ -2,10 +2,12 @@ import json
 import os
 
 import modules.api as api
+import modules.logger as logger
 from modules.interrogate import interrogate
 from modules.parse import create_img2json
 from modules.save import save_img
 
+Logger = logger.getDefaultLogger()
 # Call img2img API from webui, it has many bugs
 
 
@@ -33,16 +35,16 @@ def img2img(
     base_url = api.normalize_base_url(base_url)
     url = base_url + "/sdapi/v1/img2img"
     progress = base_url + "/sdapi/v1/progress?skip_current_image=true"
-    print("Enter API, connect", url)
+    Logger.info("Enter API, connect", url)
     dir = output_dir
     opt["dir"] = output_dir
-    print("output dir", dir)
+    Logger.info("output dir", dir)
     os.makedirs(dir, exist_ok=True)
     #    dt = datetime.datetime.now().strftime('%y%m%d')
     count = len(imagefiles)
 
-    print(f"API loop count is {count} times")
-    print("")
+    Logger.info(f"API loop count is {count} times")
+    Logger.info("")
     flash = ""
     alt_image_dir = opt.get("alt_image_dir")
     mask_image_dir = opt.get("mask_dir")
@@ -67,7 +69,7 @@ def img2img(
                 if result.status_code == 200:
                     item["prompt"] = result.json()["caption"]
             except BaseException as e:
-                print("itterogate failed", e)
+                Logger.error("itterogate failed", e)
         if "extend" in opt:
             # extend = opt['extend']
             del opt["extend"]
@@ -116,7 +118,7 @@ def img2img(
         )
 
         if response is None:
-            print("http connection - happening error")
+            Logger.error("http connection - happening error")
             raise Exception("http connection - happening error")
         if response.status_code != 200:
             print("\033[KError!", response.status_code, response.text)

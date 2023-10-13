@@ -18,15 +18,15 @@ enum = {
 }
 
 
-def getDefaultLogger():
+def getDefaultLogger() -> "LogPrint":
     return getLogger("root")
 
 
-def getLogger(service_name="root"):
-    if service_name not in Logger:
-        logger = Logger(service_name)
+def getLogger(service_name="root") -> "LogPrint":
+    if service_name in Logger:
+        logger = Logger[service_name]
         return logger
-    return Logger[service_name]
+    return LogPrint(service_name)
 
 
 class LogPrint:
@@ -220,6 +220,9 @@ class LogPrint:
             open(logfile, "w").close()
             # update startDay
             self.startDay = now
+
+    def stdout(self, *msg):
+        print(*msg)
 
 
 LogPrint("service")

@@ -1,7 +1,9 @@
 import asyncio
 
-from modules.logger import LogPrint
+from modules.logger import getDefaultLogger
 from modules.save import save_images
+
+Logger = getDefaultLogger()
 
 
 class BackgroundWorker:
@@ -13,7 +15,6 @@ class BackgroundWorker:
         asyncio.create_task(self.worker())
 
     async def worker(self):
-        Logger = LogPrint("CreatePrompt2")
         Logger.info("BackgroundWorker start")
         while True:
             while self._queue.empty():

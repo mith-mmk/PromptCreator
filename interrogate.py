@@ -1,9 +1,13 @@
 # sample of iterrogate api
 # iterrogate api call has bug call self.__base64_to_image() but its function is not implementent
 # workaround call decode_base64_to_image()
+import argparse
+
+import modules.logger as logger
 from modules.interrogate import interrogate
 
-import argparse
+Logger = logger.getDefaultLogger()
+
 
 parser = argparse.ArgumentParser()
 
@@ -34,10 +38,10 @@ for filename in filenames:
     result = interrogate(
         filename, base_url=base_url, model=args.model
     )  # 'clip' or 'deepdanbooru'
-    print(result)
+    Logger.info(result)
     if result.status_code == 200:
-        print(filename)
-        print(result.json()["caption"])
+        Logger.info(filename)
+        Logger.info(result.json()["caption"])
     else:
-        print(result.text)
-        print("Is Web UI replace newest version?")
+        Logger.info(result.text)
+        Logger.info("Is Web UI replace newest version?")

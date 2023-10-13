@@ -8,11 +8,15 @@
 import argparse
 import json
 import os
+
 import modules.api as api
 from modules.img2img import img2img
-from modules.txt2img import txt2img
 from modules.interrogate import interrogate
-from modules.prompt import expand_arg, create_text
+from modules.logger import getDefaultLogger
+from modules.prompt import create_text, expand_arg
+from modules.txt2img import txt2img
+
+Logger = getDefaultLogger()
 
 
 def img2img_from_args(args):
@@ -62,7 +66,7 @@ def img2img_from_args(args):
         elif os.path.isfile(filename):
             input_files.append(filename)
     if len(input_files) == 0:
-        print("no exit files")
+        Logger.error("no exit files")
         return False
 
     if dicted_args.get("sd_model") is not None:
@@ -97,7 +101,7 @@ def img2img_from_args(args):
             opt=opt,
         )
     except Exception as e:
-        print(e)
+        Logger.info(e)
         return False
     return True
 
@@ -113,13 +117,13 @@ def interrogate_from_args(args):
         result = interrogate(
             filename, base_url=base_url, model=args.model
         )  # 'clip' or 'deepdanbooru'
-        print(result)
+        Logger.info(result)
         if result.status_code == 200:
-            print(filename)
-            print(result.json()["caption"])
+            Logger.info(filename)
+            Logger.info(result.json()["caption"])
         else:
-            print(result.text)
-            print("Is Web UI replace newest version?")
+            Logger.info(result.text)
+            Logger.info("Is Web UI replace newest version?")
 
 
 def main(args):
@@ -142,7 +146,7 @@ def main(args):
         with open(args.api_input_json, "r", encoding="utf-8") as f:
             output_text = json.loads(f.read())
     else:
-        print("option error")
+        Logger.error("option error")
         raise Exception("option error")
 
     opt = {}
@@ -362,8 +366,8 @@ def run_from_args(command_args=None):
 
     args = parser.parse_args(command_args)
     if args.input is None and not (args.api_mode and args.api_input_json is not None):
-        parser.print_help()
-        print("need [input] or --api-mode --api_input_json [filename]")
+        parser.Logger.info_help()
+        Logger.info("need [input] or --api-mode --api_input_json [filename]")
         return False
     return main(args)
 

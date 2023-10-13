@@ -6,8 +6,11 @@ import time
 
 import httpx
 
+import modules.logger as logger
+
 # shared function for api
 
+Logger = logger.getDefaultLogger()
 
 share = {"timeout": 5, "max_timeout": 1000}
 
@@ -164,13 +167,15 @@ def request_post_wrapper(url, data, progress_url=None, base_url=None, userpass=N
     except KeyboardInterrupt:
         if base_url:
             progress_interrupt(base_url + "/sdapi/v1/skip")  # chage api?
-        print("enter Ctrl-c, Process stopping", file=sys.stderr)
+        Logger.error("enter Ctrl-c, Process stopping", file=sys.stderr)
         raise KeyboardInterrupt
     except httpx.ConnectError:
-        print("All connection attempts failed,Is the server down?", file=sys.stderr)
+        Logger.error(
+            "All connection attempts failed,Is the server down?", file=sys.stderr
+        )
         raise httpx.ConnectError
     except httpx.ConnectTimeout:
-        print(
+        Logger.error(
             "Connection Time out,Is the server down or server address mistake?",
             file=sys.stderr,
         )
@@ -226,7 +231,7 @@ def get_vae(base_url="http://127.0.0.1:7860", vae=None):
 
 
 def set_sd_model(sd_model, base_url="http://127.0.0.1:7860", sd_vae="Automatic"):
-    print(f"Try change sd model to {sd_model}")
+    Logger.info(f"Try change sd model to {sd_model}")
     headers = {
         "Content-Type": "application/json",
     }
@@ -246,10 +251,10 @@ def set_sd_model(sd_model, base_url="http://127.0.0.1:7860", sd_vae="Automatic")
                 load_model = model["title"]
                 break
         if load_model is None:
-            print(f"{sd_model} model is not found")
+            Logger.info(f"{sd_model} model is not found")
             raise
         sd_model = load_model
-        print(f"{sd_model} model loading...")
+        Logger.info(f"{sd_model} model loading...")
         payload = {"sd_model_checkpoint": sd_model, "sd_vae": sd_vae}
         data = json.dumps(payload)
         res = httpx.post(
@@ -260,10 +265,10 @@ def set_sd_model(sd_model, base_url="http://127.0.0.1:7860", sd_vae="Automatic")
         )
         # Version Return null only
         if res.status_code == 200:
-            print("change success sd_model")
+            Logger.info("change success sd_model")
         else:
-            print("change failed")
+            Logger.info("change failed")
 
     except Exception:
-        print("Change SD Model Error")
+        Logger.error("Change SD Model Error")
         raise

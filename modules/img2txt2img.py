@@ -2,8 +2,11 @@ import json
 import os
 
 import modules.api as api
+from modules.logger import getDefaultLogger
 from modules.parse import create_img2params
 from modules.save import save_img
+
+Logger = getDefaultLogger()
 
 
 def img2txt2img(
@@ -16,15 +19,15 @@ def img2txt2img(
     base_url = api.normalize_base_url(base_url)
     url = base_url + "/sdapi/v1/txt2img"
     progress = base_url + "/sdapi/v1/progress?skip_current_image=true"
-    print("Enter API, connect", url)
+    Logger.info("Enter API, connect", url)
     dir = output_dir
     opt["dir"] = output_dir
-    print("output dir", dir)
+    Logger.info("output dir", dir)
     os.makedirs(dir, exist_ok=True)
     #    dt = datetime.datetime.now().strftime('%y%m%d')
     count = len(imagefiles)
 
-    print(f"API loop count is {count} times")
+    Logger.info(f"API loop count is {count} times")
     print("")
     flash = ""
     if opt.get("userpass"):
@@ -50,7 +53,7 @@ def img2txt2img(
             userpass=userpass,
         )
         if response is None:
-            print("http connection - happening error")
+            Logger.error("http connection - happening error")
             raise Exception("http connection - happening error")
         if response.status_code != 200:
             print("\033[KError!", response.status_code, response.text)

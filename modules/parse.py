@@ -5,6 +5,9 @@ import re
 from PIL import Image
 
 import modules.api as api
+from modules.logger import getDefaultLogger
+
+Logger = getDefaultLogger()
 
 
 # parsing json from metadata in an image
@@ -60,7 +63,7 @@ def create_parameters(parameters_text):
             else:
                 parameters[key] = keyvalue[1]
         else:
-            print("unknow", keyvalue)
+            Logger.verbose("unknow", keyvalue)
     return parameters
 
 
@@ -147,7 +150,7 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None, base_url
         basename = os.path.basename(imagefile)
         alt_imagefile = os.path.join(alt_image_dir, basename)
         if os.path.isfile(alt_imagefile):
-            print(f"\033[Kbase image use alternative {alt_imagefile}")
+            Logger.info(f"\033[Kbase image use alternative {alt_imagefile}")
             if "line_count" in api.share:
                 api.share["line_count"] += 1
             load_image = alt_imagefile
@@ -162,7 +165,7 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None, base_url
         mask_imagefile = os.path.join(mask_image_dir, basename)
         if os.path.isfile(mask_imagefile):
             with open(mask_imagefile, "rb") as f:
-                print(f"\033[KUse image mask {mask_imagefile}")
+                Logger.info(f"\033[KUse image mask {mask_imagefile}")
                 if "line_count" in api.share:
                     api.share["line_count"] += 1
                 mask_image = base64.b64encode(f.read()).decode("ascii")
@@ -301,8 +304,8 @@ def create_img2params(imagefile):
         del parameters["height"]
     json_raw = {}
     override_settings = {}
-    print(schema)
-    print(parameters)
+    Logger.verbose(schema)
+    Logger.verbose(parameters)
 
     sampler_index = None
     # override settings only return sd_model_checkpoint and CLIP_stop_at_last_layers

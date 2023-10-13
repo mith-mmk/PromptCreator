@@ -4,7 +4,6 @@ import io
 import json
 import os
 import re
-import sys
 from datetime import datetime
 from hashlib import sha256
 from zoneinfo import ZoneInfo
@@ -12,7 +11,10 @@ from zoneinfo import ZoneInfo
 from PIL import Image, PngImagePlugin
 
 import modules.api as api
+from modules.logger import getDefaultLogger
 from modules.parse import create_parameters
+
+Logger = getDefaultLogger()
 
 # The Image saver, but enough support aysnc
 
@@ -84,7 +86,7 @@ def save_img(r, opt={"dir": "./outputs"}):
         elif name == "sec":
             count += 2
         elif use_num:
-            print(f"[{name}] is setting before [num]", file=sys.stderr)
+            Logger.error(f"[{name}] is setting before [num]")
             raise ValueError
 
     num_length = 5
@@ -113,7 +115,7 @@ def save_img(r, opt={"dir": "./outputs"}):
         info = r["info"]
 
     count = len(r["images"])
-    print(f"\033[Kreturn {count} images")
+    Logger.stdout(f"\033[Kreturn {count} images")
 
     filename_pattern = {}
     variables = {}
@@ -264,7 +266,7 @@ def save_img(r, opt={"dir": "./outputs"}):
             #            seed = filename_pattern['all_seeds'] [n]
             #            filename = str(num).zfill(5) +'-' +  str(seed) + '.png'
             filename = re.sub(r"\[.+?\:.+?\]", "", filename)
-            print("\033[Ksave... ", filename)
+            Logger.stdout("\033[Ksave... ", filename)
             filename = os.path.join(dir, filename)
             dirname = os.path.dirname(filename)
             if dirname != dir:
@@ -315,27 +317,23 @@ def save_img(r, opt={"dir": "./outputs"}):
                         user_bytes = bytes(extendend_meta, encoding="utf-16le")
                         exif_dict["0th"] = {}
                         exif_dict["0th"][piexif.ImageIFD.XPComment] = user_bytes
-                    print(exif_dict)
+                    Logger.debug(exif_dict)
                     exif_bytes = piexif.dump(exif_dict)
-                    # print("start image save")
                     image.save(filename, exif=exif_bytes, quality=quality)
-                    # print("end image save")
                 except ImportError:
-                    print("piexif not found")
+                    Logger.error("piexif not found")
                     image.save(filename, quality=quality)
             else:
                 pnginfo = PngImagePlugin.PngInfo()
                 pnginfo.add_text("parameters", meta)
                 if extendend_meta is not None:
                     pnginfo.add_text("expantion", extendend_meta)
-                # print("start image save")
                 image.save(filename, pnginfo=pnginfo)
-                # print("end image save")
         except KeyboardInterrupt:
-            print("\033[KProcess stopped Ctrl+C break", file=sys.stderr)
+            Logger.error("Process stopped Ctrl+C break")
             raise KeyboardInterrupt
         except BaseException as e:
-            print("\033[Ksave error", e, filename, file=sys.stderr)
+            Logger.error("save error", e, filename)
             raise e
     #    opt['startnum'] = num
     return len(r["images"]) + 2

@@ -1,7 +1,10 @@
 import re
+
+import modules.logger as logger
 from modules.prompt import item_split
 
 # Read a file and return a list of prompt
+Logger = logger.getDefaultLogger()
 
 
 def read_file(filename):
@@ -17,8 +20,8 @@ def read_file(filename):
                     try:
                         strs.append(item_split(item))
                     except Exception:
-                        print(f"Error happen line {filename} {i} {item}")
+                        Logger.error(f"Error happen line {filename} {i} {item}")
         except FileNotFoundError:
-            print(f"{filename} is not found")
+            Logger.error(f"{filename} is not found")
             raise FileNotFoundError
     return strs

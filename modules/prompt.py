@@ -9,6 +9,9 @@ import re
 import yaml
 
 from modules.formula import FormulaCompute
+from modules.logger import getDefaultLogger
+
+Logger = getDefaultLogger()
 
 # randam prompt creator
 
@@ -22,7 +25,7 @@ def text_formula(text, variables):
             text = text.replace("${=" + formula + "}", str(replace_text))
         else:
             error = compute.getError()
-            print(f"Error happen formula {formula}, {error}")
+            Logger.error(f"Error happen formula {formula}, {error}")
     return text
 
 
@@ -33,8 +36,8 @@ def prompt_formula(new_prompt, variables, info=None):
             for key, item in info.items():
                 variables[f"info:{key}"] = item
     except Exception as e:
-        print(e)
-        print(info)
+        Logger.error(e)
+        Logger.error(info)
 
     if type(new_prompt) is str:
         return text_formula(new_prompt, variables)
@@ -84,8 +87,7 @@ def get_appends(appends):
             for item in items:
                 append.append(item_split(item))
         if len(append) == 0:
-            print(f"Error happen append {key} is empty")
-            raise f"Error happen append {key} is empty"
+            Logger.error(f"Error happen append {key} is empty")
         appends_result[key] = append
     return appends_result
 
@@ -119,7 +121,7 @@ def yaml_parse(filename, mode="text", override=None, info=None):
     #        with open(filename, encoding='utf-8') as f:
     #            yml = yaml.safe_load(f)
     except FileNotFoundError:
-        print(f"File {filename} is not found")
+        Logger.error(f"File {filename} is not found")
         raise FileNotFoundError
     if "command" not in yml:
         yml["command"] = {}
@@ -172,9 +174,9 @@ def read_file(filename):
                     try:
                         strs.append(item_split(item))
                     except Exception:
-                        print(f"Error happen line {filename} {i} {item}")
+                        Logger.error(f"Error happen line {filename} {i} {item}")
         except FileNotFoundError:
-            print(f"{filename} is not found")
+            Logger.error(f"{filename} is not found")
             raise FileNotFoundError
     return strs
 
@@ -193,7 +195,7 @@ def item_split(item):
 
 def prompt_replace(string, replace_texts, var):
     if type(string) is string:
-        print("Repacing String is type error ", type(string))
+        Logger.error("Repacing String is type error ", type(string))
         exit(-1)
 
     if type(replace_texts) is not list:
@@ -313,7 +315,7 @@ def weight_calc(append, num, default_weight=0.1, weight_mode=True):
                 else:
                     weight = max_value + default_weight
             except ValueError:
-                print(
+                Logger.error(
                     f"float convert error append {num + 1} line {i} {item} use default"
                 )
                 weight = max_value + default_weight
@@ -350,7 +352,7 @@ def prompt_random(
     weight_appends = []
     for num, append in enumerate(appends):
         weighted = weight_calc(append, num, default_weight, weight_mode=weight_mode)
-        #           print(weighted)
+        Logger.debug(weighted)
         weight_appends.append(weighted)
     for _ in range(0, max_number):
         new_prompt = copy.deepcopy(prompts)
@@ -364,12 +366,11 @@ def prompt_random(
             cnt = int((len(append) + 1) / 2)
             while True:
                 w = append[pos]["weight"]
-                #                   print (cnt,pos,n,w)
+                Logger.debug(cnt, pos, n, w)
                 if n < w:
                     if pos == 0:
                         break
                     if n >= append[pos - 1]["weight"]:
-                        #                           print ('break')
                         break
                     pos = pos - cnt
                     cnt = int((cnt + 1) / 2)
@@ -391,10 +392,10 @@ def prompt_random(
                         pos = len(append) - 1
                     if cnt == 0:
                         break
-            #               print (n,pos)
+            Logger.debug(n, pos)
             var = keys[i]
             re_str = append[pos]["text"]
-            #               print(var, re_str)
+            Logger.debug(var, re_str)
             new_prompt = prompt_replace(new_prompt, re_str, var)
             if type(re_str) is list:
                 variables[var] = re_str[0]
@@ -453,7 +454,7 @@ def create_text(args):
         try:
             dirs = os.listdir(current)
         except FileNotFoundError:
-            print(f"Directory {current} is not found")
+            Logger.error(f"Directory {current} is not found")
             raise FileNotFoundError
 
         sorted(dirs)
@@ -466,7 +467,7 @@ def create_text(args):
                 for line in f.readlines():
                     prompts = prompts + " " + line.replace("\n", "")
         except FileNotFoundError:
-            print(f"{prompt_file} is not found")
+            Logger.error(f"{prompt_file} is not found")
             raise FileNotFoundError
     appends = set_reserved(appends)
 
@@ -598,14 +599,3 @@ def create_text(args):
                 json.dump(output_text, fp=fw, indent=2)
     result = {"options": options, "yml": yml, "output_text": output_text}
     return result
-
-
-# test
-"""
-if __name__ == '__main__':
-    (prompts, yml, append, mode) = yaml_parse('./prompts/prompts-girls-santa.yaml')
-    print(prompts)
-    print(yml)
-    print(append)
-    print(mode)
-"""

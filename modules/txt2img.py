@@ -1,7 +1,11 @@
-import os
 import json
+import os
+
 import modules.api as api
+from modules.logger import getDefaultLogger
 from modules.save import save_images
+
+Logger = getDefaultLogger()
 
 # Call txt2img API from webui
 
@@ -12,15 +16,15 @@ def txt2img(
     base_url = api.normalize_base_url(base_url)
     url = base_url + "/sdapi/v1/txt2img"
     progress = base_url + "/sdapi/v1/progress?skip_current_image=true"
-    print("Enter API mode, connect", url)
+    Logger.info("Enter API mode, connect", url)
     dir = output_dir
     opt["dir"] = output_dir
-    print("output dir", dir)
+    Logger.info("output dir", dir)
     os.makedirs(dir, exist_ok=True)
     #    dt = datetime.datetime.now().strftime('%y%m%d')
     count = len(output_text)
-    print(f"API loop count is {count} times")
-    print("")
+    Logger.info(f"API loop count is {count} times")
+    Logger.info("")
     flash = ""
 
     if opt.get("userpass"):
@@ -33,6 +37,7 @@ def txt2img(
         print(flash, end="")
         print(f"\033[KBatch {n + 1} of {count}")
         # Why is an error happening? json=payload or json=item
+        Logger.info("run API")
         if "variables" in item:
             opt["variables"] = item.pop("variables")
         payload = json.dumps(item)
@@ -45,11 +50,10 @@ def txt2img(
         )
 
         if response is None:
-            print("http connection - happening error")
+            Logger.error("http connection - happening error")
             raise Exception("http connection - happening error")
         if response.status_code != 200:
-            print("\033[KError!", response.status_code, response.text)
-            print("\033[2A", end="")
+            Logger.info("Error!", response.status_code, response.text)
             continue
 
         r = response.json()

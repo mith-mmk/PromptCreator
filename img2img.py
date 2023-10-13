@@ -1,9 +1,12 @@
 # img2img api test inpritation,function specifications are change after commit
-from modules.img2img import img2img
-from modules.api import set_sd_model
+import argparse
 import os
 
-import argparse
+import modules.logger as logger
+from modules.api import set_sd_model
+from modules.img2img import img2img
+
+Logger = logger.getDefaultLogger()
 
 
 def run_from_args_img2img(command_args=None):
@@ -161,7 +164,7 @@ def run_from_args_img2img(command_args=None):
         elif os.path.isfile(filename):
             input_files.append(filename)
     if len(input_files) == 0:
-        print("no exit files")
+        Logger.info("no exit files")
         return False
 
     if dicted_args.get("sd_model") is not None:
