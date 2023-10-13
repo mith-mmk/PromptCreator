@@ -18,13 +18,21 @@ enum = {
 }
 
 
+def getDefaultLogger():
+    keys = list(Logger.keys())
+    if len(keys) == 0:
+        logger = Logger()
+        return logger
+    return Logger[keys[0]]
+
+
 class LogPrint:
-    def __init__(self, service_name="service"):
+    def __init__(self, service_name="root"):
         global Logger
         self.service_name = service_name
-        self.log_dir = None
-        self.print_levels = None
-        self.logging_level = None
+        self.log_dir = None  # log file path if None, not write log file
+        self.print_levels = "info"
+        self.logging_level = 20
         self.log_days = None
         self.startMessage = False
         self.startDay = datetime.datetime.now()
@@ -136,6 +144,8 @@ class LogPrint:
 
     def write(self, logging_level, *msg):
         if self.logging_level is None:
+            return
+        if self.log_dir is None:
             return
         #  logging_level -> key
         for key, value in enum.items():

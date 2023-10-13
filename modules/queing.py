@@ -1,70 +1,53 @@
 import asyncio
 
-import logger as Logger
+from modules.logger import LogPrint
+from modules.save import save_images
 
 
 class BackgroundWorker:
     def __init__(self, max_tasks=3):
         self._queue = asyncio.Queue()
-        self._woker_queue = asyncio.Queue()
-        self._result_queue = asyncio.Queue()
         self._tasks = []
+        self._result = {}
         self.max_tasks = max_tasks
+        asyncio.create_task(self.worker())
 
-    def new_woker_start(self):
-        asyncio.run(self.main())
-
-    def woker_cancel(self):
-        self._queue.put_nowait("done")
-        for task in self._tasks:
-            task.cancel()
-        asyncio.run(asyncio.gather(*self._tasks, return_exceptions=True))
-        self._tasks = []
-
-    async def main(self):
-        # woker start up
-        for i in range(self.max_tasks):
-            task = asyncio.create_task(
-                self.worker(f"worker-{i}", self.woker_queue, self.result_queue)
-            )
-            self._tasks.append(task)
-        # work
+    async def worker(self):
+        Logger = LogPrint("CreatePrompt2")
+        Logger.info("BackgroundWorker start")
         while True:
-            work = await self._queue.get()
-            if type(work) is str:
-                work = work.split()
+            while self._queue.empty():
+                await asyncio.sleep(0.01)
+            (work, id) = await self._queue.get()
+            self._result[id] = None
             if work[0] == "done":
-                for i in range(self.max_tasks):
-                    await self.woker_queue.put("done")
-                self._queue.task_done()
-                break
-            await self.woker_queue.put(work)
-            self._queue.task_done()
+                Logger.info("BackgroundWorker end")
+                return
+            Logger.info(f"BackgroundWorker get work: {work}")
+            match work[0]:
+                case "save":
+                    Logger.info("BackgroundWorker save")
+                    save_images(work[1], work[2])
+                    self._result[id] = work[1]
+                case "clone":
+                    Logger.info("BackgroundWorker Clone")
+                    self._result[id] = work[1]
+                case "task":
+                    Logger.info("BackgroundWorker task")
+                    self._result[id] = work[1]
+                case "prompt":
+                    Logger.info("BackgroundWorker prompt")
+                    self._result[id] = work[1]
 
     async def put(self, work):
-        await self._queue.put(work)
+        self._tasks.append(work)
+        id = len(self._tasks) - 1
+        await asyncio.create_task(self._queue.put((work, id)))
+        return id
 
-    async def get(self):
-        return await self._result_queue.get()
+    async def done(self):
+        await self.put(("done", None))
+        await self._queue.join()
 
-    async def worker(self, name, worker_queue, result_queue):
-        Logger.debug(f"worker {name} start")
-        while True:
-            # Get a "work item" out of the queue.
-            work = await worker_queue.get()
-            match work[0]:
-                case "clone":
-                    # fileclone(src, dst)
-                    result_queue.put_nowait(f"result: {name} clone {work[1]} {work[2]}")
-                case "save":
-                    # savefile(filename, data, options)
-                    result_queue.put_nowait(f"result: {name} save {work[1]} {work[2]}")
-                case "custom":
-                    # customfunc(*work[1:])
-                    result_queue.put_nowait(f"result: {name} custom {work[1:]}")
-                case "done":
-                    result_queue.put_nowait(f"result: {name} done")
-                    break
-            Logger.debug(f"worker {name} {work} end")
-            worker_queue.task_done()
-        Logger.debug(f"worker {name} end")
+    def get(self, task_id):
+        return self._result[task_id]
