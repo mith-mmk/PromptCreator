@@ -119,12 +119,12 @@ def save_img(r, opt={"dir": "./outputs"}):
     variables = {}
     for key, value in info.items():
         filename_pattern[key] = value
-    if "variables" in opt:
+    if opt.get("save_extend_meta") and "variables" in opt:
         var = re.compile(r"\$\{(.+?)\}")
         for key, value in opt["variables"].items():
             value = str(value)
             match = var.search(value)
-            if match is None:
+            if match is not None:
                 for new_key in match.groups():
                     if new_key in opt["variables"]:
                         value = value.replace(
