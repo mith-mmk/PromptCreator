@@ -11,6 +11,7 @@ import time
 import yaml
 
 import create_prompts
+
 # import logging
 import img2img
 from modules.logger import LogPrint
@@ -645,11 +646,18 @@ def txt2img(config):
 def ping(config):
     host = config["host"].split(":")[1].replace("//", "")
     logger.info(f"ping {host}")
-    result = subprocess.run(
-        ["ping", host, "-n", "1", "-w", "1000"],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
+    if os.name == "nt":
+        result = subprocess.run(
+            ["ping", host, "-n", "1", "-w", "1000"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    else:
+        result = subprocess.run(
+            ["ping", host, "-c", "1", "-w", "1000"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
     logger.debug(f"ping {host} {result.returncode}")
     return result.returncode
 
