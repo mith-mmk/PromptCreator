@@ -124,7 +124,7 @@ def save_img(r, opt={"dir": "./outputs"}):
         for key, value in opt["variables"].items():
             value = str(value)
             match = var.search(value)
-            while match is not None:
+            if match is None:
                 for new_key in match.groups():
                     if new_key in opt["variables"]:
                         value = value.replace(
@@ -132,7 +132,6 @@ def save_img(r, opt={"dir": "./outputs"}):
                         )
                     else:
                         value = value.replace("${%s}" % (new_key), "")
-                    match = var.search(value)
             variables[key] = value
             filename_pattern["var:" + key] = value
 
@@ -318,7 +317,9 @@ def save_img(r, opt={"dir": "./outputs"}):
                         exif_dict["0th"][piexif.ImageIFD.XPComment] = user_bytes
                     print(exif_dict)
                     exif_bytes = piexif.dump(exif_dict)
+                    print("start image save")
                     image.save(filename, exif=exif_bytes, quality=quality)
+                    print("end image save")
                 except ImportError:
                     print("piexif not found")
                     image.save(filename, quality=quality)
@@ -327,7 +328,9 @@ def save_img(r, opt={"dir": "./outputs"}):
                 pnginfo.add_text("parameters", meta)
                 if extendend_meta is not None:
                     pnginfo.add_text("expantion", extendend_meta)
+                print("start image save")
                 image.save(filename, pnginfo=pnginfo)
+                print("end image save")
         except KeyboardInterrupt:
             print("\033[KProcess stopped Ctrl+C break", file=sys.stderr)
             raise KeyboardInterrupt
