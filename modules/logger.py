@@ -19,11 +19,14 @@ enum = {
 
 
 def getDefaultLogger():
-    keys = list(Logger.keys())
-    if len(keys) == 0:
-        logger = Logger()
+    return getLogger("root")
+
+
+def getLogger(service_name="root"):
+    if service_name not in Logger:
+        logger = Logger(service_name)
         return logger
-    return Logger[keys[0]]
+    return Logger[service_name]
 
 
 class LogPrint:
