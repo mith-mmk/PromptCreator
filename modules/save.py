@@ -11,12 +11,22 @@ from zoneinfo import ZoneInfo
 from PIL import Image, PngImagePlugin
 
 import modules.api as api
+import modules.queing as queing
 from modules.logger import getDefaultLogger
 from modules.parse import create_parameters
 
 Logger = getDefaultLogger()
 
 # The Image saver, but enough support aysnc
+queue = None
+
+
+def save_images_async(r, opt={"dir": "./outputs"}):
+    global queue
+    if queue is None:
+        queue = queing.BackgroundWorker()
+    queue.put(["save", r, opt])
+    return len(r["images"])
 
 
 def save_images(r, opt={"dir": "./outputs"}):
@@ -34,10 +44,10 @@ async def save_img_wrapper(r, opt):
 
     if loop:
         loop.run_in_executor(None, save_img(r, opt=opt))
-        return len(r["images"]) + 2
+        return len(r["images"])
     else:
         save_img(r, opt=opt)
-        return len(r["images"]) + 2
+        return len(r["images"])
 
 
 def save_img(r, opt={"dir": "./outputs"}):
@@ -336,4 +346,4 @@ def save_img(r, opt={"dir": "./outputs"}):
             Logger.error("save error", e, filename)
             raise e
     #    opt['startnum'] = num
-    return len(r["images"]) + 2
+    return len(r["images"])

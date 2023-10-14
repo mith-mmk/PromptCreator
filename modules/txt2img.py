@@ -25,7 +25,6 @@ def txt2img(
     count = len(output_text)
     Logger.info(f"API loop count is {count} times")
     Logger.info("")
-    flash = ""
 
     if opt.get("userpass"):
         userpass = opt.get("userpass")
@@ -34,10 +33,8 @@ def txt2img(
 
     for n, item in enumerate(output_text):
         api.share["line_count"] = 0
-        print(flash, end="")
         print(f"\033[KBatch {n + 1} of {count}")
         # Why is an error happening? json=payload or json=item
-        Logger.info("run API")
         if "variables" in item:
             opt["variables"] = item.pop("variables")
         payload = json.dumps(item)
@@ -61,5 +58,4 @@ def txt2img(
         if "line_count" in api.share:
             prt_cnt += api.share["line_count"]
             api.share["line_count"] = 0
-        flash = f"\033[{prt_cnt}A"
     print("")

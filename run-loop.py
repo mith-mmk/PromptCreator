@@ -11,7 +11,6 @@ import time
 import yaml
 
 import create_prompts
-
 # import logging
 import img2img
 from modules.logger import LogPrint
@@ -640,7 +639,7 @@ def txt2img(config):
             try:
                 create_prompts.run_from_args(args)
             except Exception as e:
-                logger.debug(type(e))
+                logger.debug(e)
 
 
 def ping(config):

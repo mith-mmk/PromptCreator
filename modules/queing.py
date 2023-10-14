@@ -1,7 +1,6 @@
 import asyncio
 
 from modules.logger import getDefaultLogger
-from modules.save import save_images
 
 Logger = getDefaultLogger()
 
@@ -24,26 +23,15 @@ class BackgroundWorker:
             if work[0] == "done":
                 Logger.info("BackgroundWorker end")
                 return
-            Logger.info(f"BackgroundWorker get work: {work}")
-            match work[0]:
-                case "save":
-                    Logger.info("BackgroundWorker save")
-                    save_images(work[1], work[2])
-                    self._result[id] = work[1]
-                case "clone":
-                    Logger.info("BackgroundWorker Clone")
-                    self._result[id] = work[1]
-                case "task":
-                    Logger.info("BackgroundWorker task")
-                    self._result[id] = work[1]
-                case "prompt":
-                    Logger.info("BackgroundWorker prompt")
-                    self._result[id] = work[1]
+            if work[0] == "save":
+                import modules.save as save
 
-    async def put(self, work):
+                save.save_img(work[1], work[2])
+
+    def put(self, work):
         self._tasks.append(work)
         id = len(self._tasks) - 1
-        await asyncio.create_task(self._queue.put((work, id)))
+        asyncio.create_task(self._queue.put((work, id)))
         return id
 
     async def done(self):
