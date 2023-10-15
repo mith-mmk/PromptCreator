@@ -11,7 +11,8 @@ from zoneinfo import ZoneInfo
 from PIL import Image, PngImagePlugin
 
 import modules.api as api
-import modules.queing as queing
+
+# import modules.queing as queing
 from modules.logger import getDefaultLogger
 from modules.parse import create_parameters
 
@@ -20,13 +21,18 @@ Logger = getDefaultLogger()
 # The Image saver, but enough support aysnc
 queue = None
 
-
-def save_images_async(r, opt={"dir": "./outputs"}):
-    global queue
-    if queue is None:
-        queue = queing.BackgroundWorker()
-    queue.put(["save", r, opt])
-    return len(r["images"])
+"""
+async def save_images(r, opt={"dir": "./outputs"}):
+    try:
+        global queue
+        if queue is None:
+            queue = await queing.BackgroundWorker()
+        queue.put(["save", r, opt])
+        return len(r["images"])
+    except Exception as e:
+        Logger.error("save_images", e)
+    return 0
+"""
 
 
 def save_images(r, opt={"dir": "./outputs"}):
@@ -131,12 +137,16 @@ def save_img(r, opt={"dir": "./outputs"}):
     variables = {}
     for key, value in info.items():
         filename_pattern[key] = value
-    if opt.get("save_extend_meta") and "variables" in opt:
+    if "variables" in opt:
         var = re.compile(r"\$\{(.+?)\}")
         for key, value in opt["variables"].items():
+            Logger.debug("variable", key, value)
             value = str(value)
             match = var.search(value)
-            if match is not None:
+            max_loop = 100
+            count = 0
+            while match is not None and count < max_loop:
+                count += 1
                 for new_key in match.groups():
                     if new_key in opt["variables"]:
                         value = value.replace(
@@ -144,6 +154,7 @@ def save_img(r, opt={"dir": "./outputs"}):
                         )
                     else:
                         value = value.replace("${%s}" % (new_key), "")
+                match = var.search(value)
             variables[key] = value
             filename_pattern["var:" + key] = value
 
@@ -156,6 +167,8 @@ def save_img(r, opt={"dir": "./outputs"}):
         for key, value in opt["command"].items():
             if type(key) is str:
                 filename_pattern["command:" + key] = value
+
+    Logger.debug("filename_pattern", filename_pattern)
 
     for n, i in enumerate(r["images"]):
         try:
@@ -276,9 +289,10 @@ def save_img(r, opt={"dir": "./outputs"}):
             #            seed = filename_pattern['all_seeds'] [n]
             #            filename = str(num).zfill(5) +'-' +  str(seed) + '.png'
             filename = re.sub(r"\[.+?\:.+?\]", "", filename)
-            Logger.stdout("\033[Ksave... ", filename)
+            print("\033[Ksave... ", filename)
             filename = os.path.join(dir, filename)
             dirname = os.path.dirname(filename)
+            Logger.debug("dirname", dirname)
             if dirname != dir:
                 os.makedirs(dirname, exist_ok=True)
             num += 1
@@ -307,7 +321,9 @@ def save_img(r, opt={"dir": "./outputs"}):
 
             # jpeg
             if "image_type" in opt and opt["image_type"] == "jpg":
+                Logger.debug("save jpg", filename)
                 quality = opt["image_quality"] if "image_quality" in opt else 80
+                Logger.debug("quality", quality)
                 try:
                     import piexif
 
@@ -333,12 +349,16 @@ def save_img(r, opt={"dir": "./outputs"}):
                 except ImportError:
                     Logger.error("piexif not found")
                     image.save(filename, quality=quality)
+                Logger.debug("saved")
             else:
+                Logger.debug("save png", filename)
                 pnginfo = PngImagePlugin.PngInfo()
                 pnginfo.add_text("parameters", meta)
+                Logger.debug("parameters", meta)
                 if extendend_meta is not None:
                     pnginfo.add_text("expantion", extendend_meta)
                 image.save(filename, pnginfo=pnginfo)
+                Logger.debug("saved")
         except KeyboardInterrupt:
             Logger.error("Process stopped Ctrl+C break")
             raise KeyboardInterrupt

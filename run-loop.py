@@ -11,16 +11,17 @@ import time
 import yaml
 
 import create_prompts
+
 # import logging
 import img2img
-from modules.logger import LogPrint
+import modules.logger as logger
 
 # from modules.logger import Print
 
 # FULL AUTOMATIC CRATE IMAGES FROM STABLE DIFFUSION script
 # MIT License (C) 2023 mith@mmk
 
-# Todo replace logger,logiing to logger.py
+# Todo replace logger,logiing to Logger.py
 
 # sample fuction call from create_prompts.py and img2img_from_args()
 
@@ -80,7 +81,8 @@ ABORT_MATRIX = {
     "SKIP": None,
 }
 
-logger = LogPrint("run-loop")
+DefaultLogger = logger.getDefaultLogger()
+Logger = logger.getLogger("run-loop")
 
 
 def load_models_csv(filename):
@@ -328,7 +330,10 @@ def load_config(config_file):
             config["log"] = log
 
         log = config["log"]
-        logger.setConfig(log["path"], log["print_levels"], log["level"], log["days"])
+        DefaultLogger.setConfig(
+            log["path"], log["print_levels"], log["level"], log["days"]
+        )
+        Logger.setConfig(log["path"], log["print_levels"], log["level"], log["days"])
         dirs = config["img2img"]["dir"]
 
         if "img2img" in yaml_config:
@@ -345,7 +350,7 @@ def load_config(config_file):
                 img2img["file_pattern"] = img_config["file_pattern"]
             if "dir" in img_config:
                 dirs = img_config["dir"]
-                logger.debug(dirs)
+                Logger.debug(dirs)
                 if "input" in dirs:
                     image_dirs["input"] = dirs["input"]
                 if "work" in dirs:
@@ -360,7 +365,7 @@ def load_config(config_file):
                     image_dirs["output"] = dirs["output"]
                 if "folder_suffix" in dirs:
                     image_dirs["folder_suffix"] = dirs["folder_suffix"]
-                logger.debug(image_dirs)
+                Logger.debug(image_dirs)
             config["img2img"] = img2img
         if "img2txt2img" in yaml_config:
             if "overrides" in yaml_config["img2txt2img"]:
@@ -386,7 +391,7 @@ def check_time(config_file):
     stop_hour = config["stop_hour"]
     now = datetime.datetime.now()
     if not (now.hour >= start_hour and now.hour < stop_hour):
-        logger.info(
+        Logger.info(
             f"sleeping...{now.hour} running between {start_hour} and {stop_hour}"
         )
     while not (now.hour >= start_hour and now.hour < stop_hour):
@@ -400,16 +405,16 @@ def check_time(config_file):
 def custom(args):
     result = subprocess.run(args)
     if result.returncode == 0:
-        logger.info(f"custom command finished {args}")
+        Logger.info(f"custom command finished {args}")
         return True
     else:
-        logger.error(f"custom command failed {args}")
+        Logger.error(f"custom command failed {args}")
         return False
 
 
 def run_plugin(plugin_name, config, args):
     try:
-        logger.info(f"custom {plugin_name} {args}")
+        Logger.info(f"custom {plugin_name} {args}")
         if plugin_name == "subprocess":
             result = custom(args[1:])
         elif os.path.isdir(os.path.join("./plugins", plugin_name)):
@@ -419,7 +424,7 @@ def run_plugin(plugin_name, config, args):
             result = plugin_module.run(args[1:], config)
         return result
     except Exception as e:
-        logger.error(f"plugin error {e}")
+        Logger.error(f"plugin error {e}")
         return False
 
 
@@ -432,20 +437,20 @@ def model_copy(clone):
         dest = os.path.join(dest_dir, folder)
         if not os.path.exists(dest):
             os.makedirs(dest)
-        logger.info(f"copying {src} to {dest}")
+        Logger.info(f"copying {src} to {dest}")
         if os.name == "nt":
             subprocess.Popen(
                 ["robocopy", src, dest, "/NP", "/J", "/R:1", "/W:1", "/FFT"],
                 stdout=subprocess.DEVNULL,
             )
-            logger.verbose("robocopy", src, dest, "/NP", "/J", "/R:1", "/W:1", "/FFT")
+            Logger.verbose("robocopy", src, dest, "/NP", "/J", "/R:1", "/W:1", "/FFT")
         else:
             dest = dest.replace("\\", "/")
             # dest の最後を / にする
             if dest[-1] != "/":
                 dest = dest + "/"
             subprocess.Popen(["rsync", "-av", src, dest], stdout=subprocess.DEVNULL)
-            logger.verbose("rsync", "-av", src, dest)
+            Logger.verbose("rsync", "-av", src, dest)
 
 
 def run_img2img(config):
@@ -465,22 +470,22 @@ def run_img2img(config):
     output_dir = dirs["output"]
     folder_suffix = dirs["folder_suffix"]
 
-    logger.debug(config)
+    Logger.debug(config)
 
     # INPUT_DIRの下のフォルダ取得する
     folders = glob.glob(os.path.join(input_dir, "*"))
-    logger.verbose(input_dir)
-    logger.verbose(folders)
+    Logger.verbose(input_dir)
+    Logger.verbose(folders)
 
     for folder in folders:
-        logger.verbose(f"processing folder {folder}")
+        Logger.verbose(f"processing folder {folder}")
         files = glob.glob(os.path.join(folder, "*.png"))
         files.extend(glob.glob(os.path.join(folder, "*.jpg")))
         if len(files) == 0:
-            logger.verbose(f"no files in {folder}")
+            Logger.verbose(f"no files in {folder}")
             continue
         for file in files:
-            logger.verbose(f"move {file} to {work_dir}")
+            Logger.verbose(f"move {file} to {work_dir}")
             shutil.move(file, work_dir)
         # img2img.pyのrun_from_args_img2img()
         args = [
@@ -504,11 +509,11 @@ def run_img2img(config):
             str(img2img_batch_size),
             work_dir,
         ]
-        logger.verbose(args)
+        Logger.verbose(args)
         result = img2img.run_from_args_img2img(args)
         result = True
         if result:
-            logger.info(f"img2img.py finished {folder}")
+            Logger.info(f"img2img.py finished {folder}")
             try:
                 # *.png, *.jpg を ended_dir に移動
                 files = glob.glob(os.path.join(work_dir, "*.png"))
@@ -516,16 +521,16 @@ def run_img2img(config):
                 for file in files:
                     shutil.move(file, ended_dir)
             except Exception as e:
-                logger.debug(e)
+                Logger.debug(e)
         else:
-            logger.error(f"img2img.py failed {folder}")
+            Logger.error(f"img2img.py failed {folder}")
             try:
                 files = glob.glob(os.path.join(work_dir, "*.png"))
                 files.extend(glob.glob(os.path.join(work_dir, "*.jpg")))
                 for file in files:
                     shutil.move(file, folder)
             except Exception as e:
-                logger.error(e)
+                Logger.error(e)
 
 
 def escape_split(str, split):
@@ -560,11 +565,11 @@ def txt2img(config):
     info = config["info"]
     if type(overrides) is str:
         overrides = escape_split(overrides, " ")
-        logger.debug(f"overrides string {overrides}")
+        Logger.debug(f"overrides string {overrides}")
     elif type(overrides) is list:
-        logger.debug(f"overrides list {overrides}")
+        Logger.debug(f"overrides list {overrides}")
     else:
-        logger.debug("overrides is None")
+        Logger.debug("overrides is None")
         overrides = None
 
     while True:
@@ -572,14 +577,14 @@ def txt2img(config):
         model_name = model["model_name"]
         vae = model["vae"]
         mode = model["mode"]
-        logger.info(f"Set model {model_name} vae {vae} mode {mode}")
+        Logger.info(f"Set model {model_name} vae {vae} mode {mode}")
 
         if mode in abort_matrix:
             matrix = abort_matrix[mode]
         else:
             matrix = None
         if matrix is None:
-            logger.info(f"SKIP {model_name} {vae} {mode}")
+            Logger.info(f"SKIP {model_name} {vae} {mode}")
         else:
             break
 
@@ -600,7 +605,7 @@ def txt2img(config):
         folder = prompt["folder"]
         number = float(prompt["number"])
         genre = prompt["genre"]
-        logger.debug(
+        Logger.debug(
             f"prompt_name {prompt_name} folder {folder} number {number} genre {genre}"
         )
 
@@ -611,7 +616,7 @@ def txt2img(config):
         if matrix == "*" or genre in matrix:
             number = int(number * coef)
             output = os.path.join(output_dir, folder + folder_suffix)
-            logger.info(f"{model_name}, {prompt_name}, {output}, {genre}")
+            Logger.info(f"{model_name}, {prompt_name}, {output}, {genre}")
             args = [
                 "--api-mode",
                 "--api-base",
@@ -634,17 +639,21 @@ def txt2img(config):
             if info is not None and info != "":
                 args.append("--info")
                 args.append(info)
-            logger.verbose(args)
+            Logger.verbose(args)
 
             try:
                 create_prompts.run_from_args(args)
             except Exception as e:
-                logger.debug(e)
+                try:
+                    Logger.debug(e)
+                except Exception as err:
+                    print(e)
+                    print(err)
 
 
 def ping(config):
     host = config["host"].split(":")[1].replace("//", "")
-    logger.info(f"ping {host}")
+    Logger.info(f"ping {host}")
     if os.name == "nt":
         result = subprocess.run(
             ["ping", host, "-n", "1", "-w", "1000"],
@@ -657,7 +666,7 @@ def ping(config):
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
-    logger.debug(f"ping {host} {result.returncode}")
+    Logger.debug(f"ping {host} {result.returncode}")
     return result.returncode
 
 
@@ -666,7 +675,7 @@ def wait_ping(config):
     while res != 0:
         res = ping(config)
         if res != 0:
-            logger.info("ping failed")
+            Logger.info("ping failed")
             time.sleep(5)
 
 
@@ -704,7 +713,7 @@ def compare(*args):
 
 def prepare_custom(config, args):
     if len(args) == 0:
-        logger.info("custom command not found")
+        Logger.info("custom command not found")
         #         logging.info('custom command not found')
         return False
     plugin = args[0]
@@ -716,29 +725,29 @@ def prepare_custom(config, args):
 
 
 def loop(config_file):
-    logger.info("loop mode")
+    Logger.info("loop mode")
     config = load_config(config_file)
-    logger.info(config["loop"])
+    Logger.info(config["loop"])
     if not config["loop"]["mode"]:
-        logger.info("loop mode is not setting")
+        Logger.info("loop mode is not setting")
         return
-    logger.debug(config)
+    Logger.debug(config)
     random.seed()
     loop_counter = 0
-    logger.info("start")
+    Logger.info("start")
     loop = config["loop"]
-    logger.info(f'MAX LOOP {loop["loop_count"]}')
+    Logger.info(f'MAX LOOP {loop["loop_count"]}')
     while True:
         if loop["loop_count"] > 0 and loop_counter >= loop["loop_count"]:
-            logger.info("LOOP completed")
+            Logger.info("LOOP completed")
             exit()
         loop_counter += 1
-        logger.info(f'LOOP #{loop_counter} / {loop["loop_count"]}')
+        Logger.info(f'LOOP #{loop_counter} / {loop["loop_count"]}')
 
         next = True
 
         for command in loop["commands"]:
-            logger.info(command)
+            Logger.info(command)
             if not next:
                 next = True
                 continue
@@ -768,7 +777,7 @@ def loop(config_file):
                     case "custom":
                         (plugin, plugin_config) = prepare_custom(config, args)
                         if plugin:
-                            logger.info(f"custom {plugin}")
+                            Logger.info(f"custom {plugin}")
                             run_plugin(plugin, plugin_config, args)
                         else:
                             continue
@@ -785,10 +794,10 @@ def loop(config_file):
                         except Exception:
                             max_count = 0
 
-                        logger.info(args)
+                        Logger.info(args)
                         (plugin, plugin_config) = prepare_custom(config, args)
                         if plugin:
-                            logger.info(
+                            Logger.info(
                                 f"custom loop {plugin} : {args} count {max_count} sleep {sleep_time}"
                             )
                             if len(args) > 1:
@@ -803,14 +812,14 @@ def loop(config_file):
                                 if result:
                                     break
                                 count += 1
-                                logger.info(f"retry {count} {plugin}")
+                                Logger.info(f"retry {count} {plugin}")
                                 time.sleep(sleep_time)
                         else:
                             continue
                     case "custom-compare":
                         (plugin, plugin_config) = prepare_custom(config, args)
                         if plugin:
-                            logger.info(f"custom compare {plugin} : {args}")
+                            Logger.info(f"custom compare {plugin} : {args}")
                             next = run_plugin(plugin, plugin_config, args)
                         else:
                             continue
@@ -824,12 +833,12 @@ def loop(config_file):
                     case "break":
                         break
                     case _:
-                        logger.info(f"unknown command {command}")
+                        Logger.info(f"unknown command {command}")
             except AttributeError as e:
-                logger.error(f"command error {command} {e}")
+                Logger.error(f"command error {command} {e}")
                 exit(1)
             except Exception as e:
-                logger.info("run-loop error", e)
+                Logger.info("run-loop error", e)
                 continue
             config = load_config(config_file)
             if not config["loop"]["mode"]:
@@ -844,20 +853,20 @@ def main(config_file=CONFIG):
 
     while True:
         try:
-            logger.info("start")
+            Logger.info("start")
             check_time(config_file)
-            logger.info("running...")
+            Logger.info("running...")
             res = 1
             while res != 0:
                 res = ping(config)
                 if res != 0:
-                    logger.info("ping failed")
+                    Logger.info("ping failed")
                     time.sleep(5)
             config = load_config(config_file)
         except Exception as e:
-            logger.info("load config error", e)
-            logger.info("Please check config.yaml")
-            logger.info("Wait 60 seconds...")
+            Logger.info("load config error", e)
+            Logger.info("Please check config.yaml")
+            Logger.info("Wait 60 seconds...")
             time.sleep(60)
             continue
 
@@ -865,22 +874,22 @@ def main(config_file=CONFIG):
             clone = config["clone"]
             print("clone")
             model_copy(clone)
-        logger.info("txt2img")
+        Logger.info("txt2img")
         try:
             txt2img(config)
         except AttributeError as e:  # if this error is happned reboot
-            logger.error(f"Attribute Error in txt2img {e}")
+            Logger.error(f"Attribute Error in txt2img {e}")
             exit(1)
         except Exception as e:
-            logger.error("txt2img running error", e)
-        logger.info("img2img")
+            Logger.error("txt2img running error", e)
+        Logger.info("img2img")
         try:
             run_img2img(config)
         except AttributeError as e:  # if this error is happned reboot
-            logger.error(f"Attribute Error in img2img {e}")
+            Logger.error(f"Attribute Error in img2img {e}")
             exit(1)
         except Exception as e:
-            logger.error("img2img running error", e)
+            Logger.error("img2img running error", e)
         time.sleep(1)
 
 
