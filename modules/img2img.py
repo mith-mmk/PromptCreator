@@ -28,7 +28,7 @@ Logger = logger.getDefaultLogger()
 def img2img(
     imagefiles,
     overrides=None,
-    base_url="http://127.0.0.1:8760",
+    base_url="http://127.0.0.1:7860",
     output_dir="./outputs",
     opt={},
 ):

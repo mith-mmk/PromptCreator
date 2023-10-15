@@ -11,7 +11,7 @@ Logger = getDefaultLogger()
 
 
 def txt2img(
-    output_text, base_url="http://127.0.0.1:8760", output_dir="./outputs", opt={}
+    output_text, base_url="http://127.0.0.1:7860", output_dir="./outputs", opt={}
 ):
     base_url = api.normalize_base_url(base_url)
     url = base_url + "/sdapi/v1/txt2img"
