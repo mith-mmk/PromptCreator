@@ -90,6 +90,7 @@ def get_appends(appends):
                 append.append(item_split(item))
         if len(append) == 0:
             Logger.error(f"Error happen append {key} is empty")
+            append = [""]
         appends_result[key] = append
     return appends_result
 
