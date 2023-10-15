@@ -136,7 +136,11 @@ def main(args):
             return
 
     if args.input is not None:
-        result = create_text(args)
+        try:
+            result = create_text(args)
+        except Exception as e:
+            Logger.info(e)
+            return False
         options = result["options"]
         output_text = result["output_text"]
         yml = result["yml"]

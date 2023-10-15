@@ -80,7 +80,9 @@ def get_appends(appends):
             key = str(n + 1)
         if type(items) is str:
             # filemode
+            Logger.verbose("read file", items)
             append = read_file(items)
+            Logger.verbose(f"{key} : Read file {items} {len(append)} lines")
         else:
             # inline mode
             append = []

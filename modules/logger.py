@@ -34,7 +34,7 @@ class LogPrint:
         global Logger
         self.service_name = service_name
         self.log_dir = None  # log file path if None, not write log file
-        self.print_levels = "info"
+        self.print_levels = ["info", "warning", "error", "critical"]  # print levels
         self.logging_level = 20
         self.log_days = None
         self.startMessage = False
@@ -46,7 +46,11 @@ class LogPrint:
             Logger[self.service_name] = self
 
     def setConfig(
-        self, log_dir="./log", print_levels=["info"], logging_level="info", log_days=7
+        self,
+        log_dir="./log",
+        print_levels=["info", "warning", "error", "critical"],
+        logging_level="info",
+        log_days=7,
     ):
         chenged = False
 
