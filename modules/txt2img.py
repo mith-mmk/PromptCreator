@@ -20,7 +20,7 @@ def txt2img(
     dir = output_dir
     opt["dir"] = output_dir
     Logger.info("output dir", dir)
-    Logger.verbose("output text", output_text)
+    Logger.debug("output text", output_text)
     os.makedirs(dir, exist_ok=True)
     #    dt = datetime.datetime.now().strftime('%y%m%d')
     count = len(output_text)

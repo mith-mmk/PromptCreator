@@ -304,8 +304,8 @@ def create_img2params(imagefile):
         del parameters["height"]
     json_raw = {}
     override_settings = {}
-    Logger.verbose(schema)
-    Logger.verbose(parameters)
+    Logger.debug(schema)
+    Logger.debug(parameters)
 
     sampler_index = None
     # override settings only return sd_model_checkpoint and CLIP_stop_at_last_layers
