@@ -15,6 +15,7 @@ import create_prompts
 # import logging
 import img2img
 import modules.logger as logger
+import modules.share as share
 
 # from modules.logger import Print
 
@@ -83,6 +84,14 @@ ABORT_MATRIX = {
 
 DefaultLogger = logger.getDefaultLogger()
 Logger = logger.getLogger("run-loop")
+
+
+def arg_split(args):
+    results = []
+    csv_reader = csv.reader([args], delimiter=" ")
+    for row in csv_reader:
+        results.extend(row)
+    return results
 
 
 def load_models_csv(filename):
@@ -381,6 +390,7 @@ def load_config(config_file):
             config["img2txt2img"] = img2txt2img
         if "custom" in yaml_config:
             config["custom"] = yaml_config["custom"]
+    share.set("config", config)
     return config
 
 
@@ -422,6 +432,9 @@ def run_plugin(plugin_name, config, args):
 
             plugin_module = importlib.import_module(f"plugins.{plugin_name}.run")
             result = plugin_module.run(args[1:], config)
+        else:
+            Logger.error(f"plugin {plugin_name} not found")
+            return False
         return result
     except Exception as e:
         Logger.error(f"plugin error {e}")
@@ -751,7 +764,7 @@ def loop(config_file):
             if not next:
                 next = True
                 continue
-            commands = command.split(" ")
+            commands = arg_split(command)
             command = commands[0].lower()
             args = commands[1:]
             try:
