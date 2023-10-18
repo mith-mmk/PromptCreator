@@ -11,7 +11,6 @@ import time
 import yaml
 
 import create_prompts
-
 # import logging
 import img2img
 import modules.logger as logger
@@ -562,7 +561,7 @@ def escape_split(str, split):
     return args
 
 
-def txt2img(config):
+def run_txt2img(config):
     host = config["host"]
     config = config["txt2img"]
     output_dir = config["output"]
@@ -784,7 +783,7 @@ def loop(config_file):
                     case "ping":
                         wait_ping(config)
                     case "txt2img":
-                        txt2img(config)
+                        run_txt2img(config)
                     case "img2img":
                         run_img2img(config)
                     case "custom":
@@ -889,7 +888,7 @@ def main(config_file=CONFIG):
             model_copy(clone)
         Logger.info("txt2img")
         try:
-            txt2img(config)
+            run_txt2img(config)
         except AttributeError as e:  # if this error is happned reboot
             Logger.error(f"Attribute Error in txt2img {e}")
             exit(1)

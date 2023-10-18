@@ -594,7 +594,13 @@ def create_text(args):
                     )
             output_text = multiple_text
     else:
-        output_text = prompt_multiple(prompts, appends, console_mode, mode=mode)
+        output_text = prompt_multiple(
+            prompts,
+            appends,
+            console_mode,
+            mode=mode,
+            variables_mode=args.api_filename_variable,
+        )
 
     if output is not None:
         with open(output, "w", encoding="utf-8", newline="\n") as fw:
