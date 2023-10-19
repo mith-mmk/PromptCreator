@@ -243,11 +243,13 @@ def prompt_multiple(prompts, appends, console_mode, mode="text", variables_mode=
     if info is not None:
         del appends["$INFO"]
     _RANDOM = appends.get("$RANDOM")
-    del appends["$RANDOM"]
+    if _RANDOM is not None:
+        del appends["$RANDOM"]
     array = list(appends.values())
     keys = list(appends.keys())
     x = list(range(0, len(array[0])))
-    appends.update({"$RANDOM": _RANDOM})
+    if _RANDOM is not None:
+        appends["$RANDOM"] = _RANDOM
     if len(array) >= 2:
         for i in range(1, len(array)):
             a = list(range(0, len(array[i])))
