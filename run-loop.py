@@ -11,6 +11,7 @@ import time
 import yaml
 
 import create_prompts
+
 # import logging
 import img2img
 import modules.logger as logger
@@ -429,8 +430,8 @@ def run_plugin(plugin_name, config, args):
         elif os.path.isdir(os.path.join("./plugins", plugin_name)):
             import importlib
 
-            plugin_module = importlib.import_module(f"plugins.{plugin_name}.run")
-            result = plugin_module.run(args[1:], config)
+            plugin_module = importlib.import_module(f"plugins.{plugin_name}")
+            result = plugin_module.run_plugin(args[1:], config)
         else:
             Logger.error(f"plugin {plugin_name} not found")
             return False
