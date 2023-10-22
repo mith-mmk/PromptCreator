@@ -500,50 +500,91 @@ def run_img2img(config):
         for file in files:
             Logger.verbose(f"move {file} to {work_dir}")
             shutil.move(file, work_dir)
-        # img2img.pyのrun_from_args_img2img()
-        args = [
-            "--filename-pattern",
-            file_pattern,
-            "--api-base",
-            host,
-            "--steps",
-            str(img2img_steps),
-            "--mask-dir",
-            input_mask,
-            "--alt-image-dir",
-            input_append,
-            "--output",
-            os.path.join(output_dir, os.path.basename(folder) + folder_suffix),
-            "--denoising_strength",
-            str(img2img_denosing_stringth),
-            "--n_iter",
-            str(img2img_n_iter),
-            "--batch_size",
-            str(img2img_batch_size),
-            work_dir,
-        ]
-        Logger.verbose(args)
-        result = img2img.run_from_args_img2img(args)
-        result = True
-        if result:
-            Logger.info(f"img2img.py finished {folder}")
+        # direct call が True の場合は modules/img2img.py を直接呼び出す
+        if config.get("direct_call") is True:
+            import modules.img2img
+
+            opt = (
+                {
+                    "steps": img2img_steps,
+                    "denoising_strength": img2img_denosing_stringth,
+                    "n_iter": img2img_n_iter,
+                    "batch_size": img2img_batch_size,
+                    "filename_pattern": file_pattern,
+                    "mask_dir": input_mask,
+                    "alt_image_dir": input_append,
+                },
+            )
+            if config.get("userpass"):
+                opt["userpass"] = config.get("userpass")
+            if config.get("overrides"):
+                opt["overrides"] = config.get("overrides")
+            output = (
+                os.path.join(output_dir, os.path.basename(folder) + folder_suffix),
+            )
+            Logger.verbose(f"output {output}, opt: {opt}")
             try:
-                # *.png, *.jpg を ended_dir に移動
-                files = glob.glob(os.path.join(work_dir, "*.png"))
-                files.extend(glob.glob(os.path.join(work_dir, "*.jpg")))
-                for file in files:
-                    shutil.move(file, ended_dir)
-            except Exception as e:
-                Logger.debug(e)
-        else:
-            Logger.error(f"img2img.py failed {folder}")
-            try:
-                files = glob.glob(os.path.join(work_dir, "*.png"))
-                files.extend(glob.glob(os.path.join(work_dir, "*.jpg")))
-                for file in files:
-                    shutil.move(file, folder)
+                modules.img2img.img2img(
+                    imagefiles=files, base_url=host, output_dir=output, opt=opt
+                )
+                Logger.info(f"img2img.py finished {folder}")
+                try:
+                    for file in files:
+                        shutil.move(file, ended_dir)
+                except Exception as e:
+                    Logger.debug(e)
             except Exception as e:
                 Logger.error(e)
+                Logger.error(f"img2img.py failed {folder}")
+        else:
+            for file in files:
+                Logger.verbose(f"move {file} to {work_dir}")
+                shutil.move(file, work_dir)
+
+            # img2img.pyのrun_from_args_img2img()
+            args = [
+                "--filename-pattern",
+                file_pattern,
+                "--api-base",
+                host,
+                "--steps",
+                str(img2img_steps),
+                "--mask-dir",
+                input_mask,
+                "--alt-image-dir",
+                input_append,
+                "--output",
+                os.path.join(output_dir, os.path.basename(folder) + folder_suffix),
+                "--denoising_strength",
+                str(img2img_denosing_stringth),
+                "--n_iter",
+                str(img2img_n_iter),
+                "--batch_size",
+                str(img2img_batch_size),
+                work_dir,
+            ]
+            Logger.verbose(args)
+            result = img2img.run_from_args_img2img(args)
+            result = True
+            if result:
+                Logger.info(f"img2img.py finished {folder}")
+                try:
+                    # *.png, *.jpg を ended_dir に移動
+                    files = glob.glob(os.path.join(work_dir, "*.png"))
+                    files.extend(glob.glob(os.path.join(work_dir, "*.jpg")))
+                    for file in files:
+                        shutil.move(file, ended_dir)
+                except Exception as e:
+                    Logger.debug(e)
+            else:
+                Logger.error(f"img2img.py failed {folder}")
+                try:
+                    files = glob.glob(os.path.join(work_dir, "*.png"))
+                    files.extend(glob.glob(os.path.join(work_dir, "*.jpg")))
+                    for file in files:
+                        shutil.move(file, folder)
+                except Exception as e:
+                    Logger.error(e)
 
 
 def escape_split(str, split):
@@ -630,38 +671,97 @@ def run_txt2img(config):
             number = int(number * coef)
             output = os.path.join(output_dir, folder + folder_suffix)
             Logger.info(f"{model_name}, {prompt_name}, {output}, {genre}")
-            args = [
-                "--api-mode",
-                "--api-base",
-                host,
-                "--api-set-sd-model",
-                model_name,
-                "--api-set-sd-vae",
-                vae,
-                "--api-filename-variable",
-                "--api-filename-pattern",
-                file_pattern,
-                "--api-output-dir",
-                output,
-                "--max-number",
-                str(number),
-                prompt_name,
-            ]
-            if overrides is not None and overrides != "":
-                args.extend(overrides)
-            if info is not None and info != "":
-                args.append("--info")
-                args.append(info)
-            Logger.verbose(args)
-
-            try:
-                create_prompts.run_from_args(args)
-            except Exception as e:
+            # If direct call is True, call modules/txt2img.py
+            if config.get("direct_call") is True:
+                # create prompt
+                Logger.verbose(f"create prompt {prompt_name}")
                 try:
-                    Logger.debug(e)
-                except Exception as err:
-                    print(e)
-                    print(err)
+                    import modules.prompt
+
+                    opt = {
+                        "mode": "json",
+                        "override": overrides,
+                        "info": info,
+                        "input": prompt_name,
+                        "max_number": number,
+                        "api_filename_variable": True,
+                    }
+                    result = prompt.create_text(opt)
+                except Exception as e:
+                    Logger.error("create prompt failed")
+                    Logger.error(e)
+                    return False
+                options = result["options"]
+                payloads = result["output_text"]
+                opt = {
+                    "filename_pattern": file_pattern,
+                    "sd_model": model_name or options["sd_model"],
+                    "sd_vae": vae or options["sd_vae"],
+                    "filename-variable": True,
+                }
+                if config.get("userpass"):
+                    opt["userpass"] = config.get("userpass")
+                if config.get("save_extend_meta"):
+                    opt["save_extend_meta"] = config.get("save_extend_meta")
+                if config.get("image_quality"):
+                    opt["image_quality"] = config.get("image_quality")
+                if config.get("image_quality"):
+                    opt["image_quality"] = config.get("image_quality")
+                # set model
+                Logger.verbose(f"set model {model_name} {vae}")
+                if model_name is not None:
+                    import modules.api
+
+                    modules.api.set_sd_model(
+                        base_url=host, sd_model=model_name, sd_vae=vae
+                    )
+                # txt2img
+                import modules.txt2img
+
+                Logger.verbose(f"txt2img {opt}")
+                try:
+                    modules.txt2img.txt2img(
+                        payloads,
+                        base_url=host,
+                        output_dir=output,
+                        opt=opt,
+                    )
+                except Exception as e:
+                    Logger.error(e)
+                    return False
+            else:
+                args = [
+                    "--api-mode",
+                    "--api-base",
+                    host,
+                    "--api-set-sd-model",
+                    model_name,
+                    "--api-set-sd-vae",
+                    vae,
+                    "--api-filename-variable",
+                    "--api-filename-pattern",
+                    file_pattern,
+                    "--api-output-dir",
+                    output,
+                    "--max-number",
+                    str(number),
+                    prompt_name,
+                ]
+                if overrides is not None and overrides != "":
+                    args.extend(overrides)
+                if info is not None and info != "":
+                    args.append("--info")
+                    args.append(info)
+                Logger.verbose(args)
+
+                try:
+                    create_prompts.run_from_args(args)
+                except Exception as e:
+                    try:
+                        Logger.debug(e)
+                    except Exception as err:
+                        print(e)
+                        print(err)
 
 
 def ping(config):

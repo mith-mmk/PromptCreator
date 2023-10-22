@@ -24,8 +24,9 @@ def set_max_timeout(timeout):
 
 
 def init():
-    loop = asyncio.new_event_loop()
-    share["loop"] = loop
+    if share.get("loop") is None:
+        loop = asyncio.new_event_loop()
+        share["loop"] = loop
 
 
 def shutdown():
