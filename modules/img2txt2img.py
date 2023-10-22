@@ -11,7 +11,7 @@ Logger = getDefaultLogger()
 
 def img2txt2img(
     imagefiles,
-    overrides=None,
+    overrides={},
     base_url="http://127.0.0.1:7860",
     output_dir="./outputs",
     opt={},
@@ -78,6 +78,8 @@ def create_param(item, overritesettings):
             if "override_settings" not in item:
                 item["override_settings"] = {}
             for subkey in overritesettings[key]:
+                if subkey == "sd_model":
+                    subkey = "sd_model_checkpoint"
                 if overritesettings[key][subkey] == "":
                     if subkey in item[key]:
                         del item[key][subkey]
@@ -85,8 +87,5 @@ def create_param(item, overritesettings):
                     item[key][subkey] = overritesettings[key][subkey]
         else:
             item[key] = overritesettings[key]
-    if "crear_model" in item:
-        if "override_settings" in item:
-            if "sd_model_checkpoint" in item["override_settings"]:
-                del item["override_settings"]["sd_model_checkpoint"]
+
     return item
