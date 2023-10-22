@@ -59,7 +59,7 @@ def img2txt2img(
             print("\033[KError!", response.status_code, response.text)
             print("\033[2A", end="")
             continue
-        os.remove
+
         r = response.json()
         prt_cnt = save_img(r, opt=opt)
         if "line_count" in api.share:
@@ -85,3 +85,8 @@ def create_param(item, overritesettings):
                     item[key][subkey] = overritesettings[key][subkey]
         else:
             item[key] = overritesettings[key]
+    if "crear_model" in item:
+        if "override_settings" in item:
+            if "sd_model_checkpoint" in item["override_settings"]:
+                del item["override_settings"]["sd_model_checkpoint"]
+    return item
