@@ -101,6 +101,7 @@ def img2img_from_args(args):
             opt=opt,
         )
     except Exception as e:
+        Logger.error("img2img error")
         Logger.info(e)
         return False
     return True
@@ -139,6 +140,7 @@ def main(args):
         try:
             result = create_text(args)
         except Exception as e:
+            Logger.error("create_text error")
             Logger.info(e)
             return False
         options = result["options"]
@@ -382,4 +384,5 @@ if __name__ == "__main__":
         if not result:
             exit(1)
     except Exception:
+        print("Error")
         exit(1)

@@ -1,3 +1,8 @@
+import modules.logger as logger
+
+Logger = logger.getDefaultLogger()
+
+
 def debug_print(*args, mode=None, debug=False):
     if not debug:
         return
@@ -14,6 +19,6 @@ def debug_print(*args, mode=None, debug=False):
                         text += f"{i} "
             else:
                 text += f"{arg} "
-        print(text)
+        Logger.debug(text)
     else:
-        print(*args)
+        Logger.debug(*args)

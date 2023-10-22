@@ -7,20 +7,22 @@ import time
 import httpx
 
 import modules.logger as logger
+import modules.share as share
 
 # shared function for api
 
 Logger = logger.getDefaultLogger()
 
-share = {"timeout": 5, "max_timeout": 1000}
+share.set("timeout", 5)
+share.set("max_timeout", 1000)
 
 
 def set_timeout(timeout):
-    share["timeout"] = timeout
+    share.set("timeout", timeout)
 
 
 def set_max_timeout(timeout):
-    share["max_timeout"] = timeout
+    share.set("max_timeout", timeout)
 
 
 def init():
@@ -201,7 +203,9 @@ def get_sd_model(base_url="http://127.0.0.1:7860", sd_model=None):
         res = httpx.get(model_url, headers=headers, timeout=(share.get("timeout")))
         for model in res.json():
             if (
-                model["model_name"] == sd_model or model["hash"] == sd_model or model["title"] == sd_model
+                model["model_name"] == sd_model
+                or model["hash"] == sd_model
+                or model["title"] == sd_model
             ):
                 return model
     except Exception:
@@ -220,9 +224,9 @@ def get_vae(base_url="http://127.0.0.1:7860", vae=None):
         # automatic1111 1.6 <- no yet hash support but use metadata?
         for model in res.json():
             if (
-                model["model_name"] == vae or
-                model["hash"] == vae or
-                model["title"] == vae
+                model["model_name"] == vae
+                or model["hash"] == vae
+                or model["title"] == vae
             ):
                 return model
     except Exception:
@@ -244,9 +248,9 @@ def set_sd_model(sd_model, base_url="http://127.0.0.1:7860", sd_vae="Automatic")
         load_model = None
         for model in res.json():
             if (
-                model["model_name"] == sd_model or
-                model["hash"] == sd_model or
-                model["title"] == sd_model
+                model["model_name"] == sd_model
+                or model["hash"] == sd_model
+                or model["title"] == sd_model
             ):
                 load_model = model["title"]
                 break

@@ -68,7 +68,7 @@ def create_parameters(parameters_text):
 
 
 # parsing json from image's metadata
-def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None, base_url=None):
+def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None):
     schema = [
         "hires_upscale",
         "prompt",
@@ -198,6 +198,7 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None, base_url
     override_settings = {}
 
     sampler_index = None
+    sampler_name = None
     # override settings only return sd_model_checkpoint and CLIP_stop_at_last_layers
     # Automatic1111 2023/07/25 verion do not support VAE tag
     for key, value in parameters.items():
@@ -205,12 +206,16 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None, base_url
             json_raw[key] = value
         elif key == "sampler_index":
             sampler_index = value
+        elif key == "sampler_name":
+            sampler_name = value
         elif key == "model_hash":
             override_settings["sd_model_checkpoint"] = value
         elif key == "CLIP_stop_at_last_layers":
             override_settings[key] = value
-    if ("sampler" not in json_raw) and sampler_index is not None:
-        json_raw["sampler_index"] = sampler_index
+    if ("sampler" not in json_raw) and (
+        sampler_index is not None or sampler_name is not None
+    ):
+        json_raw["sampler_index"] = sampler_name or sampler_index
 
     json_raw["override_settings"] = override_settings
     return json_raw
@@ -341,6 +346,8 @@ def create_img2params(imagefile):
             sampler_name = value
         elif key == "model_hash":
             override_settings["sd_model_checkpoint"] = value
+        #        elif key == "VAE_hash":
+        #            override_settings["sd_vae"] = value
         elif key == "CLIP_stop_at_last_layers":
             override_settings[key] = value
     if ("sampler" not in json_raw) and (

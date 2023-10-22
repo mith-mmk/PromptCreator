@@ -36,8 +36,8 @@ def prompt_formula(new_prompt, variables, info=None):
             for key, item in info.items():
                 variables[f"info:{key}"] = item
     except Exception as e:
+        Logger.error(f"Error happen info {info}")
         Logger.error(e)
-        Logger.error(info)
 
     if type(new_prompt) is str:
         return text_formula(new_prompt, variables)
@@ -482,11 +482,25 @@ def create_text(args):
         options = yml["options"]
     else:
         options = {}
+
+    Logger.info(f"info {info}")
+
     if "info" in yml:
-        keys = list(yml["info"].keys())
+        if info is None:
+            info = {}
+        try:
+            keys = list(yml["info"].keys())
+        except Exception as e:
+            Logger.error(f"Error happen info {yml['info']}")
+            Logger.error(e)
         for key in keys:
+            Logger.info(f"info:{key} = {yml['info'][key]}")
             if key not in info:
-                appends[f"info:{key}"] = yml["info"][key]
+                try:
+                    appends[f"info:{key}"] = yml["info"][key]
+                except Exception as e:
+                    Logger.error(f"Error happen info {yml['info']}")
+                    Logger.error(e)
 
     console_mode = False
     if output is None and args.api_mode is False:
