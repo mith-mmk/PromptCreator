@@ -19,6 +19,7 @@ Logger = getDefaultLogger()
 def text_formula(text, variables):
     compute = FormulaCompute()
     formulas = re.findall(r"\$\{\=(.+?)\}", text)
+    Logger.info(f"formulas {formulas}")
     for formula in formulas:
         replace_text = compute.getCompute(formula, variables)
         if replace_text is not None:
@@ -399,15 +400,14 @@ def prompt_random(
                         pos = len(append) - 1
                     if cnt == 0:
                         break
-            Logger.debug(n, pos)
             var = keys[i]
             re_str = append[pos]["text"]
-            Logger.debug(var, re_str)
             new_prompt = prompt_replace(new_prompt, re_str, var)
             if type(re_str) is list:
                 variables[var] = re_str[0]
             else:
                 variables[var] = re_str
+
         new_prompt = prompt_formula(new_prompt, variables, info)
 
         if console_mode:
@@ -483,24 +483,7 @@ def create_text(args):
     else:
         options = {}
 
-    Logger.info(f"info {info}")
-
-    if "info" in yml:
-        if info is None:
-            info = {}
-        try:
-            keys = list(yml["info"].keys())
-        except Exception as e:
-            Logger.error(f"Error happen info {yml['info']}")
-            Logger.error(e)
-        for key in keys:
-            Logger.info(f"info:{key} = {yml['info'][key]}")
-            if key not in info:
-                try:
-                    appends[f"info:{key}"] = yml["info"][key]
-                except Exception as e:
-                    Logger.error(f"Error happen info {yml['info']}")
-                    Logger.error(e)
+    Logger.debug(f"info {info}")
 
     console_mode = False
     if output is None and args.api_mode is False:
@@ -618,11 +601,36 @@ def create_text(args):
             variables_mode=args.api_filename_variable,
         )
 
+    if mode == "json":
+        if info is not None:
+            info = {}
+        for output_text in output_text:
+            variables = output_text.get("variables") or {}
+            try:
+                keys = list(yml["info"].keys())
+            except Exception as e:
+                Logger.error(f"Error happen info {yml['info']}")
+                Logger.error(e)
+            for key in keys:
+                if key not in info:
+                    try:
+                        formula = yml["info"][key]
+                        Logger.info(f"info {key} {formula}")
+                        value = text_formula(formula, variables)
+
+                        info[f"info:{key}"] = value
+                    except Exception as e:
+                        Logger.error(f"Error happen info {yml['info']}")
+                        Logger.error(e)
+            output_text["info"] = info
+
     if output is not None:
         with open(output, "w", encoding="utf-8", newline="\n") as fw:
             if type(output_text) is str:
                 fw.write(output_text)
             else:
                 json.dump(output_text, fp=fw, indent=2)
+    Logger.debug(f"Output {output_text}")
+
     result = {"options": options, "yml": yml, "output_text": output_text}
     return result
