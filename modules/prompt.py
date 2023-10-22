@@ -605,6 +605,10 @@ def create_text(args):
             info = {}
         for output_text in output_text:
             variables = output_text.get("variables") or {}
+            reserved = set_reserved({})
+            del reserved["$RANDOM"]
+            for key, item in reserved.items():
+                variables[key] = item[0]
             try:
                 keys = list(yml["info"].keys())
             except Exception as e:
