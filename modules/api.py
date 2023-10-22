@@ -274,3 +274,65 @@ def set_sd_model(sd_model, base_url="http://127.0.0.1:7860", sd_vae="Automatic")
     except Exception:
         Logger.error("Change SD Model Error")
         raise
+
+
+def refresh(
+    base_url="http://localhost:7860", userpass=None, sd_model=True, vae=True, lora=True
+):
+    host = normalize_base_url(base_url)
+    result = True
+    if sd_model:
+        Logger.info(f"refreshing checkpoint {host}")
+        url = host + "/sdapi/v1/refresh-checkpoint"
+        try:
+            res = request_post_wrapper(
+                url,
+                data={},
+                progress_url=None,
+                base_url=host,
+                userpass=userpass,
+            )
+            if res.status_code == 200:
+                result = result and True
+            else:
+                result = result and False
+        except Exception:
+            Logger.error("refresh checkpoint failed")
+            raise
+    if vae:
+        Logger.info(f"refreshing vae {host}")
+        try:
+            url = host + "/sdapi/v1/refresh-vae"
+            res = request_post_wrapper(
+                url,
+                data={},
+                progress_url=None,
+                base_url=host,
+                userpass=userpass,
+            )
+            if res.status_code == 200:
+                result = result and True
+            else:
+                result = result and False
+        except Exception:
+            Logger.error("refresh vae failed")
+            raise
+    if lora:
+        url = host + "/sdapi/v1/refresh-loras"
+        Logger.info(f"refreshing lora {host}")
+        try:
+            res = request_post_wrapper(
+                url,
+                data={},
+                progress_url=None,
+                base_url=host,
+                userpass=userpass,
+            )
+            if res.status_code == 200:
+                result = result and True
+            else:
+                result = result and False
+        except Exception:
+            Logger.error("refresh lora failed")
+            raise
+    return result
