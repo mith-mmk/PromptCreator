@@ -129,6 +129,7 @@ def save_img(r, opt={"dir": "./outputs"}):
         info = json.loads(r["info"])
     else:
         info = r["info"]
+    Logger.debug("info", info)
 
     count = len(r["images"])
     Logger.stdout(f"\033[Kreturn {count} images")
