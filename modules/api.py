@@ -196,6 +196,7 @@ def get_sd_model(base_url="http://127.0.0.1:7860", sd_model=None):
     base_url = normalize_base_url(base_url)
     model_url = base_url + "/sdapi/v1/sd-models"
     try:
+        Logger.verbose(f"Try get sd model from {model_url}")
         res = httpx.get(model_url, headers=headers, timeout=(share.get("timeout")))
         for model in res.json():
             if (
@@ -252,9 +253,9 @@ def set_sd_model(sd_model, base_url="http://127.0.0.1:7860", sd_vae="Automatic")
                 break
         if load_model is None:
             Logger.info(f"{sd_model} model is not found")
-            raise
+            raise Exception(f"{sd_model} model is not found")
         sd_model = load_model
-        Logger.info(f"{sd_model} model loading...")
+        Logger.info(f"checkpoint {sd_model} ,vae {sd_vae} models loading...")
         payload = {"sd_model_checkpoint": sd_model, "sd_vae": sd_vae}
         data = json.dumps(payload)
         res = httpx.post(

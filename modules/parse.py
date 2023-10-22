@@ -70,18 +70,14 @@ def create_parameters(parameters_text):
 # parsing json from image's metadata
 def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None, base_url=None):
     schema = [
-        "enable_hr",
-        "denoising_strength",
-        # "firstphase_width",  # obusolete
-        # "firstphase_height",  # obusolete
         "hires_upscale",
         "prompt",
         "styles",
+        # "sampler_name",  # add 2023/10/22  synonim "sampler_index"
+        # "sampler_index"  # This option is exception handling
         "seed",
         "subseed",
         "subseed_strength",
-        "seed_resize_from_h",
-        "seed_resize_from_w",
         "batch_size",
         "n_iter",
         "steps",
@@ -91,18 +87,41 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None, base_url
         "restore_faces",
         "tiling",
         "negative_prompt",
+        # "do_not_save_samples", # this option is not supported
+        # "do_not_save_grid", # this option is not supported
         "eta",
         "s_churn",
         "s_tmax",
         "s_tmin",
         "s_noise",
         "sampler",
+        "comments",  # add 2023/10/22
+        # hires fix
+        "enable_hr",  # this option is not used
+        "denoising_strength",
+        # "firstphase_width",  # obusolete
+        # "firstphase_height",  # obusolete
+        "seed_resize_from_h",
+        "seed_resize_from_w",
         # img2img inpainting only
+        "resize_mode",
+        "image_cfg_scale",
+        "mask",
+        "mask_blur_x",
+        "mask_blur_y",
         "mask_blur",
         "inpainting_fill",
         "inpaint_full_res",
         "inpaint_full_res_padding",
         "inpainting_mask_invert",
+        "initial_noise_multiplier",
+        "latent_mask",
+        # these option are not used
+        # "script_name",
+        # "script_args",
+        # "send_images",
+        # "save_images",
+        # "alwayson_scripts"
     ]
 
     image = Image.open(imagefile)
@@ -266,6 +285,8 @@ def create_img2params(imagefile):
     parameters["width"] = image.width
     parameters["height"] = image.height
 
+    # convert txt2img parameters to img2img parameters
+
     if "hires_upscale" in parameters:
         parameters["hr_upscale"] = parameters["hires_upscale"]
         del parameters["hires_upscale"]
@@ -308,6 +329,7 @@ def create_img2params(imagefile):
     Logger.debug(parameters)
 
     sampler_index = None
+    sampler_name = None
     # override settings only return sd_model_checkpoint and CLIP_stop_at_last_layers
     # Automatic1111 2023/07/25 verion do not support VAE tag
     for key, value in parameters.items():
@@ -315,12 +337,16 @@ def create_img2params(imagefile):
             json_raw[key] = value
         elif key == "sampler_index":
             sampler_index = value
+        elif key == "sampler_name":
+            sampler_name = value
         elif key == "model_hash":
             override_settings["sd_model_checkpoint"] = value
         elif key == "CLIP_stop_at_last_layers":
             override_settings[key] = value
-    if ("sampler" not in json_raw) and sampler_index is not None:
-        json_raw["sampler_index"] = sampler_index
+    if ("sampler" not in json_raw) and (
+        sampler_index is not None or sampler_name is not None
+    ):
+        json_raw["sampler_index"] = sampler_name or sampler_index
 
     json_raw["override_settings"] = override_settings
     return json_raw
