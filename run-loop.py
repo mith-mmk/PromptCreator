@@ -11,7 +11,6 @@ import time
 import yaml
 
 import create_prompts
-
 # import logging
 import img2img
 import modules.logger as logger
@@ -497,11 +496,9 @@ def run_img2img(config):
         if len(files) == 0:
             Logger.verbose(f"no files in {folder}")
             continue
-        for file in files:
-            Logger.verbose(f"move {file} to {work_dir}")
-            shutil.move(file, work_dir)
         # direct call が True の場合は modules/img2img.py を直接呼び出す
         if config.get("direct_call") is True:
+            Logger.info("direct_call")
             import modules.img2img
 
             opt = (
@@ -673,6 +670,7 @@ def run_txt2img(config):
             Logger.info(f"{model_name}, {prompt_name}, {output}, {genre}")
             # If direct call is True, call modules/txt2img.py
             if config.get("direct_call") is True:
+                Logger.info("direct_call")
                 # create prompt
                 Logger.verbose(f"create prompt {prompt_name}")
                 try:
