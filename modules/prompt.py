@@ -19,7 +19,6 @@ Logger = getDefaultLogger()
 def text_formula(text, variables):
     compute = FormulaCompute()
     formulas = re.findall(r"\$\{\=(.+?)\}", text)
-    Logger.info(f"formulas {formulas}")
     for formula in formulas:
         replace_text = compute.getCompute(formula, variables)
         if replace_text is not None:
@@ -60,13 +59,13 @@ def set_reserved(keys):
     keys["$RANDOM"] = []
     for _ in range(0, 10):
         keys["$RANDOM"].append(str(random.randint(0, 2**31 - 1)))
-    keys["$SYSTEM"] = ["1.0;" + platform.system()]
-    keys["$ARCHITECTURE"] = ["1.0;" + platform.architecture()[0]]
-    keys["$VERSION"] = ["1.0;" + platform.version()]
-    keys["$MACHINE"] = ["1.0;" + platform.machine()]
-    keys["$PROCESSOR"] = ["1.0;" + platform.processor()]
-    keys["$PYTHON_VERSION"] = ["1.0;" + platform.python_version()]
-    keys["$HOSTNAME"] = ["1.0;" + platform.node()]
+    keys["$SYSTEM"] = [platform.system()]
+    keys["$ARCHITECTURE"] = [platform.architecture()[0]]
+    keys["$VERSION"] = [platform.version()]
+    keys["$MACHINE"] = [platform.machine()]
+    keys["$PROCESSOR"] = [platform.processor()]
+    keys["$PYTHON_VERSION"] = [platform.python_version()]
+    keys["$HOSTNAME"] = [platform.node()]
 
     return keys
 
@@ -615,14 +614,13 @@ def create_text(args):
                 if key not in info:
                     try:
                         formula = yml["info"][key]
-                        Logger.info(f"info {key} {formula}")
+                        Logger.debug(f"info {key} {formula}")
                         value = text_formula(formula, variables)
 
-                        info[f"info:{key}"] = value
+                        variables[f"info:{key}"] = value
                     except Exception as e:
                         Logger.error(f"Error happen info {yml['info']}")
                         Logger.error(e)
-            output_text["info"] = info
 
     if output is not None:
         with open(output, "w", encoding="utf-8", newline="\n") as fw:
