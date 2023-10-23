@@ -141,8 +141,34 @@ def load_not_default(filename):
         return []
 
 
-# loopごとに読み直す
-def load_config(config_file):
+# replace config from default config to load config
+def replace_config(use_config, load_config):
+    if type(load_config) is dict:
+        keys = load_config.keys()
+        for key in keys:
+            if type(load_config[key]) is dict:
+                if key not in use_config:
+                    use_config[key] = load_config[key]
+                else:
+                    try:
+                        replace_config(use_config[key], load_config[key])
+                    except Exception as e:
+                        Logger.error(f"replace error {e} {key} {load_config[key]}")
+                        use_config[key] = load_config[key]
+            elif type(load_config[key]) is list:
+                if key not in use_config:
+                    use_config[key] = []
+                use_config[key] = load_config[key]
+            else:
+                try:
+                    use_config[key] = load_config[key]
+                except Exception as e:
+               
+                    Logger.error(f"replace error {e} {key} {load_config[key]}")
+
+
+# build default config
+def default_config():
     prefix = {
         "default": PROMPT_PREFIX,
         "exception": PROMPT_EXCEPTION_PREFIX,
@@ -211,12 +237,20 @@ def load_config(config_file):
         "stop_hour": STOP_HOUR,
         "txt2img": txt2img,
         "img2img": img2img,
+        "img2txt2img": img2txt2img,
         "log": log,
         "clone": clone,
         "custom": {},  # dispose custom
         "loop": loop,
         "direct_call": True,
     }
+    return config
+
+
+# loopごとに読み直す
+def load_config(config_file):
+    config = default_config()
+    txt2img = config["txt2img"]
     # CONFIG ファイルがない場合
     if not os.path.exists(config_file):
         txt2img["prompts"] = load_prompts_csv(PROMPT_CSV)
@@ -227,6 +261,8 @@ def load_config(config_file):
 
     with open(config_file, "r", encoding="utf-8") as f:
         yaml_config = yaml.safe_load(f)
+        # replace_config(config, yaml_config)
+
         if "host" in yaml_config:
             config["host"] = yaml_config["host"]
         if "promppt_base" in yaml_config:
@@ -249,6 +285,7 @@ def load_config(config_file):
             config["loop"]["commands"] = loop_config["commands"]
 
         if "clone" in yaml_config:
+            clone = config["clone"]
             clone_config = yaml_config["clone"]
             if "clone" in clone:
                 clone["clone"] = clone_config["clone"]
@@ -351,6 +388,7 @@ def load_config(config_file):
         dirs = config["img2img"]["dir"]
 
         if "img2img" in yaml_config:
+            img2img = config["img2img"]
             img_config = yaml_config["img2img"]
             if "steps" in img_config:
                 img2img["steps"] = img_config["steps"]
@@ -364,8 +402,11 @@ def load_config(config_file):
                 img2img["file_pattern"] = img_config["file_pattern"]
             if "direct_call" in img_config:
                 img2img["direct_call"] = img_config["direct_call"]
+            if "overrides" in img_config:
+                img2img["overrides"] = img_config["overrides"]
             if "dir" in img_config:
                 dirs = img_config["dir"]
+                image_dirs = img2img["dir"]
                 Logger.debug(dirs)
                 if "input" in dirs:
                     image_dirs["input"] = dirs["input"]
@@ -384,6 +425,7 @@ def load_config(config_file):
                 Logger.debug(image_dirs)
             config["img2img"] = img2img
         if "img2txt2img" in yaml_config:
+            img2txt2img = config["img2txt2img"]
             if "overrides" in yaml_config["img2txt2img"]:
                 img2txt2img["overrides"] = yaml_config["img2txt2img"]["overrides"]
             if "input" in yaml_config["img2txt2img"]:
@@ -506,14 +548,44 @@ def run_img2img(config):
             continue
         # direct call が True の場合は modules/img2img.py を直接呼び出す
         if config.get("direct_call") is True or img_config.get("direct_call") is True:
-            Logger.info("direct_call")
+            Logger.debug("direct_call")
             import modules.img2img
-
-            opt = {
+            overrides = {
                 "steps": img2img_steps,
                 "denoising_strength": img2img_denosing_stringth,
                 "n_iter": img2img_n_iter,
                 "batch_size": img2img_batch_size,
+            }
+
+            items = [
+                "denoising_strength",
+                "seed",
+                "subseed",
+                "subseed_strength",
+                "batch_size",
+                "n_iter",
+                "steps",
+                "cfg_scale",
+                "width",
+                "height",
+                "prompt",
+                "negative_prompt",
+                "sampler_index",
+                "mask_blur",
+                "inpainting_fill",
+                "inpaint_full_res",
+                "inpaint_full_res_padding",
+                "inpainting_mask_invert",
+            ]
+
+            if "overrides" in img_config:
+                if type(img_config["overrides"]) is dict:
+                    for item in img_config["overrides"]:
+                        if item in items:
+                            overrides[item] = img_config["overrides"][item]
+                else:
+                    Logger.debug("overrides is None")
+            opt = {
                 "filename_pattern": file_pattern,
                 "mask_dir": input_mask,
                 "alt_image_dir": input_append,
@@ -526,7 +598,7 @@ def run_img2img(config):
             Logger.verbose(f"output {output}, opt: {opt}")
             try:
                 modules.img2img.img2img(
-                    imagefiles=files, base_url=host, output_dir=output, opt=opt
+                    imagefiles=files, overrides=overrides, base_url=host, output_dir=output, opt=opt
                 )
                 Logger.info(f"img2img.py finished {folder}")
                 try:
@@ -682,7 +754,7 @@ def run_txt2img(config):
             Logger.info(f"{model_name}, {prompt_name}, {output}, {genre}")
             # If direct call is True, call modules/txt2img.py
             if config.get("direct_call") is True or text_config.get("direct_call") is True:
-                Logger.info("direct_call")
+                Logger.debug("direct_call")
                 # create prompt
                 Logger.verbose(f"create prompt {prompt_name}")
                 try:
