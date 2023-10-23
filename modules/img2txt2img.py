@@ -2,6 +2,7 @@ import json
 import os
 
 import modules.api as api
+import modules.share as share
 from modules.logger import getDefaultLogger
 from modules.parse import create_img2params
 from modules.save import save_img
@@ -35,7 +36,7 @@ def img2txt2img(
     else:
         userpass = None
     for n, imagefile in enumerate(imagefiles):
-        api.share["line_count"] = 0
+        share.set("line_count", 0)
         print(flash, end="")
         print(f"\033[KBatch {n + 1} of {count}")
         # Path: modules/img2txt2img.py
@@ -62,9 +63,9 @@ def img2txt2img(
 
         r = response.json()
         prt_cnt = save_img(r, opt=opt)
-        if "line_count" in api.share:
-            prt_cnt += api.share["line_count"]
-            api.share["line_count"] = 0
+        if share.get("line_count"):
+            prt_cnt += share.get("line_count")
+            share.set("line_count", 0)
         flash = f"\033[{prt_cnt}A"
     print("")
 
