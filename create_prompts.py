@@ -140,7 +140,7 @@ def main(args):
         try:
             # arg ->dict
             opt = vars(args)
-            Logger.info(opt)
+            Logger.debug(opt)
             result = create_text(opt)
         except Exception as e:
             Logger.error("create_text error")
