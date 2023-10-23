@@ -160,6 +160,7 @@ def load_config(config_file):
         "folder_suffix": FOLDER_SUFFIX,
         "overrides": "",
         "info": "",
+        "direct_call": False,
     }
     image_dirs = {
         "input": INPUT_DIR,
@@ -177,6 +178,7 @@ def load_config(config_file):
         "batch_size": IMG2IMG_BATCH_SIZE,
         "file_pattern": "[num]-[seed]",
         "dir": image_dirs,
+        "direct_call": False,
     }
     img2txt2img = {
         "models": None,
@@ -269,6 +271,9 @@ def load_config(config_file):
 
         if "overrides" in txt_config:
             txt2img["overrides"] = txt_config["overrides"]
+        
+        if "direct_call" in txt_config:
+            txt2img["direct_call"] = txt_config["direct_call"]
 
         if "prompts" in txt_config:
             if type(txt_config["prompts"]) is str:
@@ -356,6 +361,8 @@ def load_config(config_file):
                 img2img["batch_size"] = img_config["batch_size"]
             if "file_pattern" in img_config:
                 img2img["file_pattern"] = img_config["file_pattern"]
+            if "direct_call" in img_config:
+                img2img["direct_call"] = img_config["direct_call"]
             if "dir" in img_config:
                 dirs = img_config["dir"]
                 Logger.debug(dirs)
@@ -645,6 +652,7 @@ def run_txt2img(config):
 
     for prompt in prompts:
         prompt_name = prompt["prompt_name"]
+        Logger.debug(f"prompt_name {prompt_name}")
         if prompt_name in exception_list:
             prompt_name = (
                 prompt_base + prefix["exception"] + prompt_name + prefix["suffix"]
@@ -684,11 +692,12 @@ def run_txt2img(config):
                         "max_number": number,
                         "api_filename_variable": True,
                     }
-                    result = prompt.create_text(opt)
+                    result = modules.prompt.create_text(opt)
+                    # Logger.info(f"output_text {result['output_text']}")
                 except Exception as e:
                     Logger.error("create prompt failed")
                     Logger.error(e)
-                    return False
+                # Logger.debug(f"create prompt finished {result}")
                 options = result["options"]
                 payloads = result["output_text"]
                 opt = {
@@ -709,11 +718,14 @@ def run_txt2img(config):
                 Logger.verbose(f"set model {model_name} {vae}")
                 if model_name is not None:
                     import modules.api
-
-                    modules.api.set_sd_model(
-                        base_url=host, sd_model=model_name, sd_vae=vae
-                    )
+                    try:
+                        modules.api.set_sd_model(
+                            base_url=host, sd_model=model_name, sd_vae=vae
+                        )
+                    except Exception as e:
+                        Logger.error(e.with_traceback())
                 # txt2img
+                Logger.debug(f"txt2img {opt}")
                 import modules.txt2img
 
                 Logger.verbose(f"txt2img {opt}")

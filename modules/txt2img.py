@@ -2,6 +2,7 @@ import json
 import os
 
 import modules.api as api
+import modules.share as share
 from modules.logger import getDefaultLogger
 from modules.save import save_images
 
@@ -33,7 +34,8 @@ def txt2img(
         userpass = None
 
     for n, item in enumerate(output_text):
-        api.share["line_count"] = 0
+        Logger.info(f"API loop {n + 1} of {count}")
+        share.set("line_count", 0)
         print(f"\033[KBatch {n + 1} of {count}")
         # Why is an error happening? json=payload or json=item
         if "variables" in item:
@@ -56,7 +58,7 @@ def txt2img(
 
         r = response.json()
         prt_cnt = save_images(r, opt=opt)
-        if "line_count" in api.share:
-            prt_cnt += api.share["line_count"]
-            api.share["line_count"] = 0
+        if share.get("line_count"):
+            prt_cnt += share.get("line_count")
+            share.set("line_count", 0)
     print("")

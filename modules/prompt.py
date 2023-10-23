@@ -98,9 +98,9 @@ def get_appends(appends):
 def update_nested_dict(original_dict, new_dict):
     for key, value in new_dict.items():
         if (
-            isinstance(value, dict)
-            and key in original_dict
-            and isinstance(original_dict[key], dict)
+            isinstance(value, dict) and
+            key in original_dict and
+            isinstance(original_dict[key], dict)
         ):
             update_nested_dict(original_dict[key], value)
         else:
@@ -322,7 +322,7 @@ def weight_calc(append, num, default_weight=0.1, weight_mode=True):
                 else:
                     weight = max_value + default_weight
             except ValueError:
-                Logger.error(
+                Logger.debug(
                     f"float convert error append {num + 1} line {i} {item} use default"
                 )
                 weight = max_value + default_weight
@@ -436,16 +436,18 @@ def expand_arg(args):
     return array
 
 
-def create_text(args):
-    override = expand_arg(args.override)
-    info = expand_arg(args.info)
-    if args.json or args.api_mode:
+def create_text(opt):
+    override = expand_arg(opt.get("override"))
+    info = expand_arg(opt.get("info"))
+    Logger.debug(f"override {override}")
+    Logger.debug(f"info {info}")
+    if opt.get("json") or opt.get("api_mode"):
         mode = "json"
     else:
         mode = "text"
-    current = args.append_dir
-    prompt_file = args.input
-    output = args.output
+    current = opt.get("append_dir")
+    prompt_file = opt.get("input")
+    output = opt.get("output")
     ext = os.path.splitext(prompt_file)[-1:][0]
     yml = None
     if ext == ".yaml" or ext == ".yml":
@@ -482,16 +484,16 @@ def create_text(args):
     else:
         options = {}
 
-    Logger.debug(f"info {info}")
+    # Logger.debug(f"info {info}")
 
     console_mode = False
-    if output is None and args.api_mode is False:
+    if output is None and opt.get("api_mode") is False:
         if options.get("output"):
             output = options["output"]
         else:
             console_mode = True
 
-    if args.api_input_json is None and options.get("method") == "random":
+    if opt.get("api_input_json") is None and options.get("method") == "random":
         max_number = 100
         default_weight = 0.1
         weight_mode = False
@@ -499,8 +501,8 @@ def create_text(args):
             if "number" in options:
                 max_number = options["number"]
 
-            if args.max_number != -1:
-                max_number = args.max_number
+            if opt.get("max_number") != -1:
+                max_number = opt.get("max_number")
 
             if "weight" in options:
                 weight_mode = options["weight"]
@@ -513,7 +515,7 @@ def create_text(args):
                 yml["before_multiple"],
                 console_mode=False,
                 mode=mode,
-                variables_mode=args.api_filename_variable,
+                variables_mode=opt.get("api_filename_variable"),
             )
             if type(output_text) is list:
                 multiple_text = []
@@ -526,7 +528,7 @@ def create_text(args):
                         weight_mode=weight_mode,
                         default_weight=default_weight,
                         mode=mode,
-                        variables_mode=args.api_filename_variable,
+                        variables_mode=opt.get("api_filename_variable"),
                     )
                     for item in result:
                         multiple_text.append(item)
@@ -541,7 +543,7 @@ def create_text(args):
                         weight_mode=weight_mode,
                         default_weight=default_weight,
                         mode=mode,
-                        variables_mode=args.api_filename_variable,
+                        variables_mode=opt.get("api_filename_variable"),
                     )
             output_text = multiple_text
         else:
@@ -554,7 +556,7 @@ def create_text(args):
                     weight_mode=weight_mode,
                     default_weight=default_weight,
                     mode=mode,
-                    variables_mode=args.api_filename_variable,
+                    variables_mode=opt.get("api_filename_variable"),
                 )
             else:
                 output_text = prompt_random(
@@ -565,7 +567,7 @@ def create_text(args):
                     weight_mode=weight_mode,
                     default_weight=default_weight,
                     mode=mode,
-                    variables_mode=args.api_filename_variable,
+                    variables_mode=opt.get("api_filename_variable"),
                 )
         if "appends_multiple" in yml:
             if type(output_text) is list:
@@ -576,7 +578,7 @@ def create_text(args):
                         yml["appends_multiple"],
                         console_mode,
                         mode=mode,
-                        variables_mode=args.api_filename_variable,
+                        variables_mode=opt.get("api_filename_variable"),
                     )
                     for item in result:
                         multiple_text.append(item)
@@ -588,7 +590,7 @@ def create_text(args):
                         yml["appends_multiple"],
                         console_mode,
                         mode=mode,
-                        variables_mode=args.api_filename_variable,
+                        variables_mode=opt.get("api_filename_variable"),
                     )
             output_text = multiple_text
     else:
@@ -597,14 +599,14 @@ def create_text(args):
             appends,
             console_mode,
             mode=mode,
-            variables_mode=args.api_filename_variable,
+            variables_mode=opt.get("api_filename_variable"),
         )
 
     if mode == "json":
         if info is not None:
             info = {}
-        for output_text in output_text:
-            variables = output_text.get("variables") or {}
+        for output_line in output_text:
+            variables = output_line.get("variables") or {}
             reserved = set_reserved({})
             del reserved["$RANDOM"]
             for key, item in reserved.items():
@@ -632,7 +634,6 @@ def create_text(args):
                 fw.write(output_text)
             else:
                 json.dump(output_text, fp=fw, indent=2)
-    Logger.debug(f"Output {output_text}")
 
     result = {"options": options, "yml": yml, "output_text": output_text}
     return result

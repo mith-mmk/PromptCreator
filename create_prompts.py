@@ -138,7 +138,10 @@ def main(args):
 
     if args.input is not None:
         try:
-            result = create_text(args)
+            # arg ->dict
+            opt = vars(args)
+            Logger.info(opt)
+            result = create_text(opt)
         except Exception as e:
             Logger.error("create_text error")
             Logger.info(e)
@@ -191,13 +194,16 @@ def main(args):
         opt["base_url"] = args.api_base
         if sd_model is not None:
             api.set_sd_model(base_url=args.api_base, sd_model=sd_model, sd_vae=sd_vae)
-        api.init()
+        # api.init()
+        Logger.verbose("api mode")
+        Logger.verbose(f"base_url: {args.api_base} output_dir: {args.api_output_dir}")
+        Logger.verbose(f"output_text: {output_text} opt: {opt}")
         result = txt2img(
             output_text, base_url=args.api_base, output_dir=args.api_output_dir, opt=opt
         )
         if not result:
             return False
-        api.shutdown()
+        # api.shutdown()
         return True
 
 

@@ -3,6 +3,7 @@ import os
 
 import modules.api as api
 import modules.logger as logger
+import modules.share as share
 from modules.interrogate import interrogate
 from modules.parse import create_img2json
 from modules.save import save_img
@@ -55,7 +56,7 @@ def img2img(
         userpass = None
 
     for n, imagefile in enumerate(imagefiles):
-        api.share["line_count"] = 0
+        share.set("line_count", 0)
         print(flash, end="")
         print(f"\033[KBatch {n + 1} of {count}")
         item = create_img2json(imagefile, alt_image_dir, mask_image_dir, base_url)
@@ -63,7 +64,7 @@ def img2img(
             item.get("prompt") is None or opt.get("force_interrogate")
         ):
             print("\033[KInterrogate from an image....")
-            api.share["line_count"] += 1
+            share.set("line_count", share.get("line_count") + 1)
             try:
                 result = interrogate(imagefile, base_url, model=opt.get("interrogate"))
                 if result.status_code == 200:
@@ -127,9 +128,9 @@ def img2img(
 
         r = response.json()
         prt_cnt = save_img(r, opt=opt)
-        if "line_count" in api.share:
-            prt_cnt += api.share["line_count"]
-            api.share["line_count"] = 0
+        if share.get("line_count"):
+            prt_cnt += share.get("line_count")
+            share.set("line_count", 0)
         flash = f"\033[{prt_cnt}A"
     print("")
 
