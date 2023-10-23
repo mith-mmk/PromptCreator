@@ -215,6 +215,7 @@ def load_config(config_file):
         "clone": clone,
         "custom": {},  # dispose custom
         "loop": loop,
+        "direct_call": True,
     }
     # CONFIG ファイルがない場合
     if not os.path.exists(config_file):
@@ -271,7 +272,7 @@ def load_config(config_file):
 
         if "overrides" in txt_config:
             txt2img["overrides"] = txt_config["overrides"]
-        
+
         if "direct_call" in txt_config:
             txt2img["direct_call"] = txt_config["direct_call"]
 
@@ -474,13 +475,13 @@ def model_copy(clone):
 
 def run_img2img(config):
     host = config["host"]
-    config = config["img2img"]
-    img2img_steps = config["steps"]
-    img2img_denosing_stringth = config["denosing_strength"]
-    img2img_n_iter = config["n_iter"]
-    img2img_batch_size = config["batch_size"]
-    file_pattern = config["file_pattern"]
-    dirs = config["dir"]
+    img_config = config["img2img"]
+    img2img_steps = img_config["steps"]
+    img2img_denosing_stringth = img_config["denosing_strength"]
+    img2img_n_iter = img_config["n_iter"]
+    img2img_batch_size = img_config["batch_size"]
+    file_pattern = img_config["file_pattern"]
+    dirs = img_config["dir"]
     input_dir = dirs["input"]
     work_dir = dirs["work"]
     input_append = dirs["append"]
@@ -504,28 +505,24 @@ def run_img2img(config):
             Logger.verbose(f"no files in {folder}")
             continue
         # direct call が True の場合は modules/img2img.py を直接呼び出す
-        if config.get("direct_call") is True:
+        if config.get("direct_call") is True or img_config.get("direct_call") is True:
             Logger.info("direct_call")
             import modules.img2img
 
-            opt = (
-                {
-                    "steps": img2img_steps,
-                    "denoising_strength": img2img_denosing_stringth,
-                    "n_iter": img2img_n_iter,
-                    "batch_size": img2img_batch_size,
-                    "filename_pattern": file_pattern,
-                    "mask_dir": input_mask,
-                    "alt_image_dir": input_append,
-                },
-            )
+            opt = {
+                "steps": img2img_steps,
+                "denoising_strength": img2img_denosing_stringth,
+                "n_iter": img2img_n_iter,
+                "batch_size": img2img_batch_size,
+                "filename_pattern": file_pattern,
+                "mask_dir": input_mask,
+                "alt_image_dir": input_append,
+            }
             if config.get("userpass"):
                 opt["userpass"] = config.get("userpass")
-            if config.get("overrides"):
-                opt["overrides"] = config.get("overrides")
-            output = (
-                os.path.join(output_dir, os.path.basename(folder) + folder_suffix),
-            )
+            if img_config.get("overrides"):
+                opt["overrides"] = img_config.get("overrides")
+            output = os.path.join(output_dir, os.path.basename(folder) + folder_suffix)
             Logger.verbose(f"output {output}, opt: {opt}")
             try:
                 modules.img2img.img2img(
@@ -609,18 +606,18 @@ def escape_split(str, split):
 
 def run_txt2img(config):
     host = config["host"]
-    config = config["txt2img"]
-    output_dir = config["output"]
-    models = config["models"]
-    exception_list = config["prefix"]["exception_list"]
-    prompts = config["prompts"]
-    prompt_base = config["prompt_base"]
-    abort_matrix = config["abort_matrix"]
-    coef_matrix = config["coef_matrix"]
-    prefix = config["prefix"]
-    folder_suffix = config["folder_suffix"]
-    overrides = config["overrides"]
-    info = config["info"]
+    text_config = config["txt2img"]
+    output_dir = text_config["output"]
+    models = text_config["models"]
+    exception_list = text_config["prefix"]["exception_list"]
+    prompts = text_config["prompts"]
+    prompt_base = text_config["prompt_base"]
+    abort_matrix = text_config["abort_matrix"]
+    coef_matrix = text_config["coef_matrix"]
+    prefix = text_config["prefix"]
+    folder_suffix = text_config["folder_suffix"]
+    overrides = text_config["overrides"]
+    info = text_config["info"]
     if type(overrides) is str:
         overrides = escape_split(overrides, " ")
         Logger.debug(f"overrides string {overrides}")
@@ -646,10 +643,6 @@ def run_txt2img(config):
         else:
             break
 
-    coef = 1.0
-    if mode in coef_matrix:
-        coef = coef_matrix[mode]
-
     for prompt in prompts:
         prompt_name = prompt["prompt_name"]
         Logger.debug(f"prompt_name {prompt_name}")
@@ -673,11 +666,22 @@ def run_txt2img(config):
             file_pattern = "[num]-[seed]"
 
         if matrix == "*" or genre in matrix:
+            coef = 1.0
+            if mode in coef_matrix:
+                if type(coef_matrix[mode]) is dict:
+                    if genre in coef_matrix[mode] and (
+                        type(coef_matrix[mode][genre]) is float or
+                        type(coef_matrix[mode][genre]) is int
+                    ):
+                        coef = coef_matrix[mode][genre]
+                elif type(coef_matrix[mode]) is float or type(coef_matrix[mode]) is int:
+                    coef = coef_matrix[mode]
+
             number = int(number * coef)
             output = os.path.join(output_dir, folder + folder_suffix)
             Logger.info(f"{model_name}, {prompt_name}, {output}, {genre}")
             # If direct call is True, call modules/txt2img.py
-            if config.get("direct_call") is True:
+            if config.get("direct_call") is True or text_config.get("direct_call") is True:
                 Logger.info("direct_call")
                 # create prompt
                 Logger.verbose(f"create prompt {prompt_name}")
@@ -708,16 +712,17 @@ def run_txt2img(config):
                 }
                 if config.get("userpass"):
                     opt["userpass"] = config.get("userpass")
-                if config.get("save_extend_meta"):
-                    opt["save_extend_meta"] = config.get("save_extend_meta")
-                if config.get("image_quality"):
-                    opt["image_quality"] = config.get("image_quality")
-                if config.get("image_quality"):
-                    opt["image_quality"] = config.get("image_quality")
+                if text_config.get("save_extend_meta"):
+                    opt["save_extend_meta"] = text_config.get("save_extend_meta")
+                if text_config.get("image_quality"):
+                    opt["image_quality"] = text_config.get("image_quality")
+                if text_config.get("image_quality"):
+                    opt["image_quality"] = text_config.get("image_quality")
                 # set model
                 Logger.verbose(f"set model {model_name} {vae}")
                 if model_name is not None:
                     import modules.api
+
                     try:
                         modules.api.set_sd_model(
                             base_url=host, sd_model=model_name, sd_vae=vae

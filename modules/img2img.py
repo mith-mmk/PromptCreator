@@ -49,17 +49,17 @@ def img2img(
     flash = ""
     alt_image_dir = opt.get("alt_image_dir")
     mask_image_dir = opt.get("mask_dir")
-
     if opt.get("userpass"):
         userpass = opt.get("userpass")
     else:
         userpass = None
 
     for n, imagefile in enumerate(imagefiles):
+        Logger.debug(f"imagefile is {imagefile}")
         share.set("line_count", 0)
         print(flash, end="")
         print(f"\033[KBatch {n + 1} of {count}")
-        item = create_img2json(imagefile, alt_image_dir, mask_image_dir, base_url)
+        item = create_img2json(imagefile, alt_image_dir, mask_image_dir)
         if opt.get("interrogate") is not None and (
             item.get("prompt") is None or opt.get("force_interrogate")
         ):

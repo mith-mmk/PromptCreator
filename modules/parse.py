@@ -5,6 +5,7 @@ import re
 from PIL import Image
 
 import modules.api as api
+import modules.share as share
 from modules.logger import getDefaultLogger
 
 Logger = getDefaultLogger()
@@ -163,18 +164,18 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None):
     # workaround for hires.fix spec change
     parameters["width"] = image.width
     parameters["height"] = image.height
-
     load_image = imagefile
     if alt_image_dir is not None:
         basename = os.path.basename(imagefile)
         alt_imagefile = os.path.join(alt_image_dir, basename)
         if os.path.isfile(alt_imagefile):
             Logger.info(f"\033[Kbase image use alternative {alt_imagefile}")
-            if "line_count" in api.share:
-                api.share["line_count"] += 1
+            if share.get("line_count") is not None:
+                share.set("line_count", share.get("line_count") + 1)
             load_image = alt_imagefile
     with open(load_image, "rb") as f:
         init_image = base64.b64encode(f.read()).decode("ascii")
+
     json_raw = {}
     json_raw["init_images"] = ["data:image/png;base64," + init_image]
     json_raw["extend"] = extend
@@ -196,7 +197,6 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None):
                 json_raw["inpainting_mask_invert"] = 0
 
     override_settings = {}
-
     sampler_index = None
     sampler_name = None
     # override settings only return sd_model_checkpoint and CLIP_stop_at_last_layers
