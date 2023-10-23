@@ -11,6 +11,7 @@ import time
 import yaml
 
 import create_prompts
+
 # import logging
 import img2img
 import modules.logger as logger
@@ -149,21 +150,16 @@ def replace_config(use_config, load_config):
             if type(load_config[key]) is dict:
                 if key not in use_config:
                     use_config[key] = load_config[key]
+                elif type(use_config[key]) is not dict:
+                    use_config[key] = load_config[key]
                 else:
-                    try:
-                        replace_config(use_config[key], load_config[key])
-                    except Exception as e:
-                        Logger.error(f"replace error {e} {key} {load_config[key]}")
-                        use_config[key] = load_config[key]
+                    replace_config(use_config[key], load_config[key])
             elif type(load_config[key]) is list:
-                if key not in use_config:
-                    use_config[key] = []
                 use_config[key] = load_config[key]
             else:
                 try:
                     use_config[key] = load_config[key]
                 except Exception as e:
-               
                     Logger.error(f"replace error {e} {key} {load_config[key]}")
 
 
@@ -261,8 +257,8 @@ def load_config(config_file):
 
     with open(config_file, "r", encoding="utf-8") as f:
         yaml_config = yaml.safe_load(f)
-        # replace_config(config, yaml_config)
-
+        replace_config(config, yaml_config)
+        """
         if "host" in yaml_config:
             config["host"] = yaml_config["host"]
         if "promppt_base" in yaml_config:
@@ -439,6 +435,7 @@ def load_config(config_file):
             config["img2txt2img"] = img2txt2img
         if "custom" in yaml_config:
             config["custom"] = yaml_config["custom"]
+        """
     share.set("config", config)
     return config
 
@@ -550,6 +547,7 @@ def run_img2img(config):
         if config.get("direct_call") is True or img_config.get("direct_call") is True:
             Logger.debug("direct_call")
             import modules.img2img
+
             overrides = {
                 "steps": img2img_steps,
                 "denoising_strength": img2img_denosing_stringth,
@@ -598,7 +596,11 @@ def run_img2img(config):
             Logger.verbose(f"output {output}, opt: {opt}")
             try:
                 modules.img2img.img2img(
-                    imagefiles=files, overrides=overrides, base_url=host, output_dir=output, opt=opt
+                    imagefiles=files,
+                    overrides=overrides,
+                    base_url=host,
+                    output_dir=output,
+                    opt=opt,
                 )
                 Logger.info(f"img2img.py finished {folder}")
                 try:
@@ -742,8 +744,8 @@ def run_txt2img(config):
             if mode in coef_matrix:
                 if type(coef_matrix[mode]) is dict:
                     if genre in coef_matrix[mode] and (
-                        type(coef_matrix[mode][genre]) is float or
-                        type(coef_matrix[mode][genre]) is int
+                        type(coef_matrix[mode][genre]) is float
+                        or type(coef_matrix[mode][genre]) is int
                     ):
                         coef = coef_matrix[mode][genre]
                 elif type(coef_matrix[mode]) is float or type(coef_matrix[mode]) is int:
@@ -753,7 +755,10 @@ def run_txt2img(config):
             output = os.path.join(output_dir, folder + folder_suffix)
             Logger.info(f"{model_name}, {prompt_name}, {output}, {genre}")
             # If direct call is True, call modules/txt2img.py
-            if config.get("direct_call") is True or text_config.get("direct_call") is True:
+            if (
+                config.get("direct_call") is True
+                or text_config.get("direct_call") is True
+            ):
                 Logger.debug("direct_call")
                 # create prompt
                 Logger.verbose(f"create prompt {prompt_name}")
