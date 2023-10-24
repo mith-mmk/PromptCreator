@@ -11,7 +11,6 @@ import time
 import yaml
 
 import create_prompts
-
 # import logging
 import img2img
 import modules.logger as logger
@@ -142,8 +141,73 @@ def load_not_default(filename):
         return []
 
 
+def set_txt2img_config(config, yaml_config):
+    txt2img = config["txt2img"]
+    if "txt2img" in yaml_config:
+        txt_config = yaml_config["txt2img"]
+    else:
+        txt_config = {}
+    if "info" in txt_config:
+        txt2img["info"] = txt_config["info"]
+    if "output" in txt_config:
+        txt2img["output"] = txt_config["output"]
+    if "overrides" in txt_config:
+        txt2img["overrides"] = txt_config["overrides"]
+    if "direct_call" in txt_config:
+        txt2img["direct_call"] = txt_config["direct_call"]
+    if "prompts" in txt_config:
+        if type(txt_config["prompts"]) is str:
+            txt2img["prompts"] = load_prompts_csv(txt_config["prompts"])
+        else:
+            prompts = []
+            for prompt in txt_config["prompts"]:
+                [prompt_name, folder, number, genre, file_pattern] = prompt.split(
+                    ","
+                )
+                prompt = {
+                    "prompt_name": prompt_name,
+                    "folder": folder,
+                    "number": number,
+                    "genre": genre,
+                    "file_pattern": file_pattern,
+                }
+                prompts.append(prompt)
+            txt2img["prompts"] = prompts
+    if "abort_matrix" in txt_config:
+        txt2img["abort_matrix"] = txt_config["abort_matrix"]
+    if "coef_matrix" in txt_config:
+        txt2img["coef_matrix"] = txt_config["coef_matrix"]
+    if "folder_suffix" in yaml_config:
+        config["folder_suffix"] = yaml_config["folder_suffix"]
+    if "prefix" in txt_config:
+        prefix = txt_config["prefix"]
+        if "default" in prefix:
+            txt2img["prefix"]["default"] = prefix["default"]
+        if "exception" in prefix:
+            txt2img["prefix"]["exception"] = prefix["exception"]
+        if "exception_list" in prefix:
+            txt2img["prefix"]["exception_list"] = prefix["exception_list"]
+        if "suffix" in prefix:
+            txt2img["prefix"]["suffix"] = prefix["suffix"]
+    if "models" in txt_config:
+        if type(txt_config["models"]) is str:
+            txt2img["models"] = load_models_csv(txt_config["models"])
+        else:
+            list = txt_config["models"]
+            models = []
+            for model in list:
+                [model_name, vae, mode] = model.split(",")
+                model = {
+                    "model_name": model_name,
+                    "vae": vae,
+                    "mode": mode,
+                }
+                models.append(model)
+            txt2img["models"] = models
+
+
 # replace config from default config to load config
-def replace_config(use_config, load_config):
+def replace_config(use_config, load_config, parent=None):
     if type(load_config) is dict:
         keys = load_config.keys()
         for key in keys:
@@ -153,7 +217,7 @@ def replace_config(use_config, load_config):
                 elif type(use_config[key]) is not dict:
                     use_config[key] = load_config[key]
                 else:
-                    replace_config(use_config[key], load_config[key])
+                    replace_config(use_config[key], load_config[key], key)
             elif type(load_config[key]) is list:
                 use_config[key] = load_config[key]
             else:
@@ -257,7 +321,9 @@ def load_config(config_file):
 
     with open(config_file, "r", encoding="utf-8") as f:
         yaml_config = yaml.safe_load(f)
+
         replace_config(config, yaml_config)
+        set_txt2img_config(config, yaml_config)
         """
         if "host" in yaml_config:
             config["host"] = yaml_config["host"]
@@ -291,7 +357,6 @@ def load_config(config_file):
                 clone["dest"] = clone_config["dest"]
             if "folders" in clone:
                 clone["folders"] = clone_config["folders"]
-
         if "txt2img" in yaml_config:
             txt_config = yaml_config["txt2img"]
         else:
@@ -363,7 +428,6 @@ def load_config(config_file):
                     }
                     models.append(model)
                 txt2img["models"] = models
-
         if "log" in yaml_config:
             log = yaml_config["log"]
             if not ("days" in log):
@@ -376,11 +440,6 @@ def load_config(config_file):
                 log["print_levels"] = ["info"]
             config["log"] = log
 
-        log = config["log"]
-        DefaultLogger.setConfig(
-            log["path"], log["print_levels"], log["level"], log["days"]
-        )
-        Logger.setConfig(log["path"], log["print_levels"], log["level"], log["days"])
         dirs = config["img2img"]["dir"]
 
         if "img2img" in yaml_config:
@@ -436,6 +495,12 @@ def load_config(config_file):
         if "custom" in yaml_config:
             config["custom"] = yaml_config["custom"]
         """
+    # set Logger
+    log = config["log"]
+    DefaultLogger.setConfig(
+        log["path"], log["print_levels"], log["level"], log["days"]
+    )
+    Logger.setConfig(log["path"], log["print_levels"], log["level"], log["days"])
     share.set("config", config)
     return config
 
@@ -744,8 +809,8 @@ def run_txt2img(config):
             if mode in coef_matrix:
                 if type(coef_matrix[mode]) is dict:
                     if genre in coef_matrix[mode] and (
-                        type(coef_matrix[mode][genre]) is float
-                        or type(coef_matrix[mode][genre]) is int
+                        type(coef_matrix[mode][genre]) is float or
+                        type(coef_matrix[mode][genre]) is int
                     ):
                         coef = coef_matrix[mode][genre]
                 elif type(coef_matrix[mode]) is float or type(coef_matrix[mode]) is int:
@@ -756,8 +821,8 @@ def run_txt2img(config):
             Logger.info(f"{model_name}, {prompt_name}, {output}, {genre}")
             # If direct call is True, call modules/txt2img.py
             if (
-                config.get("direct_call") is True
-                or text_config.get("direct_call") is True
+                config.get("direct_call") is True or
+                text_config.get("direct_call") is True
             ):
                 Logger.debug("direct_call")
                 # create prompt
