@@ -11,7 +11,6 @@ import time
 import yaml
 
 import create_prompts
-
 # import logging
 import img2img
 import modules.logger as logger
@@ -733,6 +732,7 @@ def run_txt2img(config):
                             base_url=host, sd_model=model_name, sd_vae=vae
                         )
                     except Exception as e:
+                        Logger.error("set model failed")
                         Logger.error(e.with_traceback())
                 # txt2img
                 Logger.debug(f"txt2img {opt}")
