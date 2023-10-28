@@ -11,6 +11,7 @@ import time
 import yaml
 
 import create_prompts
+
 # import logging
 import img2img
 import modules.logger as logger
@@ -345,7 +346,7 @@ def parseBetweenTime(config_time):
     return start_time, stop_time
 
 
-def loadfile(config):
+def load_schedule(config_file):
     schedule = load_config(config_file)["schedule"]
     if "time" in schedule:
         start_time, stop_time = parseBetweenTime(schedule["time"])
@@ -363,7 +364,7 @@ def loadfile(config):
 
 # sleep time
 def check_time(config_file):
-    start_hour, start_minute, stop_hour, stop_minute = loadfile(config_file)
+    start_hour, start_minute, stop_hour, stop_minute = load_schedule(config_file)
     now = datetime.datetime.now()
     minutes = now.minute + now.hour * 60
     start_minutes = start_minute + start_hour * 60
@@ -377,8 +378,11 @@ def check_time(config_file):
         )
     while not (minutes >= start_minutes and minutes < stop_minutes):
         time.sleep(60)
-        start_hour, start_minute, stop_hour, stop_minute = loadfile(config_file)
         now = datetime.datetime.now()
+        minutes = now.minute + now.hour * 60
+        start_hour, start_minute, stop_hour, stop_minute = load_schedule(config_file)
+        start_minutes = start_minute + start_hour * 60
+        stop_minutes = stop_minute + stop_hour * 60
 
 
 def custom(args):
