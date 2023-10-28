@@ -3,8 +3,9 @@ version: 1
 host: http://localhost:7860
 path: ./prompts/
 schedule:
-  start: 7
-  stop: 23
+  time 7:00 - 23:00
+#  start: 7
+#  stop: 23
 # log setter
 log:
   # log output filename

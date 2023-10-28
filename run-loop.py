@@ -11,6 +11,7 @@ import time
 import yaml
 
 import create_prompts
+
 # import logging
 import img2img
 import modules.logger as logger
@@ -355,9 +356,9 @@ def check_time(config_file):
         stop_hour = int(stop_time.split(":")[0])
         stop_minute = int(stop_time.split(":")[1])
     else:
-        start_hour = schedule["start_hour"]
+        start_hour = schedule.get("start", schedule["start_hour"])
         start_minute = schedule.get("start_minute", 0)
-        stop_hour = schedule["stop_hour"]
+        stop_hour = schedule.get("stop", schedule["stop_hour"])
         stop_minute = schedule.get("stop_minute", 0)
     now = datetime.datetime.now()
     minutes = now.minute + now.hour * 60
