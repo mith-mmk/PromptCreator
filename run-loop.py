@@ -11,6 +11,7 @@ import time
 import yaml
 
 import create_prompts
+
 # import logging
 import img2img
 import modules.logger as logger
@@ -747,6 +748,7 @@ def run_txt2img(config):
                         opt=opt,
                     )
                 except Exception as e:
+                    Logger.error("txt2img failed")
                     Logger.error(e)
                     return False
             else:
