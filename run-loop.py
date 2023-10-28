@@ -161,9 +161,7 @@ def set_txt2img_config(config, yaml_config):
         else:
             prompts = []
             for prompt in txt_config["prompts"]:
-                [prompt_name, folder, number, genre, file_pattern] = prompt.split(
-                    ","
-                )
+                [prompt_name, folder, number, genre, file_pattern] = prompt.split(",")
                 prompt = {
                     "prompt_name": prompt_name,
                     "folder": folder,
@@ -290,11 +288,14 @@ def default_config():
         "loop_count": 0,
         "commands": ["clone", "check", "ping", "txt2img", "img2img", "sleep 1"],
     }
+    schedule = {
+        "start_hour": START_HOUR,
+        "stop_hour": STOP_HOUR,
+    }
     config = {
         "host": HOST,
         "prompt_base": PROMPT_BASE,
-        "start_hour": START_HOUR,
-        "stop_hour": STOP_HOUR,
+        "schedule": schedule,
         "txt2img": txt2img,
         "img2img": img2img,
         "img2txt2img": img2txt2img,
@@ -324,198 +325,52 @@ def load_config(config_file):
 
         replace_config(config, yaml_config)
         set_txt2img_config(config, yaml_config)
-        """
-        if "host" in yaml_config:
-            config["host"] = yaml_config["host"]
-        if "promppt_base" in yaml_config:
-            config["prompt_base"] = yaml_config["prompt_base"]
-        if "schedule" in yaml_config:
-            schedule = yaml_config["schedule"]
-            if "start" in schedule:
-                config["start_hour"] = schedule["start"]
-            if "stop" in yaml_config["schedule"]:
-                config["stop_hour"] = schedule["stop"]
-        if "loop" in yaml_config:
-            loop_config = yaml_config["loop"]
-        else:
-            loop_config = {}
-        if "mode" in loop_config:
-            config["loop"]["mode"] = loop_config["mode"]
-        if "loop_count" in loop_config:
-            config["loop"]["loop_count"] = loop_config["loop_count"]
-        if "commands" in loop_config:
-            config["loop"]["commands"] = loop_config["commands"]
-
-        if "clone" in yaml_config:
-            clone = config["clone"]
-            clone_config = yaml_config["clone"]
-            if "clone" in clone:
-                clone["clone"] = clone_config["clone"]
-            if "src" in clone:
-                clone["src"] = clone_config["src"]
-            if "dest" in clone:
-                clone["dest"] = clone_config["dest"]
-            if "folders" in clone:
-                clone["folders"] = clone_config["folders"]
-        if "txt2img" in yaml_config:
-            txt_config = yaml_config["txt2img"]
-        else:
-            txt_config = {}
-
-        if "info" in txt_config:
-            txt2img["info"] = txt_config["info"]
-
-        if "output" in txt_config:
-            txt2img["output"] = txt_config["output"]
-
-        if "overrides" in txt_config:
-            txt2img["overrides"] = txt_config["overrides"]
-
-        if "direct_call" in txt_config:
-            txt2img["direct_call"] = txt_config["direct_call"]
-
-        if "prompts" in txt_config:
-            if type(txt_config["prompts"]) is str:
-                txt2img["prompts"] = load_prompts_csv(txt_config["prompts"])
-            else:
-                prompts = []
-                for prompt in txt_config["prompts"]:
-                    [prompt_name, folder, number, genre, file_pattern] = prompt.split(
-                        ","
-                    )
-                    prompt = {
-                        "prompt_name": prompt_name,
-                        "folder": folder,
-                        "number": number,
-                        "genre": genre,
-                        "file_pattern": file_pattern,
-                    }
-                    prompts.append(prompt)
-                txt2img["prompts"] = prompts
-
-        if "abort_matrix" in txt_config:
-            txt2img["abort_matrix"] = txt_config["abort_matrix"]
-
-        if "coef_matrix" in txt_config:
-            txt2img["coef_matrix"] = txt_config["coef_matrix"]
-
-        if "folder_suffix" in yaml_config:
-            config["folder_suffix"] = yaml_config["folder_suffix"]
-
-        if "prefix" in txt_config:
-            prefix = txt_config["prefix"]
-            if "default" in prefix:
-                txt2img["prefix"]["default"] = prefix["default"]
-            if "exception" in prefix:
-                txt2img["prefix"]["exception"] = prefix["exception"]
-            if "exception_list" in prefix:
-                txt2img["prefix"]["exception_list"] = prefix["exception_list"]
-            if "suffix" in prefix:
-                txt2img["prefix"]["suffix"] = prefix["suffix"]
-
-        if "models" in txt_config:
-            if type(txt_config["models"]) is str:
-                txt2img["models"] = load_models_csv(txt_config["models"])
-            else:
-                list = txt_config["models"]
-                models = []
-                for model in list:
-                    [model_name, vae, mode] = model.split(",")
-                    model = {
-                        "model_name": model_name,
-                        "vae": vae,
-                        "mode": mode,
-                    }
-                    models.append(model)
-                txt2img["models"] = models
-        if "log" in yaml_config:
-            log = yaml_config["log"]
-            if not ("days" in log):
-                log["days"] = LOG_DAYS
-            if not ("path" in log):
-                log["path"] = LOG_PATH
-            if "level" not in log:
-                log["level"] = "info"
-            if "print_levels" not in log:
-                log["print_levels"] = ["info"]
-            config["log"] = log
-
-        dirs = config["img2img"]["dir"]
-
-        if "img2img" in yaml_config:
-            img2img = config["img2img"]
-            img_config = yaml_config["img2img"]
-            if "steps" in img_config:
-                img2img["steps"] = img_config["steps"]
-            if "denosing_strength" in img_config:
-                img2img["denosing_strength"] = img_config["denosing_strength"]
-            if "n_iter" in img_config:
-                img2img["n_iter"] = img_config["n_iter"]
-            if "batch_size" in img_config:
-                img2img["batch_size"] = img_config["batch_size"]
-            if "file_pattern" in img_config:
-                img2img["file_pattern"] = img_config["file_pattern"]
-            if "direct_call" in img_config:
-                img2img["direct_call"] = img_config["direct_call"]
-            if "overrides" in img_config:
-                img2img["overrides"] = img_config["overrides"]
-            if "dir" in img_config:
-                dirs = img_config["dir"]
-                image_dirs = img2img["dir"]
-                Logger.debug(dirs)
-                if "input" in dirs:
-                    image_dirs["input"] = dirs["input"]
-                if "work" in dirs:
-                    image_dirs["work"] = dirs["work"]
-                if "append" in dirs:
-                    image_dirs["append"] = dirs["append"]
-                if "mask" in dirs:
-                    image_dirs["mask"] = dirs["mask"]
-                if "ended" in dirs:
-                    image_dirs["ended"] = dirs["ended"]
-                if "output" in dirs:
-                    image_dirs["output"] = dirs["output"]
-                if "folder_suffix" in dirs:
-                    image_dirs["folder_suffix"] = dirs["folder_suffix"]
-                Logger.debug(image_dirs)
-            config["img2img"] = img2img
-        if "img2txt2img" in yaml_config:
-            img2txt2img = config["img2txt2img"]
-            if "overrides" in yaml_config["img2txt2img"]:
-                img2txt2img["overrides"] = yaml_config["img2txt2img"]["overrides"]
-            if "input" in yaml_config["img2txt2img"]:
-                img2txt2img["input"] = yaml_config["img2txt2img"]["input"]
-            if "output" in yaml_config["img2txt2img"]:
-                img2txt2img["output"] = yaml_config["img2txt2img"]["output"]
-            if "folder_suffix" in yaml_config["img2txt2img"]:
-                img2txt2img["folder_suffix"] = yaml_config["img2txt2img"][
-                    "folder_suffix"
-                ]
-            config["img2txt2img"] = img2txt2img
-        if "custom" in yaml_config:
-            config["custom"] = yaml_config["custom"]
-        """
     # set Logger
     log = config["log"]
-    DefaultLogger.setConfig(
-        log["path"], log["print_levels"], log["level"], log["days"]
-    )
+    DefaultLogger.setConfig(log["path"], log["print_levels"], log["level"], log["days"])
     Logger.setConfig(log["path"], log["print_levels"], log["level"], log["days"])
     share.set("config", config)
     return config
 
 
+def parseBetweenTime(config_time):
+    # 7:30-21:00
+    config_times = config_time.split("-")
+    if len(config_times) == 2:
+        start_time = config_times[0].strip()
+        stop_time = config_times[1].strip()
+    else:
+        start_time = "00:00"
+        stop_time = "24:00"
+    return start_time, stop_time
+
+
 # sleep time
 def check_time(config_file):
-    config = load_config(config_file)
-    start_hour = config["start_hour"]
-    stop_hour = config["stop_hour"]
+    schedule = load_config(config_file)["schedule"]
+    if "time" in schedule:
+        start_time, stop_time = parseBetweenTime(schedule["time"])
+        start_hour = int(start_time.split(":")[0])
+        start_minute = int(start_time.split(":")[1])
+        stop_hour = int(stop_time.split(":")[0])
+        stop_minute = int(stop_time.split(":")[1])
+    else:
+        start_hour = schedule["start_hour"]
+        start_minute = schedule.get("start_minute", 0)
+        stop_hour = schedule["stop_hour"]
+        stop_minute = schedule.get("stop_minute", 0)
     now = datetime.datetime.now()
-    if not (now.hour >= start_hour and now.hour < stop_hour):
+    minutes = now.minute + now.hour * 60
+    start_minutes = start_minute + start_hour * 60
+    stop_minutes = stop_minute + stop_hour * 60
+    if not (minutes >= start_minutes and minutes < stop_minutes):
+        now_minute = str(now.minute).zfill(2)
+        start_minute = str(start_minute).zfill(2)
+        stop_minute = str(stop_minute).zfill(2)
         Logger.info(
-            f"sleeping...{now.hour} running between {start_hour} and {stop_hour}"
+            f"sleeping...{now.hour}:{now_minute} running between {start_hour}:{start_minute} and {stop_hour}:{stop_minute}"
         )
-    while not (now.hour >= start_hour and now.hour < stop_hour):
+    while not (minutes >= start_minutes and minutes < stop_minutes):
         time.sleep(60)
         config = load_config(config_file)
         start_hour = config["start_hour"]
@@ -809,8 +664,8 @@ def run_txt2img(config):
             if mode in coef_matrix:
                 if type(coef_matrix[mode]) is dict:
                     if genre in coef_matrix[mode] and (
-                        type(coef_matrix[mode][genre]) is float or
-                        type(coef_matrix[mode][genre]) is int
+                        type(coef_matrix[mode][genre]) is float
+                        or type(coef_matrix[mode][genre]) is int
                     ):
                         coef = coef_matrix[mode][genre]
                 elif type(coef_matrix[mode]) is float or type(coef_matrix[mode]) is int:
@@ -821,8 +676,8 @@ def run_txt2img(config):
             Logger.info(f"{model_name}, {prompt_name}, {output}, {genre}")
             # If direct call is True, call modules/txt2img.py
             if (
-                config.get("direct_call") is True or
-                text_config.get("direct_call") is True
+                config.get("direct_call") is True
+                or text_config.get("direct_call") is True
             ):
                 Logger.debug("direct_call")
                 # create prompt
