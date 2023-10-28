@@ -705,6 +705,7 @@ def run_txt2img(config):
                 except Exception as e:
                     Logger.error("create prompt failed")
                     Logger.error(e)
+                    continue
                 # Logger.debug(f"create prompt finished {result}")
                 options = result["options"]
                 payloads = result["output_text"]
