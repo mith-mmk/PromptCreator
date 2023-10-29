@@ -678,7 +678,7 @@ def run_txt2img(config):
                 elif type(coef_matrix[mode]) is float or type(coef_matrix[mode]) is int:
                     coef = coef_matrix[mode]
 
-            number = int(number * coef)
+            number = int(number * coef + 0.5)
             output = os.path.join(output_dir, folder + folder_suffix)
             Logger.info(f"{model_name}, {prompt_name}, {output}, {genre}")
             # If direct call is True, call modules/txt2img.py
