@@ -369,6 +369,11 @@ def check_time(config_file):
     minutes = now.minute + now.hour * 60
     start_minutes = start_minute + start_hour * 60
     stop_minutes = stop_minute + stop_hour * 60
+    if stop_minutes < start_minutes:
+        if minutes < stop_minutes:
+            minutes += 60 * 24
+        stop_minutes += 60 * 24
+
     if not (minutes >= start_minutes and minutes < stop_minutes):
         now_minute = str(now.minute).zfill(2)
         start_minute = str(start_minute).zfill(2)
@@ -376,6 +381,8 @@ def check_time(config_file):
         Logger.info(
             f"sleeping...{now.hour}:{now_minute} running between {start_hour}:{start_minute} and {stop_hour}:{stop_minute}"
         )
+    else:
+        return
     while not (minutes >= start_minutes and minutes < stop_minutes):
         time.sleep(60)
         now = datetime.datetime.now()
@@ -383,6 +390,10 @@ def check_time(config_file):
         start_hour, start_minute, stop_hour, stop_minute = load_schedule(config_file)
         start_minutes = start_minute + start_hour * 60
         stop_minutes = stop_minute + stop_hour * 60
+        if stop_minutes < start_minutes:
+            if minutes < stop_minutes:
+                minutes += 60 * 24
+            stop_minutes += 60 * 24
 
 
 def custom(args):
