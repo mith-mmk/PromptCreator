@@ -7,7 +7,7 @@ import os
 import httpx
 
 import modules.api as api
-from modules.parse import create_img2params
+from modules.parse import create_img2txt
 
 
 def get_sd_models(
@@ -90,20 +90,23 @@ def main():
 
     for imgfile in imgfiles:
         print(f"Processing {imgfile}")
-        param = create_img2params(imgfile)
-        # img2img -> txt2img
-        if "firstphase_width" in param:
-            param["width"] = param["firstphase_width"]
-            del param["firstphase_width"]
-        if "firstphase_height" in param:
-            param["height"] = param["firstphase_height"]
-            del param["firstphase_height"]
+        param = create_img2txt(imgfile)
+
         # overrride settings
         param["enable_hr"] = args.enable_hr
         if param["enable_hr"]:
-            param["hr_upscale"] = args.scale or 2
+            param["hr_scale"] = args.scale or 2
             param["hr_steps"] = args.steps or 0
             param["hr_upscaler"] = args.upscaler or "R-ESRGAN 4x+ Anime6B"
+        else:
+            # img2img -> txt2img
+            if "firstphase_width" in param:
+                param["width"] = param["firstphase_width"]
+                del param["firstphase_width"]
+            if "firstphase_height" in param:
+                param["height"] = param["firstphase_height"]
+                del param["firstphase_height"]
+
         param["batch_size"] = args.batch_size
         param["n_iter"] = args.n_iter
         param["seed"] = int(param["seed"]) + args.seed_diff
