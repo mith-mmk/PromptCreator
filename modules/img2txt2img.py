@@ -1,92 +1,53 @@
-import json
-import os
-
 import modules.api as api
-import modules.share as share
 from modules.logger import getDefaultLogger
-from modules.parse import create_img2params
-from modules.save import save_img
+from modules.parse import create_img2txt
+from modules.txt2img import txt2img
 
 Logger = getDefaultLogger()
 
 
 def img2txt2img(
     imagefiles,
-    overrides={},
     base_url="http://127.0.0.1:7860",
+    overrides={},
+    seed_diff=0,
+    models={},  # {modelname: vae_filename, ...}
     output_dir="./outputs",
     opt={},
 ):
-    base_url = api.normalize_base_url(base_url)
-    url = base_url + "/sdapi/v1/txt2img"
-    progress = base_url + "/sdapi/v1/progress?skip_current_image=true"
-    Logger.info("Enter API, connect", url)
-    dir = output_dir
-    opt["dir"] = output_dir
-    Logger.info("output dir", dir)
-    os.makedirs(dir, exist_ok=True)
-    #    dt = datetime.datetime.now().strftime('%y%m%d')
-    count = len(imagefiles)
+    # vae getter
+    modelHash = api.get_sd_models(base_url)
+    if modelHash is None:
+        Logger.error("Failed to get models")
+        # return False
+        modelHash = []
+    modeldict = {}
+    for model in modelHash:
+        modeldict[model["hash"]] = model
+    params = []
+    for imgfile in imagefiles:
+        Logger.info(f"Processing {imgfile}")
+        param = create_img2txt(imgfile)
 
-    Logger.info(f"API loop count is {count} times")
-    print("")
-    flash = ""
-    if opt.get("userpass"):
-        userpass = opt.get("userpass")
-    else:
-        userpass = None
-    for n, imagefile in enumerate(imagefiles):
-        share.set("line_count", 0)
-        print(flash, end="")
-        print(f"\033[KBatch {n + 1} of {count}")
-        # Path: modules/img2txt2img.py
-        item = create_img2params(imagefile)
-        if item is None:
-            continue
-        item = create_param(item, overrides)
+        if param.get("enable_hr", False):
+            if "firstphase_width" in param:
+                param["width"] = param["firstphase_width"]
+                del param["firstphase_width"]
+            if "firstphase_height" in param:
+                param["height"] = param["firstphase_height"]
+                del param["firstphase_height"]
 
-        payload = json.dumps(item)
-        response = api.request_post_wrapper(
-            url,
-            data=payload,
-            progress_url=progress,
-            base_url=base_url,
-            userpass=userpass,
-        )
-        if response is None:
-            Logger.error("http connection - happening error")
-            raise Exception("http connection - happening error")
-        if response.status_code != 200:
-            print("\033[KError!", response.status_code, response.text)
-            print("\033[2A", end="")
-            continue
+        for key in overrides:
+            param[key] = overrides[key]
 
-        r = response.json()
-        prt_cnt = save_img(r, opt=opt)
-        if share.get("line_count"):
-            prt_cnt += share.get("line_count")
-            share.set("line_count", 0)
-        flash = f"\033[{prt_cnt}A"
-    print("")
-
-
-def create_param(item, overritesettings):
-    for key in overritesettings:
-        if key == "override_settings":
-            if type(overritesettings[key]) is not dict:
-                print("override_settings must be a dict")
-                continue
-            if "override_settings" not in item:
-                item["override_settings"] = {}
-            for subkey in overritesettings[key]:
-                if subkey == "sd_model":
-                    subkey = "sd_model_checkpoint"
-                if overritesettings[key][subkey] == "":
-                    if subkey in item[key]:
-                        del item[key][subkey]
-                else:
-                    item[key][subkey] = overritesettings[key][subkey]
-        else:
-            item[key] = overritesettings[key]
-
-    return item
+        param["seed"] = int(param["seed"]) + seed_diff
+        overrideSettings = param.get("override_settings")
+        if overrideSettings is None:
+            modelHash = overrideSettings.get("sd_model_checkpoint")
+            if modelHash in modeldict:
+                modelName = modeldict[modelHash]["model_name"]
+                vae = models.get(modelName, [None])[0]
+                if vae is not None:
+                    param["override_settings"]["sd_vae"] = vae
+        params.append(param)
+    txt2img(params, base_url=base_url, output_dir=output_dir, opt=opt)

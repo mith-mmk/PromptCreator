@@ -192,6 +192,26 @@ def normalize_base_url(base_url):
     return base_url
 
 
+def get_api(
+    base_url="http://localhost:7860", apiname=None, options=None, userpass=None
+):
+    headers = {
+        "Content-Type": "application/json",
+    }
+    base_url = normalize_base_url(base_url)
+    model_url = base_url + "/sdapi/v1/" + apiname
+    try:
+        res = httpx.get(model_url, headers=headers, timeout=(share.get("timeout")))
+        if res.status_code != 200:
+            Logger.error(f"Failed to get {apiname} {res.status_code}")
+            return None
+        results = res.json()
+    except Exception:
+        Logger.error(f"Failed to get {apiname}")
+        return None
+    return results
+
+
 def get_sd_model(base_url="http://127.0.0.1:7860", sd_model=None):
     headers = {
         "Content-Type": "application/json",
@@ -203,7 +223,9 @@ def get_sd_model(base_url="http://127.0.0.1:7860", sd_model=None):
         res = httpx.get(model_url, headers=headers, timeout=(share.get("timeout")))
         for model in res.json():
             if (
-                model["model_name"] == sd_model or model["hash"] == sd_model or model["title"] == sd_model
+                model["model_name"] == sd_model
+                or model["hash"] == sd_model
+                or model["title"] == sd_model
             ):
                 return model
     except Exception:
@@ -222,7 +244,9 @@ def get_vae(base_url="http://127.0.0.1:7860", vae=None):
         # automatic1111 1.6 <- no yet hash support but use metadata?
         for model in res.json():
             if (
-                model["model_name"] == vae or model["hash"] == vae or model["title"] == vae
+                model["model_name"] == vae
+                or model["hash"] == vae
+                or model["title"] == vae
             ):
                 return model
     except Exception:
@@ -244,7 +268,9 @@ def set_sd_model(sd_model, base_url="http://127.0.0.1:7860", sd_vae="Automatic")
         load_model = None
         for model in res.json():
             if (
-                model["model_name"] == sd_model or model["hash"] == sd_model or model["title"] == sd_model
+                model["model_name"] == sd_model
+                or model["hash"] == sd_model
+                or model["title"] == sd_model
             ):
                 load_model = model["title"]
                 break
@@ -332,3 +358,23 @@ def refresh(
             Logger.error("refresh lora failed")
             raise
     return result
+
+
+def get_upscalers(base_url="http://localhost:7860"):
+    return get_api(base_url, "upscalers")
+
+
+def get_samplers(base_url="http://localhost:7860"):
+    return get_api(base_url, "samplers")
+
+
+def get_sd_models(base_url="http://127.0.0.1:7860"):
+    return get_api(base_url, "sd-models")
+
+
+def get_sd_vaes(base_url="http://127.0.0.1:7860"):
+    return get_api(base_url, "sd-vae")
+
+
+def get_loras(base_url="http://127.0.0.1:7860"):
+    return get_api(base_url, "loras")
