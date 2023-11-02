@@ -265,14 +265,6 @@ def default_config():
         "dir": image_dirs,
         "direct_call": False,
     }
-    img2txt2img = {
-        "models": None,
-        "overrides": "",
-        "input": INPUT_DIR,
-        "output": OUTPUT_DIR,
-        "folder_suffix": FOLDER_SUFFIX,
-        "overrides": "",
-    }
     log = {
         "path": LOG_PATH,
         "days": LOG_DAYS,
@@ -299,7 +291,6 @@ def default_config():
         "schedule": schedule,
         "txt2img": txt2img,
         "img2img": img2img,
-        "img2txt2img": img2txt2img,
         "log": log,
         "clone": clone,
         "custom": {},  # dispose custom
@@ -598,6 +589,98 @@ def run_img2img(config):
                         shutil.move(file, folder)
                 except Exception as e:
                     Logger.error(e)
+
+
+def run_img2txt2img(profile, config):
+    Logger.info(f"run img2txt2img {profile}")
+    iti_config = config.get("img2txt2img")
+    if iti_config is None:
+        Logger.error("img2txt2img config not found")
+        return False
+    base_url = config["host"]
+    dry_run = iti_config.get("dry_run")
+    profile = iti_config.get(profile, iti_config.get("DEFAULT"))
+    if profile is None:
+        Logger.error(f"profile {profile} not found in config")
+        return False
+    base_url = config["host"]
+    modelsFile = iti_config.get("modelfile")
+    models = {}
+    if os.path.exists(modelsFile):
+        with open(modelsFile, "r") as f:
+            csv_reader = csv.reader(f)
+            for row in csv_reader:
+                models[row[0]] = row[1:]
+
+    files = profile["input"]
+    if type(files) is not list:
+        files = [files]
+
+    imgfiles = []
+    for filename in files:
+        if not os.path.exists(filename):
+            Logger.error(f"File not found: {filename}")
+        if os.path.isdir(filename):
+            imgfiles.extend(glob.glob(os.path.join(filename, "*.jpg")))
+            imgfiles.extend(glob.glob(os.path.join(filename, "*.png")))
+        else:
+            imgfiles.append(filename)
+    # overrride settings
+    overrides = profile.get("overrides", {})
+    backup = profile.get("backup", None)
+    output_dir = profile.get("output", None)
+    options = profile.get("options", {})
+    options["dry_run"] = dry_run
+
+    try:
+        import modules.img2txt2img
+
+        modules.img2txt2img.img2txt2img(
+            imgfiles,
+            base_url=base_url,
+            overrides=overrides,
+            seed_diff=profile.get("seed_diff", 0),
+            models=models,
+            output_dir=output_dir,
+            opt=options,
+        )
+
+    except Exception as e:
+        Logger.error(e)
+        return False
+    try:
+        if backup is not None:
+            if not dry_run:
+                if not os.path.exists(backup):
+                    os.makedirs(backup)
+            else:
+                Logger.info(f"dry run create directory {backup}")
+            for imgfile in imgfiles:
+                backupfile = os.path.join(backup, os.path.basename(imgfile))
+                if os.path.exists(backupfile):
+                    file_ext = os.path.splitext(imgfile)[1]
+                    file_base = os.path.splitext(imgfile)[0]
+                    i = 1
+                    while os.path.exists(backupfile):
+                        backupbase = file_base + "_" + i + file_ext
+                        i += 1
+                        backupfile = os.path.join(backup, os.path.basename(backupbase))
+                if not dry_run:
+                    os.rename(imgfile, backupfile)
+                    Logger.info(f"Moved {imgfile} to {backupfile}")
+                else:
+                    Logger.info(f"dry run move {imgfile} to {backupfile}")
+        else:
+            for imgfile in imgfiles:
+                if not dry_run:
+                    os.remove(imgfile)
+                    Logger.info(f"Removed {imgfile}")
+                else:
+                    Logger.info(f"dry run remove {imgfile}")
+        return True
+    except Exception as e:
+        Logger.error(e)
+        return False
 
 
 def escape_split(str, split):
@@ -920,6 +1003,8 @@ def loop(config_file):
                         run_txt2img(config)
                     case "img2img":
                         run_img2img(config)
+                    case "img2txt2img":
+                        run_img2txt2img(args[0], config)
                     case "custom":
                         (plugin, plugin_config) = prepare_custom(config, args)
                         if plugin:

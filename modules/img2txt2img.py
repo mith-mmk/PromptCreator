@@ -15,6 +15,7 @@ def img2txt2img(
     output_dir="./outputs",
     opt={},
 ):
+    dry_run = opt.get("dry_run", False)
     # modelHash
     modelHash = api.get_sd_models(base_url)
     if modelHash is None:
@@ -43,6 +44,7 @@ def img2txt2img(
 
         param["seed"] = int(param["seed"]) + seed_diff
         overrideSettings = param.get("override_settings")
+
         # If infomation VAE is not filename, get from model name to vae filename dict
         if overrideSettings is None:
             if "sd_vae" in overrideSettings:
@@ -52,7 +54,9 @@ def img2txt2img(
                     vae = models.get(modelName, [None])[0]
                     if vae is not None:
                         param["override_settings"]["sd_vae"] = vae
-
         params.append(param)
     Logger.info("txt2img start")
-    txt2img(params, base_url=base_url, output_dir=output_dir, opt=opt)
+    if not dry_run:
+        txt2img(params, base_url=base_url, output_dir=output_dir, opt=opt)
+    else:
+        Logger.info(f"Dry run {params}")

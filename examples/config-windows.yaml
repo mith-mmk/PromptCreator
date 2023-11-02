@@ -42,6 +42,8 @@ loop:
   #  - ping
   #  - txt2img
   #  - img2img
+  #  - custom img2txt2img take
+  #  - custom img2txt2img retake
     - custom subprocess cmd /c dir
     - custom ls .
   #  - custom 1
@@ -111,6 +113,34 @@ img2img:
     output: f:/ai/outputs/
     folder_suffix: -images
     # output images f:\ai\outputs\monster-images\img000001-9999999.png
+
+# txt2img prompts from image infomations
+img2txt2img2:
+  modelfile: prompt/model.csv # csv file get from model name to vae file
+  # dry_run: true # dry run mode
+  take:
+    input: f:/ai/inputs/$retake/take  # input folder for images array str or str
+    output: f:/ai/outputs/take2-images # output folder
+    backup: f:/ai/outputs/$retake/take_bak # backup folder from input folder
+    overrides:
+      batch_size: 1
+      n_iter: 1
+      enable_hr: true # enable hr mode
+      hr_scale: 2.25  # hr scale
+      hr_upscaler: R-ESRGAN 4x+ Anime6B # hr upscaler
+      denoise_strength: 0.5 # denoise strength
+      hr_second_pass_steps: 5 # hr second pass steps
+  retake:
+    input: f:/ai/inputs/$retake/retake
+    output: f:/ai/outputs/retake-images
+    backup: f:/ai/outputs/$retake/retake_bak
+    seed_diff: 1  # seed + 1
+    overrides:
+      # output images = batch_size * n_iter
+      batch_size: 3 # same running stable diffusion batch size, dependenced GPU power, VRAM, model size and picture size
+      n_iter: 2 # n times run stable diffusion
+      enable_hr: false
+
 
 custom:
     subprocess: cmd
