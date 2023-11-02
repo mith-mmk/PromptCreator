@@ -1,5 +1,5 @@
 version: 1
-# Path: prompts\config.yaml
+# python .\run-loop.py .\examples\config-windows.yaml
 host: http://localhost:7860
 path: ./prompts/
 schedule:
@@ -11,7 +11,7 @@ log:
   # log output filename
   # *** CHANGE FROM FOLDER TO FILENAME *** 
   path: f:/ai/logs/run.log
-  # remain days
+  # remain days / logrotater has no rotate bug
   days: 7
   # logging level
   level: info
@@ -22,7 +22,7 @@ log:
   # error exceptions
   # warning/ critical not implemented
   print_levels: ['info', 'verbose', 'warning', 'error', 'critical']
-# clone is model clone from nas
+# clone is model clone from NAS
 clone:
   clone: true
   src: f:/ai/models/
@@ -42,8 +42,8 @@ loop:
   #  - ping
   #  - txt2img
   #  - img2img
-  #  - custom img2txt2img take
-  #  - custom img2txt2img retake
+  #  - img2txt2img take
+  #  - img2txt2img retake
     - custom subprocess cmd /c dir
     - custom ls .
   #  - custom 1
@@ -115,7 +115,7 @@ img2img:
     # output images f:\ai\outputs\monster-images\img000001-9999999.png
 
 # txt2img prompts from image infomations
-img2txt2img2:
+img2txt2img:
   modelfile: prompt/model.csv # csv file get from model name to vae file
   # dry_run: true # dry run mode
   take:
