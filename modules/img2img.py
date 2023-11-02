@@ -110,6 +110,9 @@ def img2img(
 
         # Why is an error happening? json=payload or json=item
         payload = json.dumps(item)
+        del item["init_images"]
+        print(json.dumps(item, indent=2))
+
         response = api.request_post_wrapper(
             url,
             data=payload,

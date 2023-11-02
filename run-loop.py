@@ -485,6 +485,7 @@ def run_img2img(config):
             }
 
             items = [
+                "enable_hr",
                 "denoising_strength",
                 "seed",
                 "subseed",

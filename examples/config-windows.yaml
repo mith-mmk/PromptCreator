@@ -1,5 +1,5 @@
 version: 1
-# python .\run-loop.py .\examples\config-windows.yaml
+# python run-loop.py .\examples\config-windows.yaml
 host: http://localhost:7860
 path: ./prompts/
 schedule:

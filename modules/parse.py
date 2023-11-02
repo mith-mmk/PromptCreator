@@ -68,7 +68,7 @@ def create_parameters(parameters_text):
     return parameters
 
 
-def imgloader(imagefile):
+def imgloader(imagefile, img2img=False):
     image = Image.open(imagefile)
     image.load()
     # if png?
@@ -104,8 +104,16 @@ def imgloader(imagefile):
             # if 0x9C9C in tiff:
             #     extend = tiff[0x9C9C].decode('utf-16le')
             #     extend = json.loads(extend)
-    parameters["width"] = parameters.get("width", image.width)
-    parameters["height"] = parameters.get("height", image.height)
+    if "hires_upscale" in parameters:
+        scale = float(parameters["hires_upscale"])
+        if scale > 1.0:
+            parameters["enable_hr"] = True
+    if img2img:
+        parameters["width"] = image.width
+        parameters["height"] = image.height
+    else:
+        parameters["width"] = parameters.get("width", image.width)
+        parameters["height"] = parameters.get("height", image.height)
     return parameters, extend
 
 
@@ -139,7 +147,7 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None):
         "sampler",
         "comments",  # add 2023/10/22
         # hires fix
-        "enable_hr",  # this option is not used
+        # "enable_hr",
         "denoising_strength",
         # "firstphase_width",  # obusolete
         # "firstphase_height",  # obusolete
@@ -166,7 +174,8 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None):
         # "alwayson_scripts"
     ]
 
-    parameters, extend = imgloader(imagefile)
+    parameters, extend = imgloader(imagefile, img2img=True)
+
     load_image = imagefile
     if alt_image_dir is not None:
         basename = os.path.basename(imagefile)
@@ -223,6 +232,7 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None):
         json_raw["sampler_index"] = sampler_name or sampler_index
 
     json_raw["override_settings"] = override_settings
+    Logger.debug(json_raw)
     return json_raw
 
 
@@ -258,7 +268,7 @@ def create_img2params(imagefile):
         "sampler",
     ]
 
-    parameters, _ = imgloader(imagefile)
+    parameters, _ = imgloader(imagefile, img2img=True)
 
     # convert txt2img parameters to img2img parameters
 

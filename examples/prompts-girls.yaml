@@ -1,4 +1,5 @@
 version: 0.8
+# python create-prompt.py samples/prompts-girls.yaml
 options:
 #   sd_model: anythingV5Anything_anythingV5PrtRE
 #   sd_vae: kl-f8-anime2-vae.safetensors

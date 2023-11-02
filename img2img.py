@@ -10,6 +10,7 @@ Logger = logger.getDefaultLogger()
 
 
 def run_from_args_img2img(command_args=None):
+    Logger.info("img2img start")
     parser = argparse.ArgumentParser(argument_default=None)
 
     parser.add_argument(
@@ -195,7 +196,8 @@ def run_from_args_img2img(command_args=None):
             output_dir=output_dir,
             opt=opt,
         )
-    except Exception:
+    except Exception as e:
+        Logger.error(f"img2img error {e}")
         return False
     return True
 
