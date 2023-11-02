@@ -203,7 +203,7 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None):
     sampler_index = None
     sampler_name = None
     # override settings only return sd_model_checkpoint and CLIP_stop_at_last_layers
-    # Automatic1111 2023/07/25 verion do not support VAE tag
+    # Automatic1111 1.6.0 use "Add model name to generation information" option in settings
     for key, value in parameters.items():
         if key in schema:
             json_raw[key] = value
@@ -214,6 +214,8 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None):
         elif key == "model_hash":
             override_settings["sd_model_checkpoint"] = value
         elif key == "CLIP_stop_at_last_layers":
+            override_settings[key] = value
+        elif key == "VAE":
             override_settings[key] = value
     if ("sampler" not in json_raw) and (
         sampler_index is not None or sampler_name is not None
@@ -314,8 +316,8 @@ def create_img2params(imagefile):
             sampler_name = value
         elif key == "model_hash":
             override_settings["sd_model_checkpoint"] = value
-        #        elif key == "VAE_hash":
-        #            override_settings["sd_vae"] = value
+        elif key == "VAE":
+            override_settings["sd_vae"] = value
         elif key == "CLIP_stop_at_last_layers":
             override_settings[key] = value
     if ("sampler" not in json_raw) and (
@@ -359,6 +361,7 @@ def create_img2txt(imagefile):
         "s_tmin",
         "s_noise",
         "sampler",
+        "sd_vae",
     ]
 
     parameters, _ = imgloader(imagefile)
@@ -391,6 +394,9 @@ def create_img2txt(imagefile):
             w = int(int(h * scale + 63) / 64) * 64
             parameters["firstphase_width"] = w
             parameters["firstphase_height"] = h
+    if "VAE" in parameters:
+        parameters["sd_vae"] = parameters["VAE"]
+        del parameters["VAE"]
     json_raw = {}
     override_settings = {}
     Logger.debug(schema)
@@ -412,6 +418,8 @@ def create_img2txt(imagefile):
         #        elif key == "VAE_hash":
         #            override_settings["sd_vae"] = value
         elif key == "CLIP_stop_at_last_layers":
+            override_settings[key] = value
+        elif key == "sd_vae":
             override_settings[key] = value
     if ("sampler" not in json_raw) and (
         sampler_index is not None or sampler_name is not None
