@@ -19,11 +19,22 @@ def create_parameters(parameters_text):
     parameters = {}
     parameters["prompt"] = para[0]
     neg = "Negative prompt: "
-    if para[1][: len(neg)] == neg:
-        parameters["negative_prompt"] = para[1].replace(neg, "")
-        params = para[2]
-    else:
-        params = para[1]
+    neg_start = 1
+    param_start = len(para) - 1
+    while para[neg_start][: len(neg)] != neg:
+        neg_start += 1
+        if neg_start >= len(para):
+            break
+    if 1 < neg_start:
+        for i in range(1, neg_start):
+            parameters["prompt"] += " " + para[i]
+    if len(para) > neg_start:
+        parameters["negative_prompt"] = para[neg_start].replace(neg, "")
+        if neg_start + 1 > param_start:
+            for i in range(neg_start + 1, param_start):
+                parameters["negative_prompt"] += " " + para[i]
+
+    params = para[param_start]
 
     regex = r'".+?"'
     matches = re.findall(regex, params)
