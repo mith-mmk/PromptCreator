@@ -11,6 +11,7 @@ import time
 import yaml
 
 import create_prompts
+
 # import logging
 import img2img
 import modules.logger as logger
@@ -534,7 +535,11 @@ def run_img2img(config):
                 Logger.info(f"img2img.py finished {folder}")
                 try:
                     for file in files:
-                        shutil.move(file, ended_dir)
+                        try:
+                            shutil.move(file, ended_dir)
+                        except Exception as e:
+                            Logger.error(f"move {file} to {ended_dir} failed")
+                            Logger.debug(e)
                 except Exception as e:
                     Logger.debug(e)
             except Exception as e:
@@ -662,19 +667,27 @@ def run_img2txt2img(profile, config):
                     file_base = os.path.splitext(imgfile)[0]
                     i = 1
                     while os.path.exists(backupfile):
-                        backupbase = file_base + "_" + i + file_ext
+                        backupbase = file_base + "_" + str(i) + file_ext
                         i += 1
                         backupfile = os.path.join(backup, os.path.basename(backupbase))
                 if not dry_run:
-                    os.rename(imgfile, backupfile)
-                    Logger.info(f"Moved {imgfile} to {backupfile}")
+                    try:
+                        os.rename(imgfile, backupfile)
+                        Logger.info(f"Moved {imgfile} to {backupfile}")
+                    except Exception as e:
+                        Logger.error(f"Move {imgfile} to {backupfile} failed")
+                        Logger.error(e)
                 else:
                     Logger.info(f"dry run move {imgfile} to {backupfile}")
         else:
             for imgfile in imgfiles:
                 if not dry_run:
-                    os.remove(imgfile)
-                    Logger.info(f"Removed {imgfile}")
+                    try:
+                        os.remove(imgfile)
+                        Logger.info(f"Removed {imgfile}")
+                    except Exception as e:
+                        Logger.error(f"Remove {imgfile} failed")
+                        Logger.error(e)
                 else:
                     Logger.info(f"dry run remove {imgfile}")
         return True
