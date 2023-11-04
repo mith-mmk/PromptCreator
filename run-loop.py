@@ -11,6 +11,7 @@ import time
 import yaml
 
 import create_prompts
+
 # import logging
 import img2img
 import modules.logger as logger
@@ -496,6 +497,7 @@ def run_img2img(config):
                 "width",
                 "height",
                 "prompt",
+                "comments",
                 "negative_prompt",
                 "sampler_index",
                 "mask_blur",
@@ -503,13 +505,20 @@ def run_img2img(config):
                 "inpaint_full_res",
                 "inpaint_full_res_padding",
                 "inpainting_mask_invert",
+                "override_settings_restore_afterwards",
+                "refiner_checkpoint",
+                "refiner_switch_at",
             ]
 
             if "overrides" in img_config:
                 if type(img_config["overrides"]) is dict:
-                    for item in img_config["overrides"]:
+                    _overrides = img_config["overrides"]
+                    for item in _overrides:
                         if item in items:
-                            overrides[item] = img_config["overrides"][item]
+                            overrides[item] = _overrides[item]
+                        elif item == "override_settings":
+                            for override in _overrides[item]:
+                                overrides[override] = _overrides[item][override]
                 else:
                     Logger.debug("overrides is None")
             opt = {
@@ -519,8 +528,6 @@ def run_img2img(config):
             }
             if config.get("userpass"):
                 opt["userpass"] = config.get("userpass")
-            if img_config.get("overrides"):
-                opt["overrides"] = img_config.get("overrides")
             output = os.path.join(output_dir, os.path.basename(folder) + folder_suffix)
             Logger.verbose(f"output {output}, opt: {opt}")
             try:
