@@ -117,8 +117,12 @@ def main():
         param["seed"] = int(param["seed"]) + args.seed_diff
         params.append(param)
         modelHash = param["override_settings"]["sd_model_checkpoint"]
-        modelName = modeldict[modelHash]["model_name"]
-        vae = models.get(modelName)[0]
+        if param["override_settings"].get("sd_vae") is None:
+            try:
+                modelName = modeldict[modelHash]["model_name"]
+            except Exception:
+                modelName = modelHash
+            vae = models.get(modelName)[0]
         param["override_settings"]["sd_vae"] = vae
 
     if args.output:

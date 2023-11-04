@@ -11,7 +11,6 @@ import time
 import yaml
 
 import create_prompts
-
 # import logging
 import img2img
 import modules.logger as logger
@@ -636,7 +635,8 @@ def run_img2txt2img(profile, config):
     output_dir = profile.get("output", None)
     options = profile.get("options", {})
     options["dry_run"] = dry_run
-
+    if "default_vae" in profile:
+        options["sd_vae"] = profile["default_vae"]
     try:
         import modules.img2txt2img
 

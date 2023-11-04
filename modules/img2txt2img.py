@@ -42,8 +42,39 @@ def img2txt2img(
                 if "denoising_strength" not in param:
                     param["denoising_strength"] = 0.5
 
+            if "override_settings" not in param:
+                param["override_settings"] = {}
+
+            overrideSettings = param.get("override_settings")
+
+            # If infomation VAE is not filename, get from model name to vae filename dict
+            if "sd_vae" not in overrideSettings:
+                modelHash = overrideSettings.get("sd_model_checkpoint")
+                if modelHash in modeldict:
+                    modelName = modeldict[modelHash]["model_name"]
+                    info = models.get(modelName, [None])
+                    if type(info) is list:
+                        vae = info[0]
+                    else:
+                        vae = info
+                    if vae is not None:
+                        param["override_settings"]["sd_vae"] = vae
+                else:
+                    Logger.warning(f"Model {modelHash} not found, use default vae")
+                    if "sd_vae" in opt:
+                        param["override_settings"]["sd_vae"] = opt["sd_vae"]
+            else:
+                if "sd_checkpoint" in opt:
+                    param["override_settings"]["sd_model_checkpoint"] = opt["model"]
+                if "sd_vae" in opt:
+                    param["override_settings"]["sd_vae"] = opt["sd_vae"]
+
             for key in overrides:
-                param[key] = overrides[key]
+                if key != "override_settings":
+                    param[key] = overrides[key]
+                else:
+                    for key2 in overrides[key]:
+                        param[key][key2] = overrides[key][key2]
 
             if "seed" in param:
                 if int(param["seed"]) >= 0:
@@ -54,17 +85,7 @@ def img2txt2img(
             else:
                 Logger.warning("No seed in param")
                 param["seed"] = -1
-            overrideSettings = param.get("override_settings")
 
-            # If infomation VAE is not filename, get from model name to vae filename dict
-            if overrideSettings is None:
-                if "sd_vae" in overrideSettings:
-                    modelHash = overrideSettings.get("sd_model_checkpoint")
-                    if modelHash in modeldict:
-                        modelName = modeldict[modelHash]["model_name"]
-                        vae = models.get(modelName, [None])[0]
-                        if vae is not None:
-                            param["override_settings"]["sd_vae"] = vae
             params.append(param)
         except Exception as e:
             Logger.error(f"Failed to create img2txt params {e}")
