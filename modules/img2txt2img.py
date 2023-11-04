@@ -51,16 +51,22 @@ def img2txt2img(
             if "sd_vae" not in overrideSettings:
                 modelHash = overrideSettings.get("sd_model_checkpoint")
                 if modelHash in modeldict:
-                    modelName = modeldict[modelHash]["model_name"]
-                    info = models.get(modelName, [None])
+                    try:
+                        modelName = modeldict[modelHash]["model_name"]
+                    except Exception:
+                        modelName = modelHash
+                    info = models.get(modelName, None)
                     if type(info) is list:
                         vae = info[0]
                     else:
                         vae = info
                     if vae is not None:
+                        Logger.warning(
+                            f"Model {modelName}'s vae not found, use default vae"
+                        )
                         param["override_settings"]["sd_vae"] = vae
                 else:
-                    Logger.warning(f"Model {modelHash} not found, use default vae")
+                    Logger.warning(f"Model hash {modelHash} not found, use default vae")
                     if "sd_vae" in opt:
                         param["override_settings"]["sd_vae"] = opt["sd_vae"]
             else:
