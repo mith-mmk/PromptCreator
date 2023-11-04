@@ -39,6 +39,8 @@ def img2txt2img(
                 if "firstphase_height" in param:
                     param["height"] = param["firstphase_height"]
                     del param["firstphase_height"]
+                if "denoising_strength" not in param:
+                    param["denoising_strength"] = 0.5
 
             for key in overrides:
                 param[key] = overrides[key]

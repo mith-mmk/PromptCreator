@@ -107,6 +107,9 @@ def img2img(
             for key, value in override.items():
                 if value is not None:
                     item[key] = value
+        if item.get("enable_hr"):
+            if "denoising_strength" not in item:
+                item["denoising_strength"] = 0.5
 
         # Why is an error happening? json=payload or json=item
         payload = json.dumps(item)

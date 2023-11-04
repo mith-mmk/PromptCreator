@@ -318,8 +318,7 @@ def load_config(config_file):
         set_txt2img_config(config, yaml_config)
     # set Logger
     log = config["log"]
-    default_path = log.get("default_path", log["path"])
-    DefaultLogger.setConfig(default_path, log["print_levels"], log["level"], log["days"])
+    DefaultLogger.setConfig(log["path"], log["print_levels"], log["level"], log["days"])
     Logger.setConfig(log["path"], log["print_levels"], log["level"], log["days"])
     share.set("config", config)
     return config

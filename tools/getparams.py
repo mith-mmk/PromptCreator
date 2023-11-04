@@ -46,7 +46,7 @@ def main():
         "-R", "--enable_hr", help="enable hr", action="store_true", default=False
     )
     parser.add_argument(
-        "-D", "--strength", help="denoise strength", default=None, type=float
+        "-D", "--strength", help="denoising strength", default=0.5, type=float
     )
     parser.add_argument("-d", "--seed-diff", help="seed diff", default=0, type=int)
     parser.add_argument("-u", "--upscaler", help="upscaler override", default=None)
@@ -102,7 +102,7 @@ def main():
             param["hr_second_pass_steps"] = args.steps or 0
             param["hr_upscaler"] = args.upscaler or "R-ESRGAN 4x+ Anime6B"
             if args.strength is not None:
-                param["denoise_strength"] = args.strength
+                param["denoising_strength"] = args.strength
         else:
             # img2img -> txt2img
             if "firstphase_width" in param:
