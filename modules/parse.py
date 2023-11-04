@@ -62,7 +62,7 @@ def create_parameters(parameters_text):
             elif key == "ensd":
                 parameters["eta_noise_seed_delta"] = int(keyvalue[1])
             elif key == "model_hash":
-                parameters["model_hash"] = keyvalue[1]
+                parameters["model_hash"] = str(keyvalue[1])
             elif key == "ti_hashes":
                 values = {}
                 for i in range(1, len(keyvalue), 2):
@@ -231,6 +231,8 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None):
             sampler_index = value
         elif key == "sampler_name":
             sampler_name = value
+        elif key == "model":
+            override_settings["sd_model_checkpoint"] = value
         elif key == "model_hash":
             override_settings["sd_model_checkpoint"] = value
         elif key == "CLIP_stop_at_last_layers":
@@ -335,6 +337,8 @@ def create_img2params(imagefile):
             sampler_index = value
         elif key == "sampler_name":
             sampler_name = value
+        elif key == "model":
+            override_settings["sd_model_checkpoint"] = value
         elif key == "model_hash":
             override_settings["sd_model_checkpoint"] = value
         # Automatic1111 1.6.0 use "Add model name to generation information" option in settings
@@ -433,6 +437,8 @@ def create_img2txt(imagefile):
             sampler_index = value
         elif key == "sampler_name":
             sampler_name = value
+        elif key == "model":
+            override_settings["sd_model_checkpoint"] = value
         elif key == "model_hash":
             override_settings["sd_model_checkpoint"] = value
         elif key == "VAE":

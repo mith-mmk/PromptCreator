@@ -197,6 +197,8 @@ class LogPrint:
         start = self.startDay.strftime("%Y%m%d")
         if now <= start:
             return
+        if not os.path.exists(self.log_dir):
+            return
         # log_dir + '.' + str(i) は削除
         try:
             self.f.close()
