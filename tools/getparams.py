@@ -56,6 +56,14 @@ def main():
     parser.add_argument(
         "-S", "--steps", help="hr_steps override", default=None, type=int
     )
+    parser.add_argument(
+        "-V",
+        "--default-vae",
+        help="default vae",
+        default="clearvae_main.safetensors",
+        type=str,
+        dest="vae",
+    )
 
     args = parser.parse_args()
     # override = args.override
@@ -122,7 +130,12 @@ def main():
                 modelName = modeldict[modelHash]["model_name"]
             except Exception:
                 modelName = modelHash
-            vae = models.get(modelName)[0]
+            opt = models.get(modelName)
+            if opt is None:
+                print(f"Model {modelName} not found")
+                vae = args.default_vae
+            else:
+                vae = models.get(modelName)[0]
         param["override_settings"]["sd_vae"] = vae
 
     if args.output:

@@ -11,6 +11,7 @@ import time
 import yaml
 
 import create_prompts
+
 # import logging
 import img2img
 import modules.logger as logger
@@ -609,8 +610,9 @@ def run_img2txt2img(profile, config):
         return False
     base_url = config["host"]
     dry_run = iti_config.get("dry_run")
-    profile = iti_config.get(profile, iti_config.get("DEFAULT"))
-    if profile is None:
+    profiles = iti_config.get("profiles", iti_config)
+    profile = profiles.get(profile, iti_config.get("DEFAULT"))
+    if profile is None or type(profile) is not dict:
         Logger.error(f"profile {profile} not found in config")
         return False
     base_url = config["host"]
@@ -1067,6 +1069,7 @@ def compare(args):
                     return True
                 else:
                     Logger.verbose(f"{file} is not file")
+            Logger.verbose(f"{file} is not exist")
             return False
         case "notexist":  # arg[0] file is not exist return True
             file = args[0]

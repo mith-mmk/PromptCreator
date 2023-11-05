@@ -247,7 +247,7 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None):
             override_settings["sd_model_checkpoint"] = value
         elif key == "CLIP_stop_at_last_layers":
             override_settings[key] = value
-        elif key == "VAE":
+        elif key == "VAE" or key == "vae":
             override_settings["sd_vae"] = value
     if ("sampler" not in json_raw) and (
         sampler_index is not None or sampler_name is not None
@@ -352,7 +352,7 @@ def create_img2params(imagefile):
         elif key == "model_hash":
             override_settings["sd_model_checkpoint"] = value
         # Automatic1111 1.6.0 use "Add model name to generation information" option in settings
-        elif key == "VAE":
+        elif key == "VAE" or key == "vae":
             override_settings["sd_vae"] = value
         elif key == "CLIP_stop_at_last_layers":
             override_settings[key] = value
@@ -451,7 +451,7 @@ def create_img2txt(imagefile):
             override_settings["sd_model_checkpoint"] = value
         elif key == "model_hash":
             override_settings["sd_model_checkpoint"] = value
-        elif key == "VAE":
+        elif key == "VAE" or key == "vae":
             override_settings["sd_vae"] = value
         elif key == "CLIP_stop_at_last_layers":
             override_settings[key] = value

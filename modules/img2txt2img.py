@@ -50,6 +50,8 @@ def img2txt2img(
                 overrideSettings = {}
                 param["override_settings"] = overrideSettings
 
+            Logger.info(f"Vae: {overrideSettings.get('sd_vae')}")
+
             # If infomation VAE is not filename, get from model name to vae filename dict
             if "sd_vae" not in overrideSettings:
                 modelHash = overrideSettings.get("sd_model_checkpoint")
