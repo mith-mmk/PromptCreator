@@ -42,10 +42,13 @@ def img2txt2img(
                 if "denoising_strength" not in param:
                     param["denoising_strength"] = 0.5
 
-            if "override_settings" not in param:
-                param["override_settings"] = {}
-
             overrideSettings = param.get("override_settings")
+
+            Logger.debug(f"Override settings: {overrideSettings}")
+
+            if overrideSettings is None:
+                overrideSettings = {}
+                param["override_settings"] = overrideSettings
 
             # If infomation VAE is not filename, get from model name to vae filename dict
             if "sd_vae" not in overrideSettings:

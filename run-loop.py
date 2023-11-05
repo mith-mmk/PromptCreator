@@ -928,33 +928,139 @@ def wait_ping(config):
             time.sleep(5)
 
 
-def compare(*args):
+def compare(args):
+    Logger.info(f"compare {args}")
     length = len(args)
     if length == 0:
         return True
-    if length == 1:
-        command = args[0]
-    else:
-        command, *args = args
+    command = args[0]
+    args = args[1:]
     match command:
-        case "date":
-            pass
-        case "time":
-            pass
-        case "day":
-            pass
-        case "hour":
-            pass
-        case "minute":
-            pass
-        case "second":
-            pass
-        case "weekday":
-            pass
-        case "month":
-            pass
-        case "year":
-            pass
+        case "afterdate":  # compare date %Y-%m-%d is after now return True
+            now = datetime.datetime.now().strftime("%Y-%m-%d")
+            compare_date = datetime.date.fromisoformat(args[0]).strftime("%Y-%m-%d")
+            if compare_date <= now:
+                return True
+            else:
+                return False
+        case "befordate":  # compare date %Y-%m-%d is befor now return True
+            now = datetime.datetime.now().strftime("%Y-%m-%d")
+            compare_date = datetime.date.fromisoformat(args[0]).strftime("%Y-%m-%d")
+            if compare_date > now:
+                return True
+            else:
+                return False
+        case "betweendate":  # compare date from %Y-%m-%d to  is between now return True
+            now = datetime.datetime.now().strftime("%Y-%m-%d")
+            if len(args) < 2:
+                Logger.error(f"betweendate args must has Two error but has {len(args)}")
+                return False
+            compare_date_from = datetime.date.fromisoformat(args[0]).strftime(
+                "%Y-%m-%d"
+            )
+            compare_date_to = datetime.date.fromisoformat(args[1]).strftime("%Y-%m-%d")
+            if compare_date_from <= now and compare_date_to > now:
+                return True
+            else:
+                return False
+        case "aftertime":  # compare time %H:%M:%S is after now return True
+            Logger.info(f"aftertime {args}")
+            now = datetime.datetime.now().strftime("%H:%M:%S")
+            compare_time = datetime.time.fromisoformat(args[0]).strftime("%H:%M:%S")
+            Logger.info(f"compare_time {compare_time} now {now}")
+            if compare_time <= now:
+                return True
+            else:
+                return False
+        case "befortime":  # compare time %H:%M:%S is befor now return True
+            Logger.info(f"aftertime {args}")
+            now = datetime.datetime.now().strftime("%H:%M:%S")
+            compare_time = datetime.time.fromisoformat(args[0]).strftime("%H:%M:%S")
+            Logger.info(f"compare_time {compare_time} now {now}")
+            if compare_time > now:
+                return True
+            else:
+                return False
+        case "betweentime":  # compare time from %H:%M:%S to  is between now return True
+            now = datetime.datetime.now().strftime("%H:%M:%S")
+            if len(args) < 2:
+                Logger.error(f"betweentime args must has Two error but has {len(args)}")
+                return False
+            compare_time_from = datetime.time.fromisoformat(args[0]).strftime(
+                "%H:%M:%S"
+            )
+            compare_time_to = datetime.time.fromisoformat(args[1]).strftime("%H:%M:%S")
+            if compare_time_from <= now and compare_time_to > now:
+                return True
+            else:
+                return False
+        case "date":  # compare date %Y-%m-%d is equal now return True
+            now = datetime.datetime.now().strftime("%Y-%m-%d")
+            compare_date = datetime.date.fromisoformat(args[0]).strftime("%Y-%m-%d")
+            if compare_date == now:
+                return True
+            else:
+                return False
+        case "day":  # compare day %d is equal now return True
+            now = datetime.datetime.now().strftime("%d")
+            compare_day = str(int(args[0])).zfill(2)
+            if compare_day == now:
+                return True
+            else:
+                return False
+        case "hour":  # compare hour %H is equal now return True
+            now = datetime.datetime.now().strftime("%H")
+            compare_hour = str(int(args[0])).zfill(2)
+            if compare_hour == now:
+                return True
+            else:
+                return False
+        case "minute":  # compare minute %M is equal now return True
+            now = datetime.datetime.now().strftime("%M")
+            compare_minute = str(int(args[0])).zfill(2)
+            if compare_minute == now:
+                return True
+            else:
+                return False
+        case "weekday":  # compare weekday %w is equal now return True
+            weekdays_mtx = [
+                ["sun", "mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+                [
+                    "sunday",
+                    "monday",
+                    "tuesday",
+                    "wednesday",
+                    "thursday",
+                    "friday",
+                    "saturday",
+                    "sunday",
+                ],
+                ["日", "月", "火", "水", "木", "金", "土", "日"],
+            ]
+            idx = datetime.datetime.now().strftime("%w")
+            compare_weekday = args[0].lower()
+            for weekdays in weekdays_mtx:
+                if compare_weekday in weekdays:
+                    compare_weekday = weekdays.index(compare_weekday)
+                    break
+            if compare_weekday == idx:
+                return True
+            else:
+                return False
+        case "month":  # compare month %m is equal now return True
+            now = datetime.datetime.now().strftime("%m")
+            compare_month = str(int(args[0])).zfill(2)
+            if compare_month == now:
+                return True
+            else:
+                return False
+        case "year":  # compare year %Y is equal now return True
+            now = datetime.datetime.now().strftime("%Y")
+            compare_year = str(int(args[0])).zfill(4)
+            if compare_year == now:
+                return True
+            else:
+                return False
         case _:
             pass
     return True
@@ -996,8 +1102,10 @@ def loop(config_file):
         next = True
 
         for command in loop["commands"]:
-            Logger.info(command)
-            if not next:
+            now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            Logger.info(f"{now} {command}")
+            if next is False:
+                Logger.info(f"skip {command}")
                 next = True
                 continue
             commands = arg_split(command)
@@ -1008,15 +1116,7 @@ def loop(config_file):
                     case "check":
                         check_time(config_file)
                     case "compare":
-                        if "compares" in config:
-                            compares = config["compares"]
-                        else:
-                            compares = []
-                        if args[0] in compares:
-                            args = compares[int(args[0])]
-                        else:
-                            args = ""
-                        next = compare(args)
+                        next = compare(commands[1:])
                     case "ping":
                         wait_ping(config)
                     case "txt2img":

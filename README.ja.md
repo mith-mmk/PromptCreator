@@ -1,5 +1,7 @@
 # 前提条件
 - python 3.10以降
+- 機能の追加にマニュアルが追いつかないので、コードを参照してください。
+- 既にrun-loop.pyの方がメイン
 # Prompt Creator
 　呪文の組み合わせを書くのが面倒なので作成してみた。AUTOMATIC1111/stable-diffusion-webuiのprompts from fileにuploadするためのテキストファイルを生成するcreate_prompt.py。
 
@@ -308,4 +310,3 @@ cyan
 - mix mode
 - ネームシードのディレクトリサポート(限定対応)
 - API for user authencation
-- {= 計算式}

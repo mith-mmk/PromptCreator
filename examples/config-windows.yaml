@@ -22,7 +22,7 @@ log:
   # error exceptions
   # warning/ critical not implemented
   print_levels: ['info', 'verbose', 'warning', 'error', 'critical']
-# clone is model clone from NAS
+# clone is models clone from NAS
 clone:
   clone: true
   src: f:/ai/models/
@@ -32,7 +32,7 @@ clone:
     - vae
     - Lora
     - embbeded
-
+# loop is main
 loop:
   mode: true # custom loop mode false = sequential loop
   loop_count: 1 # 0 is infinite
@@ -44,8 +44,11 @@ loop:
   #  - img2img
   #  - img2txt2img take
   #  - img2txt2img retake
-    - custom subprocess cmd /c dir
-    - custom ls .
+    - compare betweentime 14:00:00 15:00:00  # next command run only between from 14:00:00 to 15:00:00
+    # Compare commands are betweentime, betweendate, aftertime, afterdate, beforetime, beforedate,
+    # date, time, day, weekday, month, year, hour, minute, second and etc.
+    - custom subprocess cmd /c dir  # custom subporcess commands call subprocess, it's depence on OS
+    - custom refresh  # custom commands except subprocess call plugin, see plugins/ folder
   #  - custom 1
     - sleep 5
 

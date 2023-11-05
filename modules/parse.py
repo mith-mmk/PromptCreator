@@ -70,6 +70,12 @@ def create_parameters(parameters_text):
                         '"', ""
                     )
                 parameters["ti_hashes"] = values
+            elif key == "comments":
+                values = {}
+                for i in range(1, len(keyvalue), 2):
+                    values[keyvalue[i].replace('"', "")] = keyvalue[i + 1].replace(
+                        '"', ""
+                    )
             elif key == "vae_hash":
                 parameters["vae_hash"] = keyvalue[1]
             else:
