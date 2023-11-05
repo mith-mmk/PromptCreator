@@ -237,6 +237,10 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None):
             sampler_index = value
         elif key == "sampler_name":
             sampler_name = value
+        elif key == "hires_sampler":
+            json_raw["hr_sampler_name"] = value
+        elif key == "hires_checkpoint":
+            json_raw["hr_checkpoint_name"] = value
         elif key == "model":
             override_settings["sd_model_checkpoint"] = value
         elif key == "model_hash":

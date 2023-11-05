@@ -11,7 +11,6 @@ import time
 import yaml
 
 import create_prompts
-
 # import logging
 import img2img
 import modules.logger as logger
@@ -1061,6 +1060,25 @@ def compare(args):
                 return True
             else:
                 return False
+        case "existfile":  # arg[0] file is exist return True
+            file = args[0]
+            if os.path.exists(file):
+                if os.path.isfile(file):
+                    return True
+                else:
+                    Logger.verbose(f"{file} is not file")
+            return False
+        case "notexist":  # arg[0] file is not exist return True
+            file = args[0]
+            if not os.path.exists(file):
+                return True
+            return False
+        case "existdir":  # arg[0] dir is exist return True
+            dir = args[0]
+            if os.path.exists(dir):
+                if os.path.isdir(dir):
+                    return True
+            return False
         case _:
             pass
     return True
