@@ -398,7 +398,7 @@ def custom(args):
 
 def run_plugin(plugin_name, config, args):
     try:
-        Logger.info(f"custom {plugin_name} {args}")
+        Logger.verbose(f"custom {plugin_name} {args}")
         if plugin_name == "subprocess":
             result = custom(args[1:])
         elif os.path.isdir(os.path.join("./plugins", plugin_name)):
@@ -647,8 +647,8 @@ def run_img2txt2img(profile, config):
 
     divide = profile.get("divide", 0)
     if divide > 0:
-        Logger.info(f"trunsuction {divide}")
-        file_sets = [imgfiles[i: i+divide] for i in range(0, len(imgfiles), divide)]
+        Logger.verbose(f"trunsuction {divide}")
+        file_sets = [imgfiles[i : i + divide] for i in range(0, len(imgfiles), divide)]
     else:
         file_sets = [imgfiles]
 
@@ -694,7 +694,7 @@ def run_img2txt2img(profile, config):
                     if not dry_run:
                         try:
                             os.rename(imgfile, backupfile)
-                            Logger.info(f"Moved {imgfile} to {backupfile}")
+                            Logger.verbose(f"Moved {imgfile} to {backupfile}")
                         except Exception as e:
                             Logger.error(f"Move {imgfile} to {backupfile} failed")
                             Logger.error(e)
@@ -705,7 +705,7 @@ def run_img2txt2img(profile, config):
                     if not dry_run:
                         try:
                             os.remove(imgfile)
-                            Logger.info(f"Removed {imgfile}")
+                            Logger.verbose(f"Removed {imgfile}")
                         except Exception as e:
                             Logger.error(f"Remove {imgfile} failed")
                             Logger.error(e)
@@ -768,7 +768,7 @@ def run_txt2img(config):
         else:
             matrix = None
         if matrix is None:
-            Logger.info(f"SKIP {model_name} {vae} {mode}")
+            Logger.verbose(f"SKIP {model_name} {vae} {mode}")
         else:
             break
 
@@ -938,12 +938,12 @@ def wait_ping(config):
     while res != 0:
         res = ping(config)
         if res != 0:
-            Logger.info("ping failed")
+            Logger.error("ping failed")
             time.sleep(5)
 
 
 def compare(args):
-    Logger.info(f"compare {args}")
+    Logger.verbose(f"compare {args}")
     length = len(args)
     if length == 0:
         return True
@@ -978,19 +978,19 @@ def compare(args):
             else:
                 return False
         case "aftertime":  # compare time %H:%M:%S is after now return True
-            Logger.info(f"aftertime {args}")
+            Logger.debug(f"aftertime {args}")
             now = datetime.datetime.now().strftime("%H:%M:%S")
             compare_time = datetime.time.fromisoformat(args[0]).strftime("%H:%M:%S")
-            Logger.info(f"compare_time {compare_time} now {now}")
+            Logger.debug(f"compare_time {compare_time} now {now}")
             if compare_time <= now:
                 return True
             else:
                 return False
         case "befortime":  # compare time %H:%M:%S is befor now return True
-            Logger.info(f"aftertime {args}")
+            Logger.debug(f"aftertime {args}")
             now = datetime.datetime.now().strftime("%H:%M:%S")
             compare_time = datetime.time.fromisoformat(args[0]).strftime("%H:%M:%S")
-            Logger.info(f"compare_time {compare_time} now {now}")
+            Logger.debug(f"compare_time {compare_time} now {now}")
             if compare_time > now:
                 return True
             else:
@@ -1102,7 +1102,7 @@ def compare(args):
 
 def prepare_custom(config, args):
     if len(args) == 0:
-        Logger.info("custom command not found")
+        Logger.warning("custom command not found")
         #         logging.info('custom command not found')
         return False
     plugin = args[0]
@@ -1218,12 +1218,12 @@ def loop(config_file):
                     case "break":
                         break
                     case _:
-                        Logger.info(f"unknown command {command}")
+                        Logger.warning(f"unknown command {command}")
             except AttributeError as e:
                 Logger.error(f"command error {command} {e}")
                 exit(1)
             except Exception as e:
-                Logger.info("run-loop error", e)
+                Logger.error("run-loop error", e)
                 continue
             config = load_config(config_file)
             if not config["loop"]["mode"]:
@@ -1249,8 +1249,8 @@ def main(config_file=CONFIG):
                     time.sleep(5)
             config = load_config(config_file)
         except Exception as e:
-            Logger.info("load config error", e)
-            Logger.info("Please check config.yaml")
+            Logger.error("load config error", e)
+            Logger.error("Please check config.yaml")
             Logger.info("Wait 60 seconds...")
             time.sleep(60)
             continue
@@ -1280,6 +1280,7 @@ def main(config_file=CONFIG):
 
 if __name__ == "__main__":
     import sys
+
     print("run-loop script: start")
     args = sys.argv
     if len(args) == 1:
