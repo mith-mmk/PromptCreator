@@ -11,7 +11,6 @@ import time
 import yaml
 
 import create_prompts
-
 # import logging
 import img2img
 import modules.logger as logger
@@ -645,63 +644,77 @@ def run_img2txt2img(profile, config):
     options["dry_run"] = dry_run
     if "default_vae" in profile:
         options["sd_vae"] = profile["default_vae"]
-    try:
-        import modules.img2txt2img
 
-        modules.img2txt2img.img2txt2img(
-            imgfiles,
-            base_url=base_url,
-            overrides=overrides,
-            seed_diff=profile.get("seed_diff", 0),
-            models=models,
-            output_dir=output_dir,
-            opt=options,
-        )
+    divide = profile.get("divide", 0)
+    if divide > 0:
+        Logger.info(f"trunsuction {divide}")
+        file_sets = [imgfiles[i: i+divide] for i in range(0, len(imgfiles), divide)]
+    else:
+        file_sets = [imgfiles]
 
-    except Exception as e:
-        Logger.error(e)
-        return False
-    try:
-        if backup is not None:
-            if not dry_run:
-                if not os.path.exists(backup):
-                    os.makedirs(backup)
+    result = True
+    for imgfiles in file_sets:
+        try:
+            import modules.img2txt2img
+
+            modules.img2txt2img.img2txt2img(
+                imgfiles,
+                base_url=base_url,
+                overrides=overrides,
+                seed_diff=profile.get("seed_diff", 0),
+                models=models,
+                output_dir=output_dir,
+                opt=options,
+            )
+
+        except Exception as e:
+            Logger.error(e)
+            result = False
+            continue
+
+        try:
+            if backup is not None:
+                if not dry_run:
+                    if not os.path.exists(backup):
+                        os.makedirs(backup)
+                else:
+                    Logger.info(f"dry run create directory {backup}")
+                for imgfile in imgfiles:
+                    backupfile = os.path.join(backup, os.path.basename(imgfile))
+                    if os.path.exists(backupfile):
+                        file_ext = os.path.splitext(imgfile)[1]
+                        file_base = os.path.splitext(imgfile)[0]
+                        i = 1
+                        while os.path.exists(backupfile):
+                            backupbase = file_base + "_" + str(i) + file_ext
+                            i += 1
+                            backupfile = os.path.join(
+                                backup, os.path.basename(backupbase)
+                            )
+                    if not dry_run:
+                        try:
+                            os.rename(imgfile, backupfile)
+                            Logger.info(f"Moved {imgfile} to {backupfile}")
+                        except Exception as e:
+                            Logger.error(f"Move {imgfile} to {backupfile} failed")
+                            Logger.error(e)
+                    else:
+                        Logger.info(f"dry run move {imgfile} to {backupfile}")
             else:
-                Logger.info(f"dry run create directory {backup}")
-            for imgfile in imgfiles:
-                backupfile = os.path.join(backup, os.path.basename(imgfile))
-                if os.path.exists(backupfile):
-                    file_ext = os.path.splitext(imgfile)[1]
-                    file_base = os.path.splitext(imgfile)[0]
-                    i = 1
-                    while os.path.exists(backupfile):
-                        backupbase = file_base + "_" + str(i) + file_ext
-                        i += 1
-                        backupfile = os.path.join(backup, os.path.basename(backupbase))
-                if not dry_run:
-                    try:
-                        os.rename(imgfile, backupfile)
-                        Logger.info(f"Moved {imgfile} to {backupfile}")
-                    except Exception as e:
-                        Logger.error(f"Move {imgfile} to {backupfile} failed")
-                        Logger.error(e)
-                else:
-                    Logger.info(f"dry run move {imgfile} to {backupfile}")
-        else:
-            for imgfile in imgfiles:
-                if not dry_run:
-                    try:
-                        os.remove(imgfile)
-                        Logger.info(f"Removed {imgfile}")
-                    except Exception as e:
-                        Logger.error(f"Remove {imgfile} failed")
-                        Logger.error(e)
-                else:
-                    Logger.info(f"dry run remove {imgfile}")
-        return True
-    except Exception as e:
-        Logger.error(e)
-        return False
+                for imgfile in imgfiles:
+                    if not dry_run:
+                        try:
+                            os.remove(imgfile)
+                            Logger.info(f"Removed {imgfile}")
+                        except Exception as e:
+                            Logger.error(f"Remove {imgfile} failed")
+                            Logger.error(e)
+                    else:
+                        Logger.info(f"dry run remove {imgfile}")
+        except Exception as e:
+            Logger.error(e)
+            result = False
+    return result
 
 
 def escape_split(str, split):
@@ -1267,7 +1280,7 @@ def main(config_file=CONFIG):
 
 if __name__ == "__main__":
     import sys
-
+    print("run-loop script: start")
     args = sys.argv
     if len(args) == 1:
         main()

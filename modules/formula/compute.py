@@ -284,6 +284,17 @@ class FormulaCompute:
         # string       <string>
         # bracket      (<fomula>)
         # fomula       <expression> | <term> | <factor> | <compare> | <function> | <number> | <variable> | <string> | <bracket>
+        # 追加実装部分
+        # sentence     <fomula> | <variable> = <fomula> | var <variable> | <if> | <while> | <for> | <block>
+        # block        { <sentence> } | { <sentence> ; <sentence> ; ... }
+        # if           if (<fomula>) <sentence> | if (<fomula>) <sentence> else <sentence>
+        # while        while (<fomula>) <sentence>
+        # for          for (<sentence> ; <fomula> ; <sentence>) <sentence>
+        # script       <sentence> | <sentence> ; <sentence> ; ...
+        # 代入演
+        # 算子
+        # '=': 17,   # 代入 # 内部変数は未実装
+
         # 逆ポーランド記法に変換する
         reversed_polish = []
         stack = []
