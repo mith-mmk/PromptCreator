@@ -11,6 +11,7 @@ import time
 import yaml
 
 import create_prompts
+
 # import logging
 import img2img
 import modules.logger as logger
@@ -645,6 +646,7 @@ def run_img2txt2img(profile, config):
     if "default_vae" in profile:
         options["sd_vae"] = profile["default_vae"]
 
+    Logger.info(f"img2txt2img run {len(imgfiles)} images")
     divide = profile.get("divide", 0)
     if divide > 0:
         Logger.verbose(f"trunsuction {divide}")
@@ -653,6 +655,7 @@ def run_img2txt2img(profile, config):
         file_sets = [imgfiles]
 
     result = True
+    count = 0
     for imgfiles in file_sets:
         try:
             import modules.img2txt2img
@@ -671,7 +674,8 @@ def run_img2txt2img(profile, config):
             Logger.error(e)
             result = False
             continue
-
+        count += len(imgfiles)
+        Logger.info(f"img2txt2img finished {count} images")
         try:
             if backup is not None:
                 if not dry_run:
