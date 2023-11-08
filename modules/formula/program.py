@@ -4,8 +4,8 @@
 # <args> ::= <arg> | <arg>, <args>
 # <statement> ::= <assignment> | <if> | <while> | <print> | <return> | <function> | <break> | <continue>
 # <assignment> ::= <variable> = <expression>
-# <if> ::= if <fomula> <block> | if <fomula> <block> else <block>
-# <while> ::= while <fomula> <block>
+# <if> ::= if <formula> <block> | if <formula> <block> else <block>
+# <while> ::= while <formula> <block>
 # <break> ::= break
 # <continue> ::= continue
 # <print> ::= print <expression>

@@ -7,11 +7,11 @@ from .util import debug_print
 
 operator_order = {
     # block literal
-    # 1: {}  := { <fomula> } (TOKEN.BLOCK) # ブロック # 実装しない
-    # 2: ()  := ( <fomula> ) (TOKEN.BRACKET)
-    # 2: []  := <variable> [ <fomula> ] (TOKEN.BRACKET) # 配列
+    # 1: {}  := { <formula> } (TOKEN.BLOCK) # ブロック # 実装しない
+    # 2: ()  := ( <formula> ) (TOKEN.BRACKET)
+    # 2: []  := <variable> [ <formula> ] (TOKEN.BRACKET) # 配列
     # 2: .   := <variable>.<variable> (TOKEN.POINT) # オブジェクト # 実装しない
-    # 2: <function> := <function>(<fomula> , <fomula>,...) (TOKEN.FUNCTION)
+    # 2: <function> := <function>(<formula> , <formula>,...) (TOKEN.FUNCTION)
     # 単項演算子
     # 3: ++  := ++<variable> (TOKEN.OPERATOR)
     # 3: --  := --<variable> (TOKEN.OPERATOR)
@@ -54,7 +54,7 @@ operator_order = {
     # '^=': 17,   # ビットXOR代入 # 内部変数は未実装
     # '|=': 17,   # ビットOR代入 # 内部変数は未実装
     # その他
-    # ',': 18,   # カンマ <fomula> , <fomula>,... # 代入の実装が先
+    # ',': 18,   # カンマ <formula> , <formula>,... # 代入の実装が先
 }
 
 
@@ -264,32 +264,32 @@ class FormulaCompute:
     def reverce_polish_notation(self):
         self.mode = "reverce_polish_notation"
         # 演算順位　=> operator_order
-        # expression := <fomula> + <fomula> |
-        #               <fomula> - <fomula> |
-        # term       := <fomula> * <fomula>
-        #               <fomula> / <fomula> |
-        #               <fomula> % <fomula>
-        # factor    :=  <fomula> ^ <fomula>
-        # compare   :=  <fomula> > <fomula>
-        #               <fomula> < <fomula>
-        #               <fomula> >= <fomula>
-        #               <fomula> <= <fomula>
-        #               <fomula> == <fomula>
-        #               <fomula> != <fomula>
-        # and       :=  <fomula> && <fomula>
-        # or        :=  <fomula> || <fomula>
-        # function     <function>(<fomula> , <fomula>,...)
+        # expression := <formula> + <formula> |
+        #               <formula> - <formula> |
+        # term       := <formula> * <formula>
+        #               <formula> / <formula> |
+        #               <formula> % <formula>
+        # factor    :=  <formula> ^ <formula>
+        # compare   :=  <formula> > <formula>
+        #               <formula> < <formula>
+        #               <formula> >= <formula>
+        #               <formula> <= <formula>
+        #               <formula> == <formula>
+        #               <formula> != <formula>
+        # and       :=  <formula> && <formula>
+        # or        :=  <formula> || <formula>
+        # function     <function>(<formula> , <formula>,...)
         # number       <number>
         # variable     <variable>
         # string       <string>
-        # bracket      (<fomula>)
-        # fomula       <expression> | <term> | <factor> | <compare> | <function> | <number> | <variable> | <string> | <bracket>
+        # bracket      (<formula>)
+        # formula       <expression> | <term> | <factor> | <compare> | <function> | <number> | <variable> | <string> | <bracket>
         # 追加実装部分
-        # sentence     <fomula> | <variable> = <fomula> | var <variable> | <if> | <while> | <for> | <block>
+        # sentence     <formula> | <variable> = <formula> | var <variable> | <if> | <while> | <for> | <block>
         # block        { <sentence> } | { <sentence> ; <sentence> ; ... }
-        # if           if (<fomula>) <sentence> | if (<fomula>) <sentence> else <sentence>
-        # while        while (<fomula>) <sentence>
-        # for          for (<sentence> ; <fomula> ; <sentence>) <sentence>
+        # if           if (<formula>) <sentence> | if (<formula>) <sentence> else <sentence>
+        # while        while (<formula>) <sentence>
+        # for          for (<sentence> ; <formula> ; <sentence>) <sentence>
         # script       <sentence> | <sentence> ; <sentence> ; ...
         # 代入演
         # 算子
