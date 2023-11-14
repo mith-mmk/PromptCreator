@@ -58,11 +58,7 @@ async def save_img_wrapper(r, opt):
 
 def save_img(r, opt={"dir": "./outputs"}):
     dir = opt["dir"]
-    if "filename_pattern" in opt:
-        nameseed = opt["filename_pattern"]
-    else:
-        nameseed = "[num]-[seed]"
-
+    nameseed = opt.get("filename_pattern", "[num]-[seed]")
     need_names = re.findall(r"\[.+?\]", nameseed)
     need_names = [n[1:-1] for n in need_names]
     before_counter = re.sub(r"\[num\].*", "", nameseed)
@@ -178,7 +174,7 @@ def save_img(r, opt={"dir": "./outputs"}):
             # image = Image.open(io.BytesIO(base64.b64decode(i.split(",",1)[1])))
             image = Image.open(io.BytesIO(base64.b64decode(i)))
             parameters = create_parameters(info["infotexts"][n])
-            if "image_type" in opt and opt["image_type"] == "jpg":
+            if opt.get("image_type") == "jpg":
                 filename = nameseed + ".jpg"
             else:
                 filename = nameseed + ".png"
@@ -321,9 +317,9 @@ def save_img(r, opt={"dir": "./outputs"}):
                 extendend_meta = json.dumps(extentend_meta)
 
             # jpeg
-            if "image_type" in opt and opt["image_type"] == "jpg":
+            if opt.get("image_type") == "jpg":
                 Logger.debug("save jpg", filename)
-                quality = opt["image_quality"] if "image_quality" in opt else 80
+                quality = opt.get("image_quality", 80)
                 Logger.debug("quality", quality)
                 try:
                     import piexif

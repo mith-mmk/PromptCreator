@@ -444,6 +444,7 @@ def model_copy(clone):
 def run_img2img(config):
     host = config["host"]
     img_config = config["img2img"]
+    options = img_config.get("options", {})
     img2img_steps = img_config["steps"]
     img2img_denosing_stringth = img_config["denosing_strength"]
     img2img_n_iter = img_config["n_iter"]
@@ -521,11 +522,10 @@ def run_img2img(config):
                                 overrides[override] = _overrides[item][override]
                 else:
                     Logger.debug("overrides is None")
-            opt = {
-                "filename_pattern": file_pattern,
-                "mask_dir": input_mask,
-                "alt_image_dir": input_append,
-            }
+            opt = options
+            opt["filename_pattern"] = file_pattern
+            opt["mask_dir"] = input_mask
+            opt["alt_image_dir"] = input_append
             if config.get("userpass"):
                 opt["userpass"] = config.get("userpass")
             output = os.path.join(output_dir, os.path.basename(folder) + folder_suffix)
@@ -751,6 +751,7 @@ def run_txt2img(config):
     folder_suffix = text_config["folder_suffix"]
     overrides = text_config["overrides"]
     info = text_config["info"]
+    options = text_config.get("options", {})
     if type(overrides) is str:
         overrides = escape_split(overrides, " ")
         Logger.debug(f"overrides string {overrides}")
@@ -839,14 +840,12 @@ def run_txt2img(config):
                     Logger.error(e)
                     continue
                 # Logger.debug(f"create prompt finished {result}")
-                options = result["options"]
                 payloads = result["output_text"]
-                opt = {
-                    "filename_pattern": file_pattern,
-                    "sd_model": model_name or options["sd_model"],
-                    "sd_vae": vae or options["sd_vae"],
-                    "filename-variable": True,
-                }
+                opt = options.copy()
+                opt["filename_pattern"] = file_pattern
+                opt["sd_model"] = model_name or result["options"].get("sd_model")
+                opt["sd_vae"] = vae or result["options"].get("sd_vae")
+                opt["filename-variable"] = True
                 if config.get("userpass"):
                     opt["userpass"] = config.get("userpass")
                 if text_config.get("save_extend_meta"):
