@@ -45,6 +45,7 @@ loop:
   #  - img2txt2img take
   #  - img2txt2img retake
     - compare betweentime 14:00:00 15:00:00  # next command run only between from 14:00:00 to 15:00:00
+    # use iso time 00:00:00 to 23:59:59
     # Compare commands are betweentime, betweendate, aftertime, afterdate, beforetime, beforedate,
     # date, time, day, weekday, month, year, hour, minute, second and etc.
     - custom subprocess cmd /c dir  # custom subporcess commands call subprocess, it's depence on OS
