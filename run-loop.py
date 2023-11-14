@@ -989,7 +989,7 @@ def compare(args):
                 return True
             else:
                 return False
-        case "befortime":  # compare time %H:%M:%S is befor now return True
+        case "beforetime":  # compare time %H:%M:%S is befor now return True
             Logger.debug(f"aftertime {args}")
             now = datetime.datetime.now().strftime("%H:%M:%S")
             compare_time = datetime.time.fromisoformat(args[0]).strftime("%H:%M:%S")
@@ -1007,7 +1007,7 @@ def compare(args):
                 "%H:%M:%S"
             )
             compare_time_to = datetime.time.fromisoformat(args[1]).strftime("%H:%M:%S")
-            if compare_time_from <= now and compare_time_to > now:
+            if compare_time_from <= now and now < compare_time_to:
                 return True
             else:
                 return False
