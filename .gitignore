@@ -14,3 +14,4 @@ plugins/curl/*
 !plugins/refresh/
 !plugins/refresh/*.py
 CreatePrompt2/**/*
+.DS_Store
