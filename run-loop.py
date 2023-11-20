@@ -11,7 +11,6 @@ import time
 import yaml
 
 import create_prompts
-
 # import logging
 import img2img
 import modules.logger as logger
@@ -1114,6 +1113,122 @@ def prepare_custom(config, args):
     else:
         plugin_config = None
     return plugin, plugin_config
+
+
+def run_command(command, config_file, config, next=True):
+    commands = arg_split(command)
+    command = commands[0].lower()
+    args = commands[1:]
+    try:
+        match command:
+            case "check":
+                check_time(config_file)
+            case "compare":
+                next = compare(commands[1:])
+            case "ping":
+                wait_ping(config)
+            case "txt2img":
+                run_txt2img(config)
+            case "img2img":
+                run_img2img(config)
+            case "img2txt2img":
+                run_img2txt2img(args[0], config)
+            case "custom":
+                (plugin, plugin_config) = prepare_custom(config, args)
+                if plugin:
+                    Logger.info(f"custom {plugin}")
+                    next = run_plugin(plugin, plugin_config, args)
+                else:
+                    pass
+            case "custom-loop":
+                try:
+                    sleep_time = int(args[0])
+                    args = args[1:]
+                except Exception:
+                    sleep_time = 5
+                try:
+                    max_count = int(args[0])
+                    args = args[1:]
+                except Exception:
+                    max_count = 0
+                Logger.info(args)
+                (plugin, plugin_config) = prepare_custom(config, args)
+                if plugin:
+                    Logger.info(
+                        f"custom loop {plugin} : {args} count {max_count} sleep {sleep_time}"
+                    )
+                    if len(args) > 1:
+                        args = args[1:]
+                    else:
+                        args = []
+                    count = 0
+                    while max_count == 0 or max_count > count:
+                        result = run_plugin(plugin, plugin_config, args)
+                        print(result)
+                        if result:
+                            break
+                        count += 1
+                        Logger.info(f"retry {count} {plugin}")
+                        time.sleep(sleep_time)
+                else:
+                    return next
+            case "custom-compare":
+                (plugin, plugin_config) = prepare_custom(config, args)
+                if plugin:
+                    Logger.info(f"custom compare {plugin} : {args}")
+                    next = run_plugin(plugin, plugin_config, args)
+                else:
+                    return next
+            case "clone":
+                clone = config["clone"]
+                model_copy(clone)
+            case "sleep":
+                time.sleep(int(args[0]))
+            case "exit":
+                exit()
+            case "break":
+                raise Exception("break")
+            case _:
+                Logger.warning(f"unknown command {command}")
+    except AttributeError as e:
+        Logger.error(f"command error {command} {e}")
+        return False
+    except Exception as e:
+        Logger.error("run-loop error", e)
+        return False
+    return next
+
+
+def run_loop(commands, config_file, config, loop_count, nest=0):
+    Logger.info(f"RUN LOOP {loop_count}")
+    loop_counter = 0
+    while True:
+        Logger.info(f"RUN LOOP #{loop_counter} / {loop_count}")
+        if loop_count > 0 and loop_counter >= loop_count:
+            Logger.info("RUN LOOP completed")
+            return
+        loop_counter += 1
+        next = True
+        for i, command in enumerate(commands):
+            if command == "loop":
+                run_loop(commands[i:], config_file, config, loop_count, nest + 1)
+            elif command == "break":
+                Logger.info("break")
+                return
+            elif next is True:
+                try:
+                    next = run_command(command, config_file, config, next)
+                except Exception as e:
+                    if str(e) == "break":
+                        Logger.info("break")
+                        return
+                    Logger.error("run-loop error", e)
+                    continue
+        config = load_config(config_file)
+        if not config["loop"]["mode"]:
+            break
+        if nest == 0:
+            loop_count = config["loop"]["loop_count"]
 
 
 def loop(config_file):

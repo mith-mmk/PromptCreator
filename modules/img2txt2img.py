@@ -86,6 +86,10 @@ def img2txt2img(
                 else:
                     for key2 in overrides[key]:
                         param[key][key2] = overrides[key][key2]
+            if opt.get("rotate", False):
+                temp = param["width"]
+                param["width"] = param["height"]
+                param["height"] = temp
 
             if "seed" in param:
                 if int(param["seed"]) >= 0:
