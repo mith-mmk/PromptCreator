@@ -1116,6 +1116,8 @@ def prepare_custom(config, args):
 
 
 def run_command(command, config_file, config, next=True):
+    if command == "":
+        return next
     commands = arg_split(command)
     command = commands[0].lower()
     args = commands[1:]
@@ -1199,36 +1201,17 @@ def run_command(command, config_file, config, next=True):
     return next
 
 
-def run_loop(commands, config_file, config, loop_count, nest=0):
-    Logger.info(f"RUN LOOP {loop_count}")
-    loop_counter = 0
-    while True:
-        Logger.info(f"RUN LOOP #{loop_counter} / {loop_count}")
-        if loop_count > 0 and loop_counter >= loop_count:
-            Logger.info("RUN LOOP completed")
-            return
-        loop_counter += 1
-        next = True
-        for i, command in enumerate(commands):
-            if command == "loop":
-                run_loop(commands[i:], config_file, config, loop_count, nest + 1)
-            elif command == "break":
-                Logger.info("break")
-                return
-            elif next is True:
-                try:
-                    next = run_command(command, config_file, config, next)
-                except Exception as e:
-                    if str(e) == "break":
-                        Logger.info("break")
-                        return
-                    Logger.error("run-loop error", e)
-                    continue
-        config = load_config(config_file)
-        if not config["loop"]["mode"]:
-            break
-        if nest == 0:
-            loop_count = config["loop"]["loop_count"]
+def run_loop(command, config_file, config, loop_count, nest=0):
+    commands = command.split("\n")
+    print(commands)
+    next = True
+    for command in commands:
+        if command == "":
+            continue
+        result = run_command(command, config_file, config, next)
+        if result is False:
+            next = False
+    return next
 
 
 def loop(config_file):
@@ -1260,6 +1243,8 @@ def loop(config_file):
                 Logger.info(f"skip {command}")
                 next = True
                 continue
+            next = run_loop(command, config_file, config, loop_counter)
+            """
             commands = arg_split(command)
             command = commands[0].lower()
             args = commands[1:]
@@ -1343,6 +1328,7 @@ def loop(config_file):
             except Exception as e:
                 Logger.error("run-loop error", e)
                 continue
+            """
             config = load_config(config_file)
             if not config["loop"]["mode"]:
                 break

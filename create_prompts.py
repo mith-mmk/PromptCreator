@@ -131,10 +131,10 @@ def main(args):
     if args.api_mode:
         if args.api_type == "img2img":
             img2img_from_args(args)
-            return
+            return True
         if args.api_type == "interrogate":
             interrogate_from_args(args)
-            return
+            return True
 
     if args.input is not None:
         try:
@@ -204,7 +204,7 @@ def main(args):
         if not result:
             return False
         # api.shutdown()
-        return True
+    return True
 
 
 def run_from_args(command_args=None):
