@@ -249,6 +249,8 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None):
             override_settings[key] = value
         elif key == "VAE" or key == "vae":
             override_settings["sd_vae"] = value
+        elif key == "RNG" or key == "RNG":
+            override_settings["randn_source"] = value
     if ("sampler" not in json_raw) and (
         sampler_index is not None or sampler_name is not None
     ):
