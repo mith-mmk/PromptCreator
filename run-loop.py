@@ -11,7 +11,6 @@ import time
 import yaml
 
 import create_prompts
-
 # import logging
 import img2img
 import modules.logger as logger
@@ -441,9 +440,26 @@ def model_copy(clone):
             Logger.verbose("rsync", "-av", src, dest)
 
 
-def run_img2img(config):
+def get_profile_name(args=None):
+    profile_name = None
+    if type(args) is str:
+        profile_name = args
+    elif type(args) is list:
+        if len(args) > 0:
+            profile_name = args[0]
+    elif type(args) is dict:
+        profile_name = args.get("profile")
+    return profile_name
+
+
+def run_img2img(config, args=None):
+    Logger.verbose(f"run img2img args {args}")
     host = config["host"]
     img_config = config["img2img"]
+    profile_name = get_profile_name(args)
+    if img_config.get("profiles") and profile_name is not None:
+        Logger.info(f"run txt2img {profile_name}")
+        img_config = img_config["profiles"].get(profile_name) or img_config
     options = img_config.get("options", {})
     img2img_steps = img_config["steps"]
     img2img_denosing_stringth = img_config["denosing_strength"]
@@ -602,8 +618,10 @@ def run_img2img(config):
                     Logger.error(e)
 
 
-def run_img2txt2img(profile, config):
-    Logger.info(f"run img2txt2img {profile}")
+def run_img2txt2img(config, args):
+    Logger.verbose(f"run img2txt2img args {args}")
+    profile_name = get_profile_name(args)
+    Logger.info(f"run img2txt2img {profile_name}")
     iti_config = config.get("img2txt2img")
     if iti_config is None:
         Logger.error("img2txt2img config not found")
@@ -611,9 +629,9 @@ def run_img2txt2img(profile, config):
     base_url = config["host"]
     dry_run = iti_config.get("dry_run")
     profiles = iti_config.get("profiles", iti_config)
-    profile = profiles.get(profile, iti_config.get("DEFAULT"))
+    profile = profiles.get(profile_name, iti_config.get("DEFAULT"))
     if profile is None or type(profile) is not dict:
-        Logger.error(f"profile {profile} not found in config")
+        Logger.error(f"profile {profile_name} not found in config")
         return False
     base_url = config["host"]
     modelsFile = iti_config.get("modelfile")
@@ -737,9 +755,14 @@ def escape_split(str, split):
     return args
 
 
-def run_txt2img(config):
+def run_txt2img(config, args=None):
+    Logger.verbose(f"run txt2img args {args}")
+    profile_name = get_profile_name(args)
     host = config["host"]
     text_config = config["txt2img"]
+    if text_config.get("profiles") and profile_name is not None:
+        Logger.info(f"run txt2img {profile_name}")
+        text_config = text_config["profiles"].get(profile_name) or text_config
     output_dir = text_config["output"]
     models = text_config["models"]
     exception_list = text_config["prefix"]["exception_list"]
@@ -749,6 +772,14 @@ def run_txt2img(config):
     coef_matrix = text_config["coef_matrix"]
     prefix = text_config["prefix"]
     folder_suffix = text_config["folder_suffix"]
+    # 以下 direct config。matrix系より優先されるオプション
+    # prompt_name = text_config.get("prompt_name") # prompt用yamlを固定する場合
+    # file_pattern = text_config.get("file_pattern")    # file_patternを固定する場合
+    # max_number = text_config.get("max_number")    # numberを固定する場合
+    # model_name = text_config.get("model_name")    # modelを固定する場合
+    # vae_name = text_config.get("vae_name")        # vaeを固定する場合
+    # direct_output_dir = text_config.get("output_dir")　# output_dirを固定する場合
+
     overrides = text_config["overrides"]
     info = text_config["info"]
     options = text_config.get("options", {})
@@ -1123,7 +1154,10 @@ def run_command(command, config_file, config, next=True):
     command = commands[0].lower()
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     Logger.info(f"{now} {command}")
-    args = commands[1:]
+    if len(commands) > 1:
+        args = commands[1:]
+    else:
+        args = []
     try:
         match command:
             case "check":
@@ -1133,11 +1167,11 @@ def run_command(command, config_file, config, next=True):
             case "ping":
                 wait_ping(config)
             case "txt2img":
-                run_txt2img(config)
+                run_txt2img(config, args)
             case "img2img":
-                run_img2img(config)
+                run_img2img(config, args)
             case "img2txt2img":
-                run_img2txt2img(args[0], config)
+                run_img2txt2img(config, args)
             case "custom":
                 (plugin, plugin_config) = prepare_custom(config, args)
                 if plugin:
