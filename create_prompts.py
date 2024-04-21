@@ -3,7 +3,7 @@
 # !pip install Pillow
 # !pip install httpx
 
-# version 0.8 (C) 2022-3 MITH@mmk  MIT License
+# version 0.8.1-1.9.0 (C) 2022-4 MITH@mmk  MIT License
 
 import argparse
 import json
