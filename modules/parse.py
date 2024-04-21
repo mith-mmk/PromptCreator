@@ -57,6 +57,8 @@ def create_parameters(parameters_text):
                 parameters["sampler_index"] = keyvalue[1]
             elif key == "batch_pos":
                 pass
+            elif key == "schedule_type":
+                parameters["scheduler"] = keyvalue[1]
             elif key == "clip_skip":
                 parameters["CLIP_stop_at_last_layers"] = int(keyvalue[1])
             elif key == "ensd":
@@ -237,6 +239,8 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None):
             sampler_index = value
         elif key == "sampler_name":
             sampler_name = value
+        elif key == "schedule_type":
+            json_raw["scheduler"] = value
         elif key == "hires_sampler":
             json_raw["hr_sampler_name"] = value
         elif key == "hires_checkpoint":
