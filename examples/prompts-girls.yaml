@@ -106,7 +106,11 @@ command:
     height: 704
     steps: 30
     cfg_scale: 12.5
-    sampler_index: DPM++ SDE Karras
+    sampler_name: DPM++ SDE # not accept DPM++ SDE Karras
+    # 1.9.0 new options
+    scheduler: karras
+    # see more Samplers 
+    # % curl http://localhost:7960/sdapi/v1/samplers
     batch_size: 1  # if you can use n size batch
     n_iter: 1 # also same butch count
 # higher.fix
