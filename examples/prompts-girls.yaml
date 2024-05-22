@@ -108,9 +108,10 @@ command:
     cfg_scale: 12.5
     sampler_name: DPM++ SDE # not accept DPM++ SDE Karras
     # 1.9.0 new options
-    scheduler: karras
+#    scheduler: karras
     # see more Samplers 
     # % curl http://localhost:7960/sdapi/v1/samplers
+    # AUTOMATIC is set options ?
     batch_size: 1  # if you can use n size batch
     n_iter: 1 # also same butch count
 # higher.fix
