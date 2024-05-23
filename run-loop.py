@@ -115,7 +115,7 @@ def load_prompts_csv(filename):
     if not (os.path.exists(filename)):
         return []
     prompts = []
-    with open(PROMPT_CSV) as f:
+    with open(filename) as f:
         reader = csv.reader(f)
         # prompt_name,folder,number,genre,
         for row in reader:
