@@ -237,6 +237,10 @@ def get_vae(base_url="http://127.0.0.1:7860", vae=None):
     headers = {
         "Content-Type": "application/json",
     }
+    if vae == "Automatic":
+        return "Automatic"
+    if vae == "None":
+        return "None"
     base_url = normalize_base_url(base_url)
     model_url = base_url + "/sdapi/v1/sd-vae"
     try:
