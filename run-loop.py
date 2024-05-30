@@ -419,6 +419,7 @@ def model_copy(clone):
     src_dir = clone["src"]
     dest_dir = clone["dest"]
     folders = clone["folders"]
+    recursive = clone.get("recursive", False)
     for folder in folders:
         src = os.path.join(src_dir, folder)
         dest = os.path.join(dest_dir, folder)
@@ -426,18 +427,35 @@ def model_copy(clone):
             os.makedirs(dest)
         Logger.info(f"copying {src} to {dest}")
         if os.name == "nt":
-            subprocess.Popen(
-                ["robocopy", src, dest, "/NP", "/J", "/R:1", "/W:1", "/FFT"],
-                stdout=subprocess.DEVNULL,
-            )
-            Logger.verbose("robocopy", src, dest, "/NP", "/J", "/R:1", "/W:1", "/FFT")
+            if recursive:
+                subprocess.Popen(
+                    ["robocopy", src, dest, "/NP", "/J", "/R:1", "/W:1", "/FFT", "/S"],
+                    stdout=subprocess.DEVNULL,
+                )
+                Logger.verbose(
+                    "robocopy", src, dest, "/NP", "/J", "/R:1", "/W:1", "/FFT", "/S"
+                )
+            else:
+                subprocess.Popen(
+                    ["robocopy", src, dest, "/NP", "/J", "/R:1", "/W:1", "/FFT"],
+                    stdout=subprocess.DEVNULL,
+                )
+                Logger.verbose(
+                    "robocopy", src, dest, "/NP", "/J", "/R:1", "/W:1", "/FFT"
+                )
         else:
             dest = dest.replace("\\", "/")
             # dest の最後を / にする
             if dest[-1] != "/":
                 dest = dest + "/"
-            subprocess.Popen(["rsync", "-av", src, dest], stdout=subprocess.DEVNULL)
-            Logger.verbose("rsync", "-av", src, dest)
+            if recursive:
+                subprocess.Popen(
+                    ["rsync", "-avr", src, dest], stdout=subprocess.DEVNULL
+                )
+                Logger.verbose("rsync", "-avr", src, dest)
+            else:
+                subprocess.Popen(["rsync", "-av", src, dest], stdout=subprocess.DEVNULL)
+                Logger.verbose("rsync", "-av", src, dest)
 
 
 def get_profile_name(args=None):
