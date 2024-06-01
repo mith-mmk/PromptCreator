@@ -104,6 +104,7 @@ def load_models_csv(filename):
         # model_name,vae,mode,
         for row in reader:
             if len(row) < 3:
+                Logger.warning(f"load_models_csv {row} error column count {len(row)}")
                 continue
             try:
                 model = {
@@ -127,6 +128,7 @@ def load_prompts_csv(filename):
         # prompt_name,folder,number,genre,
         for row in reader:
             if len(row) < 4:
+                Logger.warning(f"load_prompts_csv {row} error column count {len(row)}")
                 continue
             prompt = {
                 "prompt_name": row[0],
