@@ -11,6 +11,7 @@ import time
 import yaml
 
 import create_prompts
+
 # import logging
 import img2img
 import modules.logger as logger
@@ -102,11 +103,17 @@ def load_models_csv(filename):
         reader = csv.reader(f)
         # model_name,vae,mode,
         for row in reader:
-            model = {
-                "model_name": row[0],
-                "vae": row[1],
-                "mode": row[2],
-            }
+            if len(row) < 3:
+                continue
+            try:
+                model = {
+                    "model_name": row[0],
+                    "vae": row[1],
+                    "mode": row[2],
+                }
+            except Exception as e:
+                Logger.error(f"load_models_csv {row} error {e}")
+                continue
             models.append(model)
     return models
 
