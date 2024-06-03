@@ -11,7 +11,6 @@ import time
 import yaml
 
 import create_prompts
-
 # import logging
 import img2img
 import modules.logger as logger
@@ -112,6 +111,8 @@ def load_models_csv(filename):
                     "vae": row[1],
                     "mode": row[2],
                 }
+                if len(row) > 3:
+                    model["overrrides"] = row[3]
             except Exception as e:
                 Logger.error(f"load_models_csv {row} error {e}")
                 continue
@@ -684,6 +685,7 @@ def run_img2txt2img(config, args):
             imgfiles.append(filename)
     # overrride settings
     overrides = profile.get("overrides", {})
+
     backup = profile.get("backup", None)
     output_dir = profile.get("output", None)
     options = profile.get("options", {})
@@ -819,12 +821,19 @@ def run_txt2img(config, args=None):
         Logger.debug("overrides is None")
         overrides = None
 
+    overrides_backup = overrides
     while True:
+        overrides = overrides_backup
         model = models[random.randint(0, len(models) - 1)]
         model_name = model["model_name"]
         vae = model["vae"]
         mode = model["mode"]
         Logger.info(f"Set model {model_name} vae {vae} mode {mode}")
+
+        if model.get("overrides"):
+            # model overrides is only text
+            overrides = escape_split(model["overrides"], " ")
+            Logger.info(f"model overrides {overrides}")
 
         if mode in abort_matrix:
             matrix = abort_matrix[mode]
