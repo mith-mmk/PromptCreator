@@ -48,6 +48,7 @@ Logger = getDefaultLogger()
 
 def text_formula_v2(text, variables, error_info=""):
     compute = FormulaCompute()
+    # Logger.debug(f"text_formula_v2 {text}")
 
     formulas = re.findall(r"\$\{\=(.+?)\}", text)
     for formula in formulas:
@@ -58,7 +59,7 @@ def text_formula_v2(text, variables, error_info=""):
             error = compute.getError()
             Logger.error(f"Error happen formula {error_info} {formula}, {error}")
     simple_formulas = re.findall(r"\$\{(.+?)\}", text)
-
+    # Logger.debug(f"simple_formulas {simple_formulas}")
     for formula in simple_formulas:
         _formula = formula.strip()
         # v1 formula
@@ -104,7 +105,7 @@ def prompt_formula_v2(new_prompt, variables, info=None, error_info="", nested=0)
             for key, item in info.items():
                 variables[f"info:{key}"] = item
     except Exception as e:
-        Logger.error(f"Error happen info {info}, {error_info}")
+        Logger.error(f"Error happen info get info {info}, {error_info}")
         Logger.error(e)
 
     if type(new_prompt) is str:
@@ -183,8 +184,6 @@ def yaml_parse_v2(filename, opt={}):
         yml["command"] = {}
     if "info" not in yml:
         yml["info"] = set_reserved({})
-    if "options" in yml and "json" in yml["options"] and yml["options"]["json"]:
-        mode = "json"
 
     command = yml.get("command", {})
     array = yml.get("array", {})
@@ -199,16 +198,7 @@ def yaml_parse_v2(filename, opt={}):
         for key, item in info.items():
             yml["info"][key] = item
         array["$INFO"] = info
-    prompts = ""
 
-    if mode == "text":
-        for key, item in command.items():
-            if type(item) is str:
-                prompts = prompts + "--" + key + ' "' + item + '" '
-            else:
-                prompts = prompts + "--" + key + " " + str(item) + " "
-    elif mode == "json":
-        prompts = command
     return yml
 
 
@@ -302,33 +292,35 @@ def item_split_ct2(item, error_info="", default_weight=0.1):
     return variables
 
 
-def prompt_replace(object, replace_texts, var):
-    # key ごとに検索
-    for key in object:
-        if type(object[key]) is str:
-            object[key] = object[key].replace("${variable}", var)
-        elif type(object[key]) is dict:
-            object[key] = prompt_replace(object[key], replace_texts, var)
-    return object
-
-
 def prompt_multiple_v2(yml, variable, array, input=[]):
+    Logger.debug("prompt_multiple_v2 start")
     output = [None] * len(array) * len(input) if len(input) > 0 else [None] * len(array)
     i = 0
-    for item in enumerate(input):
+    if len(input) == 0:
+        input = [copy.deepcopy(yml.get("command", {}))]
+        Logger.debug(f"input {input}")
+
+    for parts in input:
+        Logger.debug(f"prompt_multiple_v2 {parts}")
         for item in array:
-            output[i] = {}
-            for key in yml["command"]:
-                output[i][key] = yml["command"][key]
-            verbose = {}
-            for key in yml["info"]:
-                verbose = yml["info"][key]
-            for key in yml["array"]:
-                verbose = yml["array"][key]
-            output[i] = verbose
+            args = {}
+            args[variable] = item
+            Logger.debug(f"item {args}")
+            output[i] = copy.deepcopy(parts)
+            Logger.debug(f"output {output[i]}")
             # ${variable} を置換
-            output[i] = prompt_replace(output[i], item, variable)
+            Logger.debug(f"input {i} {output[i]}")
+            Logger.debug(f"output {i} {output[i]}")
+
+            verbose = output[i].get("verbose", {})
+            if "variable" not in verbose:
+                if "variables" not in verbose:
+                    verbose["variables"] = {}
+                verbose["variables"][variable] = item
+            output[i] = prompt_formula_v2(output[i], args, info=None)
+            output[i]["verbose"] = verbose
             i = i + 1
+    Logger.debug("prompt_multiple_v2 end")
     return output
 
 
@@ -459,20 +451,18 @@ def create_text_v2(opt):
     Logger.debug(f"override {override}")
     Logger.debug(f"info {info}")
     Logger.debug(f"json {opt.get('json')}")
-    if opt.get("json") or opt.get("api_mode"):
-        mode = "json"
-    else:
-        mode = "text"
 
     prompt_file = opt.get("input")
     output = opt.get("output")
-    verbose = opt.get("verbose_json", False)
+    verbose = opt.get("json_verbose", False)
+    Logger.debug(f"verbose {verbose}")
     ext = os.path.splitext(prompt_file)[-1:][0]
+    is_json = opt.get("json", False) or opt.get("api_mode", False)
     yml = {
         "version": 2,
         "options": {
             "output": output,
-            "json": mode,
+            "json": is_json,
             "verbose": verbose,
             "api_mode": opt.get("api_mode"),
         },
@@ -494,12 +484,22 @@ def create_text_v2(opt):
         raise NotImplementedError
 
     Logger.debug("set reserved")
+    if "variables" not in yml:
+        yml["variables"] = {}
     set_reserved(yml["variables"])
 
     Logger.debug(f"info {info}")
     # console mode is dispose
 
     options = yml["options"]
+    options["output"] = (
+        output if output is not None else options.get("output", "output.txt")
+    )
+    options["verbose"] = verbose if verbose else options.get("verbose", False)
+    options["api_mode"] = (
+        opt.get("api_mode") if opt.get("api_mode") else options.get("api_mode", False)
+    )
+    Logger.debug(f"options {options}")
     yml["weight_calced"] = False
     output = []
 
@@ -515,11 +515,26 @@ def create_text_v2(opt):
                 )
         Logger.debug(f"variables {key} {variables[key]}")
 
+    array = yml.get("array", {})
+    for key, item in array.items():
+        array[key] = []
+        Logger.debug(f"key {key}")
+        if type(item) is str:
+            array[key] = read_file_v2(item, error_info=f"array {key}")
+        elif type(item) is list:
+            for i, txt in enumerate(item):
+                array[key] = item_split_txt(txt, error_info=f"array {key} {i}")
+        an_array = []
+        for item in array[key]:
+            an_array.append(item.get("variables", []))
+        array[key] = an_array
+
     if "methods" not in yml:
         Logger.error("Yaml parse error, 'methods' is not found")
         raise NotImplementedError
 
     for method in yml.get("methods", []):
+        Logger.debug(f"method {method}")
         key = list(method.keys())[0]
         Logger.debug(f"method {key}")
         if key == "random":
@@ -536,14 +551,15 @@ def create_text_v2(opt):
             output = prompt_random_v2(yml, max_number, output)
         elif key == "multiple":
             variable = method["multiple"]
-            array = yml.get("array", [])
-            Logger.debug("multiple")
+            array = yml.get("array", {}).get(variable, [])
+            Logger.debug(f"create multiple {variable}")
             output = prompt_multiple_v2(yml, variable, array, output)
 
-    Logger.debug(f"output {output}")
-    mode = "json" if yml.get("options", {}).get("json") else "text"
+    is_json = options.get("json", False)
+    Logger.debug(f"is json {is_json}")
 
-    if mode == "text":
+    if not is_json:
+        Logger.debug("text mode")
         output_text = ""
         for item in output:
             text = "--prompt "
@@ -554,13 +570,19 @@ def create_text_v2(opt):
                 del item["verbose"]
             keys = list(item.keys())
             for key in keys:
-                text = text + " --" + key + " " + item[key]
+                text = text + " --" + str(key) + " " + str(item[key])
             output_text = output_text + text + "\n"
         return {
             "options": options,
             "yml": yml,
             "output_text": output_text,
-            "mode": mode,
+            "mode": "text",
         }
     else:
-        return {"options": options, "yml": yml, "output_text": output, "mode": mode}
+        Logger.debug("json mode")
+        return {
+            "options": options,
+            "yml": yml,
+            "output_text": output,
+            "is_json": is_json,
+        }
