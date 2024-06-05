@@ -6,6 +6,7 @@
 # version 2.0 (C) 4 MITH@mmk  MIT License
 
 import argparse
+import copy
 import json
 import os
 
@@ -150,25 +151,39 @@ def main(args):
             output_filename = yml.get("options").get("output")
             if isinstance(output_filename, str):  # Replace '==' with 'is'
                 Logger.debug(f"output_filename: {output_filename}")
-                Logger.debug(f"output_text: {output_text}")
                 try:
                     with open(output_filename, "w", encoding="utf-8") as f:
                         if isinstance(output_text, str):
                             text = output_text
                         else:
                             if not options.get("verbose"):
-                                import copy
-
                                 text = copy.deepcopy(output_text)
                                 for t in text:
                                     if t.get("verbose"):
                                         del t["verbose"]
+                            else:
+                                # verbose mode
+                                if not options.get("v1json"):
+                                    text = output_text
+                                else:
+                                    # conver v2 to v1
+                                    text = copy.deepcopy(output_text)
+                                    for t in text:
+                                        Logger.debug(t)
+                                        verbose = t.get("verbose", {})
+                                        if "verbose" in t:
+                                            del t["verbose"]
+                                        if "array" in t:
+                                            del t["array"]
+                                        t["variables"] = verbose.get("variables", {})
+                                        t["info"] = verbose.get("info", {})
+
                             text = json.dumps(text, ensure_ascii=False, indent=4)
                         f.write(text)
                 except Exception as e:
                     Logger.error(f"output error {e}")
                     return False
-                Logger.info("outpued")
+                Logger.info("outputed file creat")
         except Exception as e:
             Logger.error(f"create_text error {e}")
             return False
