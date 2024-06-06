@@ -260,6 +260,8 @@ def item_split_txt(item, error_info="", default_weight=0.1):
             split[i] = split[i].replace(r"${semicolon}", ";")
     try:
         weight = float(split[0])
+        if len(split) == 1:
+            return {"weight": default_weight, "variables": [weight]}
     except ValueError:
         Logger.debug(f"weight convert error use defaut {error_info} {split[0]}")
         weight = default_weight
@@ -401,11 +403,6 @@ def prompt_random_v2(yml, max_number, input=[]):
     variables = yml.get("weighted_variables", {})
     # Logger.debug(f"variables {variables}")
 
-    current_variables = {}
-    for key in variables:
-        current_variables[key] = choice_v2(variables[key])
-    Logger.debug("choice end")
-
     if len(input) == 0:
         output = [None] * max_number
     else:
@@ -413,10 +410,12 @@ def prompt_random_v2(yml, max_number, input=[]):
 
     for idx, current in enumerate(output):
         # Logger.debug(f"prompt_random_v2 {idx} {current}")
+        current_variables = {}
+        for key in variables:
+            current_variables[key] = choice_v2(variables[key])
         if current is None:
             current = {}
             # yml commands を コピー
-            Logger.debug("deep copy command")
             current = copy.deepcopy(yml.get("command", {}))
             verbose = {}
             verbose["variables"] = {}
@@ -493,7 +492,6 @@ def create_text_v2(opt):
     if "variables" not in yml:
         yml["variables"] = {}
     set_reserved(yml["variables"])
-
     Logger.debug(f"info {info}")
     # console mode is dispose
 
@@ -508,6 +506,15 @@ def create_text_v2(opt):
                 del profile["profile"]
                 Logger.error(f"nested profile is not support in {profile}")
             Logger.debug(f"override yml from profile {profile}")
+            load_profile = profile.get("load_profile", [])
+            Logger.debug(f"load_profile {load_profile}")
+            if load_profile:
+                if type(load_profile) is str:
+                    load_profile = [load_profile]
+                for profile_name in load_profile:
+                    pre_profile = yml.get("profiles", {}).get(profile_name, {})
+                    Logger.debug(f"pre_profile {pre_profile}")
+                    yml = update_nested_dict(yml, pre_profile)
             yml = update_nested_dict(yml, profile)
         else:
             Logger.error(f"profile {profile} is not found")
@@ -558,8 +565,8 @@ def create_text_v2(opt):
         array[key] = an_array
     output = []
     if "methods" not in yml:
-        Logger.error("Yaml parse error, 'methods' is not found")
-        raise NotImplementedError
+        yml["methods"] = []
+        yml["methods"].append({"random": 0})
 
     for method in yml.get("methods", []):
         Logger.debug(f"method {method}")
@@ -577,14 +584,29 @@ def create_text_v2(opt):
                 max_number = 10
             output = prompt_random_v2(yml, max_number, output)
         elif key == "multiple":
-            variables = method["multiple"]
-            Logger.debug(f"multiple {variables}")
-            if type(variables) is str:
-                variables = variables.split(" ")
-            for variable in variables:
+            multiple = method["multiple"]
+            Logger.debug(f"multiple {multiple}")
+            if type(multiple) is str:
+                multiple = multiple.split(" ")
+            for variable in multiple:
                 array = yml.get("array", {}).get(variable, [])
                 # Logger.debug(f"create multiple {variable} {array}")
                 output = prompt_multiple_v2(yml, variable, array, output)
+        elif key == "cleanup":
+            Logger.debug(f"cleanup {method}")
+            cleanup = method["cleanup"]
+            if type(cleanup) is str:
+                keys = cleanup.split(" ")
+            Logger.debug(f"cleanup {keys}")
+            for item in output:
+                for key in keys:
+                    if key in item:
+                        Logger.debug(f"cleanup {key} {item[key]}")
+                        if key in item:
+                            item[key] = re.sub(r"\s+", " ", item[key])
+                            item[key] = re.sub(r"\s*,+\s*", ", ", item[key])
+        else:
+            Logger.error(f"method {key} is not support, skip")
 
     is_json = options.get("json", False)
     Logger.debug(f"is json {is_json}")
