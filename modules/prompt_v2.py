@@ -451,6 +451,8 @@ def expand_arg_v2(args):
 def create_text_v2(opt):
     profile = opt.get("profile")
     override = expand_arg_v2(opt.get("override"))
+    option_max_number = opt.get("max_number", 0)
+    Logger.debug(f"max_number {option_max_number}")
     info = expand_arg_v2(opt.get("info"))
     Logger.debug(f"override {override}")
     Logger.debug(f"info {info}")
@@ -573,15 +575,18 @@ def create_text_v2(opt):
         key = list(method.keys())[0]
         Logger.debug(f"method {key}")
         if key == "random":
-            max_number = method.get(key, options.get("number", 10))
+            if option_max_number == 0:
+                max_number = method.get(key, options.get("max_number", 0))
+                if max_number == 0:
+                    max_number = options.get("number", max_number)
+                try:
+                    max_number = int(max_number)
+                except ValueError:
+                    Logger.error(f"Error happen random number {max_number}")
+                    max_number = 10
+            else:
+                max_number = option_max_number
             Logger.debug(f"max_number {max_number}")
-            if max_number == 0:
-                max_number = options.get("number", 10)
-            try:
-                max_number = int(max_number)
-            except ValueError:
-                Logger.error(f"Error happen random number {max_number}")
-                max_number = 10
             output = prompt_random_v2(yml, max_number, output)
         elif key == "multiple":
             multiple = method["multiple"]
