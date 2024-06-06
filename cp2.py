@@ -163,27 +163,37 @@ def main(args):
                                         del t["verbose"]
                             else:
                                 # verbose mode
-                                if not options.get("v1json"):
+                                if not args.v1json:
                                     text = output_text
                                 else:
                                     # conver v2 to v1
+                                    Logger.debug("v1json")
                                     text = copy.deepcopy(output_text)
                                     for t in text:
-                                        Logger.debug(t)
                                         verbose = t.get("verbose", {})
+                                        variables = verbose.get("variables", {})
+                                        for variable in variables:
+                                            if len(variables[variable]) > 0:
+                                                if "variables" not in t:
+                                                    t["variables"] = {}
+                                                item = variables[variable][0]
+                                                t["variables"][variable] = item
+                                        info = verbose.get("info", {})
+                                        for item in info:
+                                            if len(info[item]) > 0:
+                                                if "info" not in t:
+                                                    t["info"] = {}
+                                                t["info"][item] = info[item][0]
                                         if "verbose" in t:
                                             del t["verbose"]
                                         if "array" in t:
                                             del t["array"]
-                                        t["variables"] = verbose.get("variables", {})
-                                        t["info"] = verbose.get("info", {})
-
                             text = json.dumps(text, ensure_ascii=False, indent=4)
                         f.write(text)
                 except Exception as e:
                     Logger.error(f"output error {e}")
                     return False
-                Logger.info("outputed file creat")
+                Logger.info(f"outputed file creat {output_filename}")
         except Exception as e:
             Logger.error(f"create_text error {e}")
             return False
@@ -432,6 +442,15 @@ def run_from_args(command_args=None):
     )
     parser.add_argument(
         "--debug", type=bool, nargs="?", const=True, default=False, help="debug mode"
+    )
+
+    parser.add_argument(
+        "--v1json",
+        type=bool,
+        nargs="?",
+        const=True,
+        default=False,
+        help="output v1 json",
     )
 
     args = parser.parse_args(command_args)
