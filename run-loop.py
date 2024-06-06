@@ -114,9 +114,10 @@ def load_models_csv(filename):
                 if len(row) > 3:
                     model["overrrides"] = row[3]
             except Exception as e:
-                Logger.error(f"load_models_csv {row} error {e}")
+                Logger.error(f"load_models_csv {filename} {row} error {e}")
                 continue
             models.append(model)
+    Logger.debug(f"load_models_csv {filename} {models}")
     return models
 
 
@@ -129,7 +130,9 @@ def load_prompts_csv(filename):
         # prompt_name,folder,number,genre,
         for row in reader:
             if len(row) < 4:
-                Logger.warning(f"load_prompts_csv {row} error column count {len(row)}")
+                Logger.warning(
+                    f"load_prompts_csv {filename} {row} error column count {len(row)}"
+                )
                 continue
             prompt = {
                 "prompt_name": row[0],
@@ -138,7 +141,12 @@ def load_prompts_csv(filename):
                 "genre": row[3],
                 "file_pattern": row[4],
             }
+            if len(row) > 5:
+                prompt["profile"] = row[5]
+            else:
+                prompt["profile"] = None
             prompts.append(prompt)
+    Logger.debug(f"load_prompts_csv {filename} {prompts}")
     return prompts
 
 
@@ -212,6 +220,41 @@ def set_txt2img_config(config, yaml_config):
                 }
                 models.append(model)
             txt2img["models"] = models
+    if "profiles" in txt_config:
+        for profile in txt_config["profiles"]:
+            if "prompts" in profile:
+                if type(profile["prompts"]) is str:
+                    txt2img["prompts"] = load_prompts_csv(profile["prompts"])
+                else:
+                    prompts = []
+                    for prompt in profile["prompts"]:
+                        [prompt_name, folder, number, genre, file_pattern] = (
+                            prompt.split(",")
+                        )
+                        prompt = {
+                            "prompt_name": prompt_name,
+                            "folder": folder,
+                            "number": number,
+                            "genre": genre,
+                            "file_pattern": file_pattern,
+                        }
+                        prompts.append(prompt)
+                    profile["prompts"] = prompts
+            if "model" in profile:
+                if type(profile["models"]) is str:
+                    profile["models"] = load_models_csv(profile["models"])
+                else:
+                    list = profile["models"]
+                    models = []
+                    for model in list:
+                        [model_name, vae, mode] = model.split(",")
+                        model = {
+                            "model_name": model_name,
+                            "vae": vae,
+                            "mode": mode,
+                        }
+                        models.append(model)
+                profile["models"] = models
 
 
 # replace config from default config to load config
@@ -785,22 +828,38 @@ def escape_split(str, split):
 
 
 def run_txt2img(config, args=None):
-    Logger.verbose(f"run txt2img args {args}")
-    profile_name = get_profile_name(args)
+    # Logger.verbose(f"run txt2img args {args}")
+    try:
+        profile_name = get_profile_name(args)
+    except Exception as e:
+        Logger.error(f"get_profile_name failed {e}")
+        profile_name = None
+    Logger.info(f"profile name is {profile_name}")
     host = config["host"]
     text_config = config["txt2img"]
     if text_config.get("profiles") and profile_name is not None:
         Logger.info(f"run txt2img {profile_name}")
         text_config = text_config["profiles"].get(profile_name) or text_config
-    output_dir = text_config["output"]
-    models = text_config["models"]
-    exception_list = text_config["prefix"]["exception_list"]
-    prompts = text_config["prompts"]
-    prompt_base = text_config["prompt_base"]
-    abort_matrix = text_config["abort_matrix"]
-    coef_matrix = text_config["coef_matrix"]
-    prefix = text_config["prefix"]
-    folder_suffix = text_config["folder_suffix"]
+
+    Logger.debug(f"text_config {text_config}")
+    models = text_config.get("models", [])
+    if type(models) is str:
+        models = load_models_csv(models)
+    Logger.debug(f"models {models}")
+    prompts = text_config.get("prompts", [])
+    if type(prompts) is str:
+        prompts = load_prompts_csv(prompts)
+    Logger.debug(f"prompts {prompts}")
+    output_dir = text_config.get("output", None)
+    exception_list = text_config["prefix"].get("exception_list", [])
+    prompt_base = text_config.get("prompt_base", "")
+    abort_matrix = text_config.get("abort_matrix", {})
+    coef_matrix = text_config.get("coef_matrix", {})
+    prefix = text_config.get("prefix", {})
+    folder_suffix = text_config.get("folder_suffix", "-images")
+
+    version = text_config.get("version", 1)
+
     # 以下 direct config。matrix系より優先されるオプション
     # prompt_name = text_config.get("prompt_name") # prompt用yamlを固定する場合
     # file_pattern = text_config.get("file_pattern")    # file_patternを固定する場合
@@ -809,8 +868,8 @@ def run_txt2img(config, args=None):
     # vae_name = text_config.get("vae_name")        # vaeを固定する場合
     # direct_output_dir = text_config.get("output_dir")　# output_dirを固定する場合
 
-    overrides = text_config["overrides"]
-    info = text_config["info"]
+    overrides = text_config.get("overrides", "")
+    info = text_config.get("info", "")
     options = text_config.get("options", {})
     if type(overrides) is str:
         overrides = escape_split(overrides, " ")
@@ -822,6 +881,7 @@ def run_txt2img(config, args=None):
         overrides = None
 
     overrides_backup = overrides
+    Logger.debug(f"enter loop {models}")
     while True:
         overrides = overrides_backup
         model = models[random.randint(0, len(models) - 1)]
@@ -858,6 +918,7 @@ def run_txt2img(config, args=None):
         folder = prompt["folder"]
         number = float(prompt["number"])
         genre = prompt["genre"]
+        profile = prompt.get("profile", None)
         Logger.debug(
             f"prompt_name {prompt_name} folder {folder} number {number} genre {genre}"
         )
@@ -868,19 +929,23 @@ def run_txt2img(config, args=None):
 
         if matrix == "*" or genre in matrix:
             coef = 1.0
-            if mode in coef_matrix:
-                if type(coef_matrix[mode]) is dict:
-                    if genre in coef_matrix[mode] and (
-                        type(coef_matrix[mode][genre]) is float
-                        or type(coef_matrix[mode][genre]) is int
+            if version == 1:
+                if mode in coef_matrix:
+                    if type(coef_matrix[mode]) is dict:
+                        if genre in coef_matrix[mode] and (
+                            type(coef_matrix[mode][genre]) is float
+                            or type(coef_matrix[mode][genre]) is int
+                        ):
+                            coef = coef_matrix[mode][genre]
+                    elif (
+                        type(coef_matrix[mode]) is float
+                        or type(coef_matrix[mode]) is int
                     ):
-                        coef = coef_matrix[mode][genre]
-                elif type(coef_matrix[mode]) is float or type(coef_matrix[mode]) is int:
-                    coef = coef_matrix[mode]
+                        coef = coef_matrix[mode]
 
             number = int(number * coef + 0.5)
             output = os.path.join(output_dir, folder + folder_suffix)
-            Logger.info(f"{model_name}, {prompt_name}, {output}, {genre}")
+            Logger.info(f"{model_name}, {prompt_name}, {output}, {genre}, {profile}")
             # If direct call is True, call modules/txt2img.py
             if (
                 config.get("direct_call") is True
@@ -890,17 +955,34 @@ def run_txt2img(config, args=None):
                 # create prompt
                 Logger.verbose(f"create prompt {prompt_name}")
                 try:
-                    import modules.prompt
+                    if version == 1:
+                        import modules.prompt
 
-                    opt = {
-                        "mode": "json",
-                        "override": overrides,
-                        "info": info,
-                        "input": prompt_name,
-                        "max_number": number,
-                        "api_filename_variable": True,
-                    }
-                    result = modules.prompt.create_text(opt)
+                        opt = {
+                            "mode": "json",
+                            "override": overrides,
+                            "info": info,
+                            "input": prompt_name,
+                            "max_number": number,
+                            "api_filename_variable": True,
+                        }
+                        result = modules.prompt.create_text(opt)
+                    else:
+                        import modules.prompt_v2
+
+                        opt = {
+                            "mode": "json",
+                            "v1json": True,
+                            "override": overrides,
+                            "info": info,
+                            "input": prompt_name,
+                            "max_number": number,
+                            "api_filename_variable": True,
+                        }
+                        if profile is not None:
+                            opt["profile"] = profile
+                        result = modules.prompt_v2.create_text_v2(opt)
+
                     # Logger.info(f"output_text {result['output_text']}")
                 except Exception as e:
                     Logger.error("create prompt failed")
