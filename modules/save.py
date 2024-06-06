@@ -153,11 +153,18 @@ def save_img(r, opt={"dir": "./outputs"}):
                         value = value.replace("${%s}" % (new_key), "")
                 match = var.search(value)
             variables[key] = value
+            if type(value) is list:  # for multi value
+                value = value[0]
+                filename_pattern["var:" + key] = value
+                for n, v in enumerate(value):
+                    filename_pattern["var:" + key + "(" + str(n) + ")"] = v
             filename_pattern["var:" + key] = value
 
     if "info" in opt:
         for key, value in opt["info"].items():
             if type(key) is str:
+                if type(value) is list:
+                    value = value[0]  # only first value
                 filename_pattern["info:" + key] = value
 
     if "command" in opt:

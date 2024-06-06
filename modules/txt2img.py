@@ -38,8 +38,13 @@ def txt2img(
         share.set("line_count", 0)
         print(f"\033[KBatch {n + 1} of {count}")
         # Why is an error happening? json=payload or json=item
+        # v1 mode
         if "variables" in item:
             opt["variables"] = item.pop("variables")
+        # v2 mode
+        if "verbose" in item:
+            verbose = item.pop("verbose")
+            opt["variables"] = verbose.get("variables")
         payload = json.dumps(item)
         response = api.request_post_wrapper(
             url,
