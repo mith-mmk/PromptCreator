@@ -81,11 +81,11 @@ def text_formula_v2(text, variables, error_info=""):
             except Exception as e:
                 Logger.verbose(f"Error happen array formula {error_info} {formula} {e}")
         # v2 formula
-        elif re.match(r"(.+?)\S*\[\S*(\d+)\*\]", _formula):
+        elif re.match(r"(.+?)\s*\[\s*(\d+)\s*\]", _formula):
             # array formula ${variable[n]} n = 0, 1, 2, ...
             array_formula = re.match(r"(.+?)\s*\[\s*(\d+)\s*\]", formula)
             variable = array_formula.group(1)
-            array_index = int(array_formula.group(2))
+            array_index = int(array_formula.group(2)) - 1
             try:
                 if variable in variables:
                     try:
@@ -603,8 +603,19 @@ def create_text_v2(opt):
                     if key in item:
                         Logger.debug(f"cleanup {key} {item[key]}")
                         if key in item:
+                            # remove space
                             item[key] = re.sub(r"\s+", " ", item[key])
+                            # remove space after ,
                             item[key] = re.sub(r"\s*,+\s*", ", ", item[key])
+                            # remove space after (
+                            item[key] = re.sub(r"\(\s*", "(", item[key])
+                            # remove space before )
+                            item[key] = re.sub(r"\s*\)", ")", item[key])
+                            # remove space after [
+                            item[key] = re.sub(r"\[\s*", "[", item[key])
+                            # remove space before ]
+                            item[key] = re.sub(r"\s*\]", "]", item[key])
+
         else:
             Logger.error(f"method {key} is not support, skip")
 

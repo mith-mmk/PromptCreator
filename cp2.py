@@ -202,8 +202,19 @@ def main(args):
         yml = {}
         with open(args.api_input_json, "r", encoding="utf-8") as f:
             output_text = json.loads(f.read())
+            # if v1josn conver from v2 to v1
+            if args.v1json:
+                Logger.debug("v1json")
+                for t in output_text:
+                    if "verbose" in t:
+                        verbose = t["verbose"]
+                        variables = verbose.get("variables", {})
+                        info = verbose.get("info", {})
+                        t["variables"] = copy.deepcopy(variables)
+                        t["info"] = copy.deepcopy(info)
+                        del t["verbose"]
     else:
-        Logger.error("option error")
+        Logger.error("option error, no input file")
         raise Exception("option error")
 
     opt = {}
