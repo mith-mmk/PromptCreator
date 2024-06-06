@@ -146,11 +146,22 @@ def save_img(r, opt={"dir": "./outputs"}):
                 count += 1
                 for new_key in match.groups():
                     if new_key in opt["variables"]:
-                        value = value.replace(
-                            "${%s}" % (new_key), opt["variables"][new_key]
-                        )
+                        new_value = opt["variables"][new_key]
+                        if type(new_value) is list:
+                            new_value = new_value[0]
+                        try:
+                            value = value.replace("${%s}" % (new_key), new_value)
+                        except Exception as e:
+                            Logger.error(
+                                f"key replace error variables {new_key} {new_value} {e}"
+                            )
                     else:
-                        value = value.replace("${%s}" % (new_key), "")
+                        try:
+                            value = value.replace("${%s}" % (new_key), "")
+                        except Exception as e:
+                            Logger.error(
+                                f"key replace error value, new key {value} {new_key} {e}"
+                            )
                 match = var.search(value)
             variables[key] = value
             if type(value) is list:  # for multi value
@@ -288,7 +299,10 @@ def save_img(r, opt={"dir": "./outputs"}):
                     replacer = re.sub(r"[\<\>\:\"\/\\\\|?\*\n\s]", "_", str(replacer))[
                         :127
                     ]
-                filename = filename.replace("[" + seeds + "]", str(replacer))
+                try:
+                    filename = filename.replace("[" + seeds + "]", str(replacer))
+                except Exception as e:
+                    Logger.error("replace error", e, filename, seeds, replacer)
 
             #            seed = filename_pattern['all_seeds'] [n]
             #            filename = str(num).zfill(5) +'-' +  str(seed) + '.png'
