@@ -62,39 +62,50 @@ def text_formula_v2(text, variables, error_info=""):
     # Logger.debug(f"simple_formulas {simple_formulas}")
     for formula in simple_formulas:
         _formula = formula.strip()
-        # v1 formula
+        # v1 formula ${variable,n} n = 1, 2, 3, ...
         if re.match(r"(.+?)\,(\d+)", _formula):
             # array formula
             try:
                 array_formula = re.match(r"(.+?)\,(\d+)", formula)
                 variable = array_formula.group(1)
                 array_index = int(array_formula.group(2)) - 1
-                replace_text = variables.get(variable, "")[array_index]
+                if variable in variables:
+                    try:
+                        replace_text = variables.get(variable)[array_index]
+                        text = text.replace("${" + formula + "}", replace_text)
+                    except Exception:
+                        Logger.verbose(
+                            f"{formula} index {array_index} is not set use empty"
+                        )
+                        text = text.replace("${" + formula + "}", "")
             except Exception as e:
                 Logger.verbose(f"Error happen array formula {error_info} {formula} {e}")
-                replace_text = ""
-            text = text.replace("${" + formula + "}", replace_text)
         # v2 formula
         elif re.match(r"(.+?)\S*\[\S*(\d+)\*\]", _formula):
-            # array formula
-            array_formula = re.match(r"(.+?)\S*\[\S*(\d+)\*\]", formula)
+            # array formula ${variable[n]} n = 0, 1, 2, ...
+            array_formula = re.match(r"(.+?)\s*\[\s*(\d+)\s*\]", formula)
             variable = array_formula.group(1)
             array_index = int(array_formula.group(2))
             try:
-                replace_text = variables.get(variable, "")[array_index]
+                if variable in variables:
+                    try:
+                        replace_text = variables.get(variable, "")[array_index]
+                        text = text.replace("${" + formula + "}", replace_text)
+                    except Exception:
+                        Logger.verbose(
+                            f"{formula} index {array_index} is not set use empty"
+                        )
+                        text = text.replace("${" + formula + "}", "")
             except Exception as e:
                 Logger.verbose(f"Error happen array formula {error_info} {formula} {e}")
-                replace_text = ""
-            text = text.replace("${" + formula + "}", replace_text)
         else:
-            # simple formula
-            try:
-                replace_text = variables.get(formula, [""])[0]
-            except Exception as e:
-                Logger.verbose(
-                    f"Error happen simple formula {error_info} {formula} {e}"
-                )
-            text = text.replace("${" + formula + "}", replace_text)
+            # simple formula ${variable}
+            if formula in variables:
+                try:
+                    replace_text = variables.get(formula)[0]
+                    text = text.replace("${" + formula + "}", replace_text)
+                except Exception:
+                    Logger.error(f"Error happen simple formula illegal {formula}")
     return text
 
 
@@ -240,7 +251,7 @@ def read_file_v2(filename, error_info=""):
 # create_prompt v2
 def item_split_txt(item, error_info="", default_weight=0.1):
     if type(item) is not str:
-        return {"variable": [str(item)], "weight": default_weight}
+        return {"variables": [str(item)], "weight": default_weight}
     item = item.replace("\n", " ").strip().replace(r"\;", r"${semicolon}")
     split = item.split(";")
 
@@ -301,22 +312,16 @@ def prompt_multiple_v2(yml, variable, array, input=[]):
         Logger.debug(f"input {input}")
 
     for parts in input:
-        Logger.debug(f"prompt_multiple_v2 {parts}")
+        # Logger.debug(f"prompt_multiple_v2 {parts}")
         for item in array:
             args = {}
             args[variable] = item
-            Logger.debug(f"item {args}")
+            # Logger.debug(f"item {args}")
             output[i] = copy.deepcopy(parts)
-            Logger.debug(f"output {output[i]}")
-            # ${variable} を置換
-            Logger.debug(f"input {i} {output[i]}")
-            Logger.debug(f"output {i} {output[i]}")
-
             verbose = output[i].get("verbose", {})
-            if "variable" not in verbose:
-                if "variables" not in verbose:
-                    verbose["variables"] = {}
-                verbose["variables"][variable] = item
+            if "variables" not in verbose:
+                verbose["variables"] = {}
+            verbose["variables"][variable] = item
             output[i] = prompt_formula_v2(output[i], args, info=None)
             output[i]["verbose"] = verbose
             i = i + 1
@@ -392,9 +397,9 @@ def prompt_random_v2(yml, max_number, input=[]):
         yml["weighted_variables"] = weighted_variables
         yml["weight_calced"] = True
 
-    Logger.debug(f"prompt_random_v2 {max_number}")
+    # Logger.debug(f"prompt_random_v2 {max_number}")
     variables = yml.get("weighted_variables", {})
-    Logger.debug(f"variables {variables}")
+    # Logger.debug(f"variables {variables}")
 
     current_variables = {}
     for key in variables:
@@ -407,7 +412,7 @@ def prompt_random_v2(yml, max_number, input=[]):
         output = input
 
     for idx, current in enumerate(output):
-        Logger.debug(f"prompt_random_v2 {idx}")
+        # Logger.debug(f"prompt_random_v2 {idx} {current}")
         if current is None:
             current = {}
             # yml commands を コピー
@@ -424,10 +429,9 @@ def prompt_random_v2(yml, max_number, input=[]):
             # info をコピー
             for key in yml.get("info", {}):
                 verbose[key] = yml["info"][key]
+            current["verbose"] = verbose
         current = prompt_formula_v2(current, current_variables, None, error_info="")
-        current["verbose"] = verbose
         current.get("verbose", {})["variables"] = current_variables
-        Logger.debug(f"current {current}")
         output[idx] = current
     return output
 
@@ -446,6 +450,7 @@ def expand_arg_v2(args):
 
 
 def create_text_v2(opt):
+    profile = opt.get("profile")
     override = expand_arg_v2(opt.get("override"))
     info = expand_arg_v2(opt.get("info"))
     Logger.debug(f"override {override}")
@@ -471,6 +476,7 @@ def create_text_v2(opt):
         "variables": {},
         "methods": [],
         "array": {},
+        "profiles": {},
     }
 
     if ext == ".yaml" or ext == ".yml":
@@ -492,6 +498,21 @@ def create_text_v2(opt):
     # console mode is dispose
 
     options = yml["options"]
+
+    Logger.debug(f"profile {profile}")
+
+    if profile:
+        if profile in yml.get("profiles", {}):
+            profile = yml["profiles"][profile]
+            if "profile" in profile:  # deny nested profile
+                del profile["profile"]
+                Logger.error(f"nested profile is not support in {profile}")
+            Logger.debug(f"override yml from profile {profile}")
+            yml = update_nested_dict(yml, profile)
+        else:
+            Logger.error(f"profile {profile} is not found")
+            raise NotImplementedError
+
     options["output"] = (
         output if output is not None else options.get("output", "output.txt")
     )
@@ -501,7 +522,6 @@ def create_text_v2(opt):
     )
     Logger.debug(f"options {options}")
     yml["weight_calced"] = False
-    output = []
 
     variables = yml.get("variables", {})
     for key, item in variables.items():
@@ -509,26 +529,34 @@ def create_text_v2(opt):
         if type(item) is str:
             variables[key] = read_file_v2(item, error_info=f"variables {key}")
         elif type(item) is list:
+            Logger.debug(f"type list item {item}")
+            variables[key] = []
             for i, txt in enumerate(item):
-                variables[key][i] = item_split_txt(
-                    txt, error_info=f"variables {key} {i}"
+                variables[key].append(
+                    item_split_txt(txt, error_info=f"variables {key} {i}")
                 )
         Logger.debug(f"variables {key} {variables[key]}")
 
+    Logger.debug("array")
     array = yml.get("array", {})
+
     for key, item in array.items():
         array[key] = []
         Logger.debug(f"key {key}")
         if type(item) is str:
             array[key] = read_file_v2(item, error_info=f"array {key}")
         elif type(item) is list:
+            Logger.debug(f"type list item {item}")
+            array[key] = []
             for i, txt in enumerate(item):
-                array[key] = item_split_txt(txt, error_info=f"array {key} {i}")
+                array[key].append(
+                    item_split_txt(txt, error_info=f"variables {key} {i}")
+                )
         an_array = []
         for item in array[key]:
             an_array.append(item.get("variables", []))
         array[key] = an_array
-
+    output = []
     if "methods" not in yml:
         Logger.error("Yaml parse error, 'methods' is not found")
         raise NotImplementedError
@@ -547,13 +575,16 @@ def create_text_v2(opt):
             except ValueError:
                 Logger.error(f"Error happen random number {max_number}")
                 max_number = 10
-            Logger.debug(f"create random {max_number}")
             output = prompt_random_v2(yml, max_number, output)
         elif key == "multiple":
-            variable = method["multiple"]
-            array = yml.get("array", {}).get(variable, [])
-            Logger.debug(f"create multiple {variable}")
-            output = prompt_multiple_v2(yml, variable, array, output)
+            variables = method["multiple"]
+            Logger.debug(f"multiple {variables}")
+            if type(variables) is str:
+                variables = variables.split(" ")
+            for variable in variables:
+                array = yml.get("array", {}).get(variable, [])
+                # Logger.debug(f"create multiple {variable} {array}")
+                output = prompt_multiple_v2(yml, variable, array, output)
 
     is_json = options.get("json", False)
     Logger.debug(f"is json {is_json}")

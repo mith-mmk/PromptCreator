@@ -425,6 +425,12 @@ def run_from_args(command_args=None):
     )
 
     parser.add_argument(
+        "--profile",
+        type=str,
+        default=None,
+        help="profile for create prompt, profile is override yml",
+    )
+    parser.add_argument(
         "--debug", type=bool, nargs="?", const=True, default=False, help="debug mode"
     )
 
