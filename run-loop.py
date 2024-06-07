@@ -104,6 +104,9 @@ def load_models_csv(filename):
         # model_name,vae,mode,
         for i, row in enumerate(reader):
             if len(row) < 3:
+                if len(row) == 0:
+                    Logger.debug(f"load_models_csv {filename} line {i} empty")
+                    continue
                 Logger.warning(
                     f"load_models_csv line {i} {row} error column count {len(row)}"
                 )
@@ -133,6 +136,9 @@ def load_prompts_csv(filename):
         # prompt_name,folder,number,genre,
         for i, row in enumerate(reader):
             if len(row) < 4:
+                if len(row) == 0:
+                    Logger.debug(f"load_prompts_csv {filename} line {i} empty")
+                    continue
                 Logger.warning(
                     f"load_prompts_csv {filename} line {i} {row} error column count {len(row)}"
                 )
