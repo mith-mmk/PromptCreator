@@ -138,6 +138,8 @@ def save_img(r, opt={"dir": "./outputs"}):
         var = re.compile(r"\$\{(.+?)\}")
         for key, value in opt["variables"].items():
             Logger.debug("variable", key, value)
+            if type(value) is list:
+                value = value[0]
             value = str(value)
             match = var.search(value)
             max_loop = 100
