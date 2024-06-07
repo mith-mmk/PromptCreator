@@ -189,7 +189,10 @@ def main(args):
                                             del t["verbose"]
                                         if "array" in t:
                                             del t["array"]
-                            text = json.dumps(text, ensure_ascii=False, indent=4)
+                            if args.v1json:
+                                text = json.dumps(text, indent=2)  # escape unicode
+                            else:
+                                text = json.dumps(text, ensure_ascii=False, indent=2)
                         f.write(text)
                 except Exception as e:
                     Logger.error(f"output error {e}")
