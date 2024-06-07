@@ -168,8 +168,9 @@ def save_img(r, opt={"dir": "./outputs"}):
                 value = value[0]
                 filename_pattern["var:" + key] = value
                 for n, v in enumerate(value):
-                    filename_pattern["var:" + key + "(" + str(n) + ")"] = v
-            filename_pattern["var:" + key] = value
+                    filename_pattern["var:" + key + "(" + str(n + 1) + ")"] = v
+            else:
+                filename_pattern["var:" + key] = value
 
     if "info" in opt:
         for key, value in opt["info"].items():
