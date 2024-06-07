@@ -11,6 +11,7 @@ import time
 import yaml
 
 import create_prompts
+
 # import logging
 import img2img
 import modules.logger as logger
@@ -101,9 +102,11 @@ def load_models_csv(filename):
     with open(filename) as f:
         reader = csv.reader(f)
         # model_name,vae,mode,
-        for row in reader:
+        for i, row in enumerate(reader):
             if len(row) < 3:
-                Logger.warning(f"load_models_csv {row} error column count {len(row)}")
+                Logger.warning(
+                    f"load_models_csv line {i} {row} error column count {len(row)}"
+                )
                 continue
             try:
                 model = {
@@ -114,7 +117,7 @@ def load_models_csv(filename):
                 if len(row) > 3:
                     model["overrrides"] = row[3]
             except Exception as e:
-                Logger.error(f"load_models_csv {filename} {row} error {e}")
+                Logger.error(f"load_models_csv {filename} {i} {row} error {e}")
                 continue
             models.append(model)
     Logger.debug(f"load_models_csv {filename} {models}")
@@ -128,10 +131,10 @@ def load_prompts_csv(filename):
     with open(filename) as f:
         reader = csv.reader(f)
         # prompt_name,folder,number,genre,
-        for row in reader:
+        for i, row in enumerate(reader):
             if len(row) < 4:
                 Logger.warning(
-                    f"load_prompts_csv {filename} {row} error column count {len(row)}"
+                    f"load_prompts_csv {filename} line {i} {row} error column count {len(row)}"
                 )
                 continue
             prompt = {
@@ -153,8 +156,8 @@ def load_prompts_csv(filename):
 def load_not_default(filename):
     if os.path.exists(filename):
         with open(filename, "r") as f:
-            not_girls = f.read().splitlines()
-        return not_girls
+            not_default = f.read().splitlines()
+        return not_default
     else:
         return []
 
@@ -946,6 +949,10 @@ def run_txt2img(config, args=None):
             number = int(number * coef + 0.5)
             output = os.path.join(output_dir, folder + folder_suffix)
             Logger.info(f"{model_name}, {prompt_name}, {output}, {genre}, {profile}")
+            if number < 1:
+                Logger.info(f"skip number {number} < 1")
+                continue
+
             # If direct call is True, call modules/txt2img.py
             if (
                 config.get("direct_call") is True
@@ -1049,6 +1056,11 @@ def run_txt2img(config, args=None):
                     str(number),
                     prompt_name,
                 ]
+                if version >= 2:
+                    args.append("--v1json")
+                    if profile is not None:
+                        args.append("--profile")
+                        args.append(profile)
                 if overrides is not None and overrides != "":
                     args.extend(overrides)
                 if info is not None and info != "":
@@ -1372,7 +1384,7 @@ def run_loop(command, config_file, config, loop_count, nest=0):
 def loop(config_file):
     Logger.info("loop mode")
     config = load_config(config_file)
-    Logger.info(config["loop"])
+    Logger.verbose(config["loop"])
     if not config["loop"]["mode"]:
         Logger.info("loop mode is not setting")
         return
