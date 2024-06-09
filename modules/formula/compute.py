@@ -9,7 +9,7 @@ operator_order = {
     # block literal
     # 1: {}  := { <formula> } (TOKEN.BLOCK) # ブロック # 実装しない
     # 2: ()  := ( <formula> ) (TOKEN.BRACKET)
-    # 2: []  := <variable> [ <formula> ] (TOKEN.BRACKET) # 配列
+    # 2: []  := <variable> [ <formula> ] (TOKEN.ARRAYBRACKET) # 配列
     # 2: .   := <variable>.<variable> (TOKEN.POINT) # オブジェクト # 実装しない
     # 2: <function> := <function>(<formula> , <formula>,...) (TOKEN.FUNCTION)
     # 単項演算子
@@ -131,22 +131,40 @@ class FormulaCompute:
             # variable -> number or string
             parsed_token = {}
             debug_print("token :", token, debug=self.debug)
+            # variable or array
             if token["type"] == TOKENTYPE.VARIABLE:
+                # key,1 => key[1] -> variables[key][0]
                 if "," in token["value"]:
                     var, num = token["value"].split(",")
                     num = int(num) - 1
                 else:
                     var = token["value"]
                     num = 0
+                debug_print("var", var, num, debug=self.debug)
+                # array key[1] => variables[key][0]
                 array = re.compile(r"(.*)\[([0-9]+)\]")
                 if array.match(var):
                     var, num = array.match(var).groups()
                     num = int(num) - 1
                     debug_print("array", var, num, debug=self.debug)
+                # dict key["subkey"] => variables[key]["subkey"]
+                subkey = None
+                dict = re.compile(r"(.*)\[\"(.*)\"\]")
+                if dict.match(var):
+                    var, subkey = dict.match(var).groups()
+                    debug_print("dict var subkey", var, subkey, debug=self.debug)
                 if var in self.variables:
                     values = self.variables[var]
+                    debug_print(f"values: {values} {type(values)}", debug=self.debug)
                     if type(values) is list:
                         value = values[num]
+                    # if dict
+                    elif subkey:
+                        debug_print(f"subkey: {subkey}", debug=self.debug)
+                        if subkey in values:
+                            value = values[subkey]
+                        else:
+                            value = None
                     else:
                         value = values
                     if type(value) is int or type(value) is float:
@@ -433,6 +451,8 @@ class FormulaCompute:
         )
         # abc,1
         typeVariable3 = re.compile(r"^[a-zA-Z_$][a-zA-Z0-9_]*\,[0-9]+")
+        # abc["abc"]
+        typeVariable4 = re.compile(r"^[a-zA-Z_$][a-zA-Z0-9_]*\[\"[a-zA-Z0-9_]*\"\]")
         typeOperator = re.compile(r"^(\+|\-|\*{1,2}|\/|\%|\^|>|<|>=|<=|==|!=|&&|\|\|)")
         typeBracket = re.compile(r"^(\(|\))")
         typeFunction = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*\s*\(")
@@ -481,6 +501,17 @@ class FormulaCompute:
                     }
                 )
                 count += len(typeOperator.match(current).group(0))
+            elif typeVariable4.match(current):
+                self.token_type = TOKENTYPE.VARIABLE
+                self.token_start = count
+                self.token_end = count + len(typeVariable4.match(current).group(0))
+                self.tokens.append(
+                    {
+                        "type": TOKENTYPE.VARIABLE,
+                        "value": typeVariable4.match(current).group(0),
+                    }
+                )
+                count += len(typeVariable4.match(current).group(0))
             elif typeVariable3.match(current):
                 self.token_type = TOKENTYPE.VARIABLE
                 self.token_start = count

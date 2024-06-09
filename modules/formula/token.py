@@ -1,4 +1,4 @@
-class TOKENTYPE():
+class TOKENTYPE:
     NONE = 0
     NUMBER = 1
     VARIABLE = 2
@@ -15,5 +15,6 @@ class TOKENTYPE():
     SPACE = 13
     STRING = 14
     OTHER = 15
+    ARRAYBRACKET = 16
     END = 100
     ERROR = 99

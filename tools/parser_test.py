@@ -2,6 +2,10 @@
 import os
 
 from modules.formula import FormulaCompute
+from modules.logger import getDefaultLogger
+
+Logger = getDefaultLogger()
+Logger.setPrintModes(["debug", "info", "warning", "error", "critical", "verbose"])
 
 args = os.sys.argv
 if len(args) > 1:
@@ -21,18 +25,21 @@ if len(args) > 1:
                 # int ?
                 elif value.isdigit():
                     value = int(value)
-                if key in variables:
-                    # key width.xl=1280 => width = {xl: 1280}
-                    if "." in key:
-                        key, subkey = key.split(".")
-                        if key in variables:
-                            if isinstance(variables[key], dict):
-                                variables[key][subkey] = value
-                            else:
-                                variables[key] = {subkey: value}
+                print(f"Key: {key}, Value: {value}")
+                if "." in key:
+                    print(key)
+                    key, subkey = key.split(".")
+                    if key in variables:
+                        if isinstance(variables[key], dict):
+                            variables[key][subkey] = value
                         else:
                             variables[key] = {subkey: value}
-                        continue
+                    else:
+                        variables[key] = {subkey: value}
+                    continue
+
+                if key in variables:
+                    # key width.xl=1280 => width = {xl: 1280}
 
                     if isinstance(variables[key], list):
                         variables[key].append(value)
@@ -40,6 +47,8 @@ if len(args) > 1:
                         variables[key] = [variables[key], value]
                 else:
                     variables[key] = value
+    print(f"Formula: {formula}")
+    print(f"Variables: {variables}")
     compute = FormulaCompute(formula, variables=variables, debug=True)
     res = compute.getCompute()
     if res is None:
