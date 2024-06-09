@@ -46,7 +46,7 @@ Logger = getDefaultLogger()
 # commands:
 
 
-def text_formula_v2(text, variables, error_info=""):
+def text_formula_v2(text, variables, error_info="", attributes={}):
     compute = FormulaCompute()
     # Logger.debug(f"text_formula_v2 {text}")
 
@@ -105,7 +105,8 @@ def text_formula_v2(text, variables, error_info=""):
             key = dict_formula.group(2)
             if variable in variables:
                 try:
-                    replace_text = variables.get(variable, {}).get(key, None)
+                    attribute = attributes.get(variable, {})
+                    replace_text = attribute.get(key, None)
                     if replace_text is not None:
                         Logger.warning(f"varriable {variable} not has {key}, use empty")
                         replace_text = ""
@@ -126,7 +127,9 @@ def text_formula_v2(text, variables, error_info=""):
 
 
 # in test
-def prompt_formula_v2(new_prompt, variables, info=None, error_info="", nested=0):
+def prompt_formula_v2(
+    new_prompt, variables, info=None, error_info="", nested=0, attributes={}
+):
     try:
         if info is not None:
             for key, item in info.items():
@@ -136,7 +139,7 @@ def prompt_formula_v2(new_prompt, variables, info=None, error_info="", nested=0)
         Logger.error(e)
 
     if type(new_prompt) is str:
-        return text_formula_v2(new_prompt, variables, error_info)
+        return text_formula_v2(new_prompt, variables, error_info, attributes)
     elif type(new_prompt) is dict:
         for key in new_prompt:
             # verbose は変換しない
@@ -144,13 +147,13 @@ def prompt_formula_v2(new_prompt, variables, info=None, error_info="", nested=0)
                 continue
             if type(new_prompt[key]) is str:
                 new_prompt[key] = text_formula_v2(
-                    new_prompt[key], variables, error_info
+                    new_prompt[key], variables, error_info, attributes
                 )
             elif type(new_prompt[key]) is dict:
                 for key2 in new_prompt[key]:
                     if type(new_prompt[key][key2]) is str:
                         new_prompt[key][key2] = text_formula_v2(
-                            new_prompt[key][key2], variables, error_info
+                            new_prompt[key][key2], variables, error_info, attributes
                         )
     # シリアライズして ${.*?}があるか探す
     json_str = json.dumps(new_prompt)
@@ -162,7 +165,12 @@ def prompt_formula_v2(new_prompt, variables, info=None, error_info="", nested=0)
         if nested > 10:  # arrayの場合があるので10回まで
             return new_prompt
         new_prompt = prompt_formula_v2(
-            new_prompt, variables, info=info, error_info=error_info, nested=nested
+            new_prompt,
+            variables,
+            info=info,
+            error_info=error_info,
+            nested=nested,
+            attributes=attributes,
         )
     return new_prompt
 
@@ -321,7 +329,7 @@ def item_split_ct2(item, error_info="", default_weight=0.1):
     return variables
 
 
-def prompt_multiple_v2(yml, variable, array, input=[]):
+def prompt_multiple_v2(yml, variable, array, input=[], attributes=None):
     Logger.debug("prompt_multiple_v2 start")
     output = [None] * len(array) * len(input) if len(input) > 0 else [None] * len(array)
     i = 0
@@ -340,7 +348,11 @@ def prompt_multiple_v2(yml, variable, array, input=[]):
             if "variables" not in verbose:
                 verbose["variables"] = {}
             verbose["variables"][variable] = item
-            output[i] = prompt_formula_v2(output[i], args, info=None)
+            if attributes:
+                verbose["attributes"] = attributes
+            output[i] = prompt_formula_v2(
+                output[i], args, info=None, attributes=attributes
+            )
             output[i]["verbose"] = verbose
             i = i + 1
     Logger.debug("prompt_multiple_v2 end")
@@ -388,6 +400,9 @@ def choice_v2(array):
     choice = random.random()
     # use binary search
     length = len(array)
+    if length == 0:
+        Logger.warning("choice_v2 array is empty")
+        return []
     while length > 1:
         middle = int(length / 2)
         if choice < array[middle]["choice_start"]:
@@ -395,7 +410,13 @@ def choice_v2(array):
         else:
             array = array[middle:]
         length = len(array)
-    return array[0]["variables"]
+    attributes = None
+    for key in array[0]:
+        if key != "variables" and key != "choice_start" and key != "choice_end":
+            if attributes is None:
+                attributes = {}
+            attributes[key] = array[0][key]
+    return array[0]["variables"], attributes
 
 
 def prompt_random_v2(yml, max_number, input=[]):
@@ -428,8 +449,13 @@ def prompt_random_v2(yml, max_number, input=[]):
     for idx, current in enumerate(output):
         # Logger.debug(f"prompt_random_v2 {idx} {current}")
         current_variables = {}
+        attributes = None
         for key in variables:
-            current_variables[key] = choice_v2(variables[key])
+            current_variables[key], attribute = choice_v2(variables[key])
+            if attribute is not None:
+                if attributes is None:
+                    attributes = {}
+                attributes[key] = attribute
         if current is None:
             current = {}
             # yml commands を コピー
@@ -448,6 +474,8 @@ def prompt_random_v2(yml, max_number, input=[]):
             current["verbose"] = verbose
         current = prompt_formula_v2(current, current_variables, None, error_info="")
         current.get("verbose", {})["variables"] = current_variables
+        if attributes:
+            current.get("verbose", {})["attributes"] = attributes
         output[idx] = current
     return output
 
