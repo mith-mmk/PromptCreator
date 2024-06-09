@@ -575,7 +575,8 @@ def create_text_v2(opt):
         key = list(method.keys())[0]
         Logger.debug(f"method {key}")
         if key == "random":
-            if option_max_number == 0:
+            Logger.debug(f"max_number is not set {option_max_number} {options}")
+            if option_max_number < 0:
                 max_number = method.get(key, options.get("max_number", 0))
                 if max_number == 0:
                     max_number = options.get("number", max_number)
