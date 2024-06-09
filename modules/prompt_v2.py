@@ -75,7 +75,7 @@ def text_formula_v2(text, variables, error_info=""):
                         text = text.replace("${" + formula + "}", replace_text)
                     except Exception:
                         Logger.verbose(
-                            f"{formula} index {array_index} is not set use empty"
+                            f"{formula} index {array_index} is not, set use empty"
                         )
                         text = text.replace("${" + formula + "}", "")
             except Exception as e:
@@ -93,11 +93,27 @@ def text_formula_v2(text, variables, error_info=""):
                         text = text.replace("${" + formula + "}", replace_text)
                     except Exception:
                         Logger.verbose(
-                            f"{formula} index {array_index} is not set use empty"
+                            f"{formula} index {array_index} is not, set use empty"
                         )
                         text = text.replace("${" + formula + "}", "")
             except Exception as e:
                 Logger.verbose(f"Error happen array formula {error_info} {formula} {e}")
+        # dict formula ${variable["key"]}
+        elif re.match(r"(.+?)\s*\[\s*\"(.+?)\"\s*\]", _formula):
+            dict_formula = re.match(r"(.+?)\s*\[\s*\"(.+?)\"\s*\]", formula)
+            variable = dict_formula.group(1)
+            key = dict_formula.group(2)
+            if variable in variables:
+                try:
+                    replace_text = variables.get(variable, {}).get(key, None)
+                    if replace_text is not None:
+                        Logger.warning(f"varriable {variable} not has {key}, use empty")
+                        replace_text = ""
+                    text = text.replace("${" + formula + "}", replace_text)
+                except Exception:
+                    Logger.error(f"Error happen dict formula {formula}")
+            else:
+                Logger.error(f"Error happen dict formula {formula}")
         else:
             # simple formula ${variable}
             if formula in variables:
@@ -370,15 +386,16 @@ def weight_calc_v2(variable, default_weight=0.1):
 # {choice_start: 0, choice_end:0.1, variables: ["red", "blue"]}  0 =< choise < 0.1
 def choice_v2(array):
     choice = random.random()
-    for item in array:
-        try:
-            if item["choice_start"] <= choice < item["choice_end"]:
-                return item["variables"]
-        except Exception as e:
-            Logger.error(f"Error happen choice_v2 {array}")
-            Logger.error(e)
-            raise e
-    return ""
+    # use binary search
+    length = len(array)
+    while length > 1:
+        middle = int(length / 2)
+        if choice < array[middle]["choice_start"]:
+            array = array[:middle]
+        else:
+            array = array[middle:]
+        length = len(array)
+    return array[0]["variables"]
 
 
 def prompt_random_v2(yml, max_number, input=[]):
