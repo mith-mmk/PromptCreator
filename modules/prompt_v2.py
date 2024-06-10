@@ -242,7 +242,7 @@ def read_file_v2(filename, error_info=""):
     filenames = filename.split()
     for filename in filenames:
         try:
-            # extention is ct2 ?
+
             ext = os.path.splitext(filenames[0])[-1:][0]
             if ext == ".ct2":
                 with open(filename, "r", encoding="utf_8") as f:
@@ -251,6 +251,39 @@ def read_file_v2(filename, error_info=""):
                             item, error_info=f"{error_info} {filename} {idx}"
                         )
                         strs.append(item)
+            # is <filename>.jsonl[(.+)] or <filename>.jsonl
+            elif re.match(r"(.+\.jsonl)\[(.+)\]", filename) or ext == ".jsonl":
+                if ext == ".jsonl":
+                    query = "*"
+                else:
+                    q = re.match(r"(.+\.jsonl)\[(.+)\]", filename)
+                    filename = q.group(1)
+                    query = q.group(2)
+                with open(filename, "r", encoding="utf_8") as f:
+                    all_text = f.read()
+                    # \/\*(.*?)\*\/ を削除
+                    all_text = re.sub(r"/\*(.*?)\*/", "", all_text)
+                    lines = all_text.split("\n")
+                    for idx, item in enumerate(lines):
+                        # comment out を削除
+                        item = re.sub(r"\s*//.*$", "", item)
+                        if re.match(r"^\s*$", item):
+                            continue
+                        item = json.loads(item)
+                        # replace W => weight V => variables C => choice
+                        if "W" in item:
+                            item["weight"] = item.get("W", 0.1)
+                            del item["W"]
+                        if "V" in item:
+                            item["variables"] = item.get("V", [])
+                            del item["V"]
+                        if "C" in item:
+                            item["choice"] = item.get("C", 1)
+                            del item["C"]
+                        if query in item["choice"]:
+                            strs.append(item)
+                        elif "*" in item["choice"]:
+                            strs.append(item)
             elif ext == ".json":
                 with open(filename, "r", encoding="utf_8") as f:
                     strs.append(json.load(f))
@@ -377,6 +410,15 @@ def weight_calc_v2(variable, default_weight=0.1):
         else:
             weight = weight + default_weight
     # 係数を計算
+    if weight == 0.0:
+        Logger.warning("all weight is 0.0, choise empty")
+        weight_txt = {
+            "choice_start": 0.0,
+            "choice_end": 1.0,
+            "variables": "",
+        }
+        weight_append = [weight_txt]
+        return weight_append
     coef = 1.0 / weight
     weight = 0.0
     for i, item in enumerate(variable):
