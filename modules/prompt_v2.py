@@ -49,6 +49,7 @@ Logger = getDefaultLogger()
 def text_formula_v2(text, variables, error_info="", attributes={}):
     compute = FormulaCompute()
     # Logger.debug(f"text_formula_v2 {text}")
+    # Logger.debug(f"attributes {attributes}")
 
     formulas = re.findall(r"\$\{\=(.+?)\}", text)
     for formula in formulas:
@@ -107,8 +108,10 @@ def text_formula_v2(text, variables, error_info="", attributes={}):
                 try:
                     attribute = attributes.get(variable, {})
                     replace_text = attribute.get(key, None)
-                    if replace_text is not None:
-                        Logger.warning(f"varriable {variable} not has {key}, use empty")
+                    if replace_text is None:
+                        Logger.warning(
+                            f"varriable {variable} not has '{key}', use empty"
+                        )
                         replace_text = ""
                     text = text.replace("${" + formula + "}", replace_text)
                 except Exception:
@@ -263,39 +266,50 @@ def read_file_v2(filename, error_info=""):
                 Logger.debug(f"query {query}")
                 with open(filename, "r", encoding="utf_8") as f:
                     all_text = f.read()
-                    Logger.debug(f"all_text {all_text}")
                     # /* */ を削除 \n をまたぐので注意
                     all_text = re.sub(r"/\*.*?\*/", "", all_text, flags=re.DOTALL)
-                    Logger.debug(f"/* */ comment deleted text {all_text}")
                     lines = all_text.split("\n")
-                    for idx, item in enumerate(lines):
-                        # comment out を削除
-                        item = re.sub(r"\s*\/\/.*$", "", item)
-                        Logger.debug(f"line {idx + 1} item {item}")
-                        if re.match(r"^\s*$", item):
-                            continue
-                        item = json.loads(item)
-                        Logger.debug(f"parsed item {item}")
-                        if item is None:
-                            continue
-                        # replace W => weight V => variables C => choice
-                        if "W" in item:
-                            item["weight"] = item.get("W", 0.1)
-                            del item["W"]
-                        if "V" in item:
-                            value = item.get("V", [])
-                            if type(value) is not list:
-                                value = [value]
-                            item["variables"] = item.get("V", [])
-                            del item["V"]
-                        if "C" in item:
-                            item["choice"] = item.get("C", 1)
-                            del item["C"]
-                        Logger.debug(f"replaced item {item}")
-                        if query == "*":
-                            strs.append(item)
-                        elif query in item.get("choice", "*"):
-                            strs.append(item)
+                    try:
+                        for idx, item in enumerate(lines):
+                            # comment out を削除
+                            item = re.sub(r"\s*\/\/.*$", "", item)
+                            Logger.debug(f"line {idx + 1} item {item}")
+                            if re.match(r"^\s*$", item):
+                                continue
+                            item = json.loads(item)
+                            if item is None:
+                                continue
+                            # replace W => weight V => variables C => choice
+                            if "W" in item:
+                                item["weight"] = item.get("W", 0.1)
+                                del item["W"]
+                            if "V" in item:
+                                value = item.get("V", [])
+                                if type(value) is not list:
+                                    value = [value]
+                                item["variables"] = value
+                                del item["V"]
+                            if "C" in item:
+                                item["choice"] = item.get("C", [])
+                                del item["C"]
+                            Logger.debug(f"replaced item {item}")
+                            choice = item.get("choice", ["*"])
+                            if "choice" in item:
+                                del item["choice"]
+                            if "*" in choice or query == "*" or query in choice:
+                                strs.append(item)
+                            else:  # keyを探す weight override
+                                for key in choice:
+                                    if type(key) is not str:
+                                        if query in key:
+                                            Logger.debug(f"key {key}")
+                                            item["weight"] = key[query]
+                                            strs.append(item)
+                                            break
+                    except Exception as e:
+                        Logger.error(
+                            f"json decode error {filename} line{idx + 1} {item} {e}"
+                        )
                 Logger.debug(f"strs {strs}")
             elif ext == ".json":
                 with open(filename, "r", encoding="utf_8") as f:
@@ -409,7 +423,7 @@ def prompt_multiple_v2(yml, variable, array, input=[], attributes=None):
 # {weight: 0.1, variables: ["red", "blue"]},
 # {weight: 0.2, variables: ["green", "yellow"]},
 # ]
-def weight_calc_v2(variable, default_weight=0.1):
+def weight_calc_v2(variable, default_weight=0.1, key=""):
     # 0.0 - 0.1 に正規化する
     weight = 0.0
     weight_append = []
@@ -424,7 +438,7 @@ def weight_calc_v2(variable, default_weight=0.1):
             weight = weight + default_weight
     # 係数を計算
     if weight == 0.0:
-        Logger.warning("all weight is 0.0, choise empty")
+        Logger.warning(f"key {key} all weight is 0.0, choise empty")
         weight_txt = {
             "choice_start": 0.0,
             "choice_end": 1.0,
@@ -483,7 +497,7 @@ def prompt_random_v2(yml, max_number, input=[]):
         for key in keys:
             try:
                 Logger.debug(f"process weight calc {key}")
-                weighted = weight_calc_v2(appends[key])
+                weighted = weight_calc_v2(appends[key], key=key)
                 weighted_variables[key] = weighted
             except Exception as e:
                 Logger.error(f"Error happen weight calc {key}")
@@ -527,7 +541,9 @@ def prompt_random_v2(yml, max_number, input=[]):
             for key in yml.get("info", {}):
                 verbose[key] = yml["info"][key]
             current["verbose"] = verbose
-        current = prompt_formula_v2(current, current_variables, None, error_info="")
+        current = prompt_formula_v2(
+            current, current_variables, None, error_info="", attributes=attributes
+        )
         current.get("verbose", {})["variables"] = current_variables
         if attributes:
             current.get("verbose", {})["attributes"] = attributes
