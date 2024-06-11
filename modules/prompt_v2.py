@@ -259,10 +259,15 @@ def read_file_v2(filename, error_info=""):
                 Logger.debug("load jsonl")
                 if ext == ".jsonl":
                     query = "*"
+                    queries = ["*"]
                 else:
                     q = re.match(r"(.+\.jsonl)\[(.+)\]", filename)
                     filename = q.group(1)
                     query = q.group(2)
+                    queries = query.split(",")
+                    # trim space
+                    for i, q in enumerate(queries):
+                        queries[i] = q.strip()
                 Logger.debug(f"query {query}")
                 with open(filename, "r", encoding="utf_8") as f:
                     all_text = f.read()
@@ -283,6 +288,8 @@ def read_file_v2(filename, error_info=""):
                             if "W" in item:
                                 item["weight"] = item.get("W", 0.1)
                                 del item["W"]
+                            else:
+                                item["weight"] = 0.1
                             if "V" in item:
                                 value = item.get("V", [])
                                 if type(value) is not list:
@@ -290,22 +297,29 @@ def read_file_v2(filename, error_info=""):
                                 item["variables"] = value
                                 del item["V"]
                             if "C" in item:
+                                choice = item.get("C", [])
+                                if isinstance(choice, str):
+                                    choice = [choice]
                                 item["choice"] = item.get("C", [])
                                 del item["C"]
+                            else:
+                                item["choice"] = ["*"]
                             Logger.debug(f"replaced item {item}")
                             choice = item.get("choice", ["*"])
                             if "choice" in item:
                                 del item["choice"]
-                            if "*" in choice or query == "*" or query in choice:
-                                strs.append(item)
-                            else:  # keyを探す weight override
-                                for key in choice:
-                                    if type(key) is not str:
-                                        if query in key:
-                                            Logger.debug(f"key {key}")
-                                            item["weight"] = key[query]
-                                            strs.append(item)
-                                            break
+                            # queries にマッチするものを取り出す
+                            for query in queries:
+                                if "*" in choice or query == "*" or query in choice:
+                                    strs.append(item)
+                                else:  # keyを探す weight override
+                                    for key in choice:
+                                        if type(key) is not str:
+                                            if query in key:
+                                                Logger.debug(f"key {key}")
+                                                item["weight"] = key[query]
+                                                strs.append(item)
+                                                break
                     except Exception as e:
                         Logger.error(
                             f"json decode error {filename} line{idx + 1} {item} {e}"
