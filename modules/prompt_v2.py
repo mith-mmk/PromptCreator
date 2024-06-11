@@ -104,13 +104,14 @@ def text_formula_v2(text, variables, error_info="", attributes={}):
             dict_formula = re.match(r"(.+?)\s*\[\s*\"(.+?)\"\s*\]", formula)
             variable = dict_formula.group(1)
             key = dict_formula.group(2)
+            Logger.debug(f"dict formula {variable} {key}")
             if variable in variables:
                 try:
                     attribute = attributes.get(variable, {})
                     replace_text = attribute.get(key, None)
                     if replace_text is None:
                         Logger.warning(
-                            f"varriable {variable} not has '{key}', use empty"
+                            f"variable {variable} not has '{key}', use empty"
                         )
                         replace_text = ""
                     text = text.replace("${" + formula + "}", replace_text)
