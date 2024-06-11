@@ -2,6 +2,7 @@ append
 outputs
 prompts
 list*
+$jsonl
 __pycache__
 .vscode
 .env
