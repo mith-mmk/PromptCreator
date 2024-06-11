@@ -241,8 +241,8 @@ def read_file_v2(filename, error_info=""):
     strs = []
     filenames = filename.split()
     for filename in filenames:
+        Logger.debug(f"read_file_v2 {filename}")
         try:
-
             ext = os.path.splitext(filenames[0])[-1:][0]
             if ext == ".ct2":
                 with open(filename, "r", encoding="utf_8") as f:
@@ -253,37 +253,50 @@ def read_file_v2(filename, error_info=""):
                         strs.append(item)
             # is <filename>.jsonl[(.+)] or <filename>.jsonl
             elif re.match(r"(.+\.jsonl)\[(.+)\]", filename) or ext == ".jsonl":
+                Logger.debug("load jsonl")
                 if ext == ".jsonl":
                     query = "*"
                 else:
                     q = re.match(r"(.+\.jsonl)\[(.+)\]", filename)
                     filename = q.group(1)
                     query = q.group(2)
+                Logger.debug(f"query {query}")
                 with open(filename, "r", encoding="utf_8") as f:
                     all_text = f.read()
-                    # \/\*(.*?)\*\/ を削除
-                    all_text = re.sub(r"/\*(.*?)\*/", "", all_text)
+                    Logger.debug(f"all_text {all_text}")
+                    # /* */ を削除 \n をまたぐので注意
+                    all_text = re.sub(r"/\*.*?\*/", "", all_text, flags=re.DOTALL)
+                    Logger.debug(f"/* */ comment deleted text {all_text}")
                     lines = all_text.split("\n")
                     for idx, item in enumerate(lines):
                         # comment out を削除
-                        item = re.sub(r"\s*//.*$", "", item)
+                        item = re.sub(r"\s*\/\/.*$", "", item)
+                        Logger.debug(f"line {idx + 1} item {item}")
                         if re.match(r"^\s*$", item):
                             continue
                         item = json.loads(item)
+                        Logger.debug(f"parsed item {item}")
+                        if item is None:
+                            continue
                         # replace W => weight V => variables C => choice
                         if "W" in item:
                             item["weight"] = item.get("W", 0.1)
                             del item["W"]
                         if "V" in item:
+                            value = item.get("V", [])
+                            if type(value) is not list:
+                                value = [value]
                             item["variables"] = item.get("V", [])
                             del item["V"]
                         if "C" in item:
                             item["choice"] = item.get("C", 1)
                             del item["C"]
-                        if query in item["choice"]:
+                        Logger.debug(f"replaced item {item}")
+                        if query == "*":
                             strs.append(item)
-                        elif "*" in item["choice"]:
+                        elif query in item.get("choice", "*"):
                             strs.append(item)
+                Logger.debug(f"strs {strs}")
             elif ext == ".json":
                 with open(filename, "r", encoding="utf_8") as f:
                     strs.append(json.load(f))
