@@ -159,6 +159,28 @@ def prompt_formula_v2(
                         new_prompt[key][key2] = text_formula_v2(
                             new_prompt[key][key2], variables, error_info, attributes
                         )
+            elif type(new_prompt[key]) is list:
+                for i, item in enumerate(new_prompt[key]):
+                    if type(item) is str:
+                        new_prompt[key][i] = text_formula_v2(
+                            item, variables, error_info, attributes
+                        )
+                    elif type(item) is dict:
+                        for key2 in item:
+                            if type(item[key2]) is str:
+                                new_prompt[key][i][key2] = text_formula_v2(
+                                    item[key2], variables, error_info, attributes
+                                )
+    elif type(new_prompt) is list:
+        for i, item in enumerate(new_prompt):
+            if type(item) is str:
+                new_prompt[i] = text_formula_v2(item, variables, error_info, attributes)
+            elif type(item) is dict:
+                for key in item:
+                    if type(item[key]) is str:
+                        new_prompt[i][key] = text_formula_v2(
+                            item[key], variables, error_info, attributes
+                        )
     # シリアライズして ${.*?}があるか探す
     json_str = json.dumps(new_prompt)
     formulas = re.findall(r"\$\{(.+?)\}", json_str)
@@ -562,6 +584,11 @@ def prompt_random_v2(yml, max_number, input=[]):
         current.get("verbose", {})["variables"] = current_variables
         if attributes:
             current.get("verbose", {})["attributes"] = attributes
+        values = copy.deepcopy(current_variables)
+        values = prompt_formula_v2(
+            values, current_variables, None, attributes=attributes
+        )
+        current.get("verbose", {})["values"] = values
         output[idx] = current
     return output
 
