@@ -134,6 +134,7 @@ def save_img(r, opt={"dir": "./outputs"}):
     variables = {}
     for key, value in info.items():
         filename_pattern[key] = value
+
     if "variables" in opt:
         var = re.compile(r"\$\{(.+?)\}")
         for key, value in opt["variables"].items():
@@ -166,13 +167,23 @@ def save_img(r, opt={"dir": "./outputs"}):
                             )
                 match = var.search(value)
             variables[key] = value
-            if type(value) is list:  # for multi value
-                value = value[0]
-                filename_pattern["var:" + key] = value
-                for n, v in enumerate(value):
-                    filename_pattern["var:" + key + "(" + str(n + 1) + ")"] = v
-            else:
-                filename_pattern["var:" + key] = value
+    elif "varbose" in opt:
+        for key, value in (
+            opt["varbose"].get("valus", opt["verbose".get("variables", {})]).items()
+        ):
+            variables[key] = value
+
+    for key, value in variables.items():
+        if type(value) is list:  # for multi value
+            value = value[0]
+            filename_pattern["var:" + key] = value
+            for n, v in enumerate(value):
+                filename_pattern["var:" + key + "(" + str(n + 1) + ")"] = v
+        elif type(value) is dict:
+            for k, v in value.items():
+                filename_pattern["var:" + key + ":" + k] = v
+        else:
+            filename_pattern["var:" + key] = value
 
     if "info" in opt:
         for key, value in opt["info"].items():
