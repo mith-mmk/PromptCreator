@@ -204,6 +204,46 @@ Example(例)
         animal: ${date["animal"]} # associative array(連想配列)
         beings: jsonl/date.jsonl[animal,human] # multiple category(複数のカテゴリー) saparated by comma(カンマで区切る) not support space(スペースはサポートされません)
 ```
+
+#### profile(プロファイル)
+profile is override config file(設定ファイルをprofileで上書きします)
+```yaml
+command:
+    width: 512
+    height: 512
+    enable_hr: true
+    hr_scale: 2
+
+profiles: # override from default profile
+    xl:
+        command:
+            width: 1024
+            height: 1024
+            enable_hr: false
+            refiner_switch_at: 0.7
+```
+
+run profile(プロファイルを実行)
+```
+python cp2.py --profile xl input.yaml 
+# width = 512, height = 512, enable_hr = true, hr_scale = 2
+
+python cp2.py --profile xl input.yaml
+# width = 1024, height = 1024, enable_hr = false, refiner_switch_at = 0.7
+```
+load_profile is profile load in profile(プロファイルから他のプロファイルを読み込む)
+```yaml
+    profile:
+        xl:
+            load_profile: [animal]
+        animal:
+            prompt: "animal"
+```
+
+This case is preload profile defaut -> animal (この場合、デフォルトプロファイル -> animalを先に読み込みます)
+load_profile is not suport nested profile(プロファイルは入れ子にできません)
+
+
 #### パーサー
  sentence in \$\{ \} can be parsed(\$\{= \}の中に式が書けます)
 
