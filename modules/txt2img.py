@@ -45,6 +45,7 @@ def txt2img(
         if "verbose" in item:
             verbose = item.pop("verbose")
             opt["variables"] = verbose.get("variables")
+            opt["values"] = verbose.get("values")
         payload = json.dumps(item)
         response = api.request_post_wrapper(
             url,

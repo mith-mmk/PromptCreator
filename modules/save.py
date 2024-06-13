@@ -135,7 +135,22 @@ def save_img(r, opt={"dir": "./outputs"}):
     for key, value in info.items():
         filename_pattern[key] = value
 
-    if "variables" in opt:
+    if "varbose" in opt:
+        Logger.debug(
+            "varbose", json.dumps(opt["varbose"], ensure_ascii=False, indent=2)
+        )
+        for key, value in (
+            opt["varbose"].get("values", opt["verbose"].get("variables", {})).items()
+        ):
+            variables[key] = value
+    elif "values" in opt:
+        Logger.debug("values", json.dumps(opt["values"], ensure_ascii=False, indent=2))
+        for key, value in opt["values"].items():
+            variables[key] = value
+    elif "variables" in opt:
+        Logger.debug(
+            "variables", json.dumps(opt["variables"], ensure_ascii=False, indent=2)
+        )
         var = re.compile(r"\$\{(.+?)\}")
         for key, value in opt["variables"].items():
             Logger.debug("variable", key, value)
@@ -167,23 +182,19 @@ def save_img(r, opt={"dir": "./outputs"}):
                             )
                 match = var.search(value)
             variables[key] = value
-    elif "varbose" in opt:
-        for key, value in (
-            opt["varbose"].get("valus", opt["verbose".get("variables", {})]).items()
-        ):
-            variables[key] = value
 
     for key, value in variables.items():
         if type(value) is list:  # for multi value
-            value = value[0]
-            filename_pattern["var:" + key] = value
+            filename_pattern["var:" + key] = value[0]
             for n, v in enumerate(value):
                 filename_pattern["var:" + key + "(" + str(n + 1) + ")"] = v
-        elif type(value) is dict:
-            for k, v in value.items():
-                filename_pattern["var:" + key + ":" + k] = v
         else:
             filename_pattern["var:" + key] = value
+    if "attributes" in opt.get("verbose", {}):
+        for key, value in opt["verbose"]["attributes"].items():
+            # it's dict
+            for k, v in value.items():
+                filename_pattern["var:" + key + ":" + k] = v
 
     if "info" in opt:
         for key, value in opt["info"].items():
@@ -197,7 +208,9 @@ def save_img(r, opt={"dir": "./outputs"}):
             if type(key) is str:
                 filename_pattern["command:" + key] = value
 
-    Logger.debug("filename_pattern", filename_pattern)
+    Logger.debug(
+        "filename_pattern", json.dumps(filename_pattern, ensure_ascii=False, indent=2)
+    )
 
     for n, i in enumerate(r["images"]):
         try:

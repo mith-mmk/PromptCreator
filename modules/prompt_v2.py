@@ -301,7 +301,7 @@ def read_file_v2(filename, error_info=""):
                         for idx, item in enumerate(lines):
                             # comment out を削除
                             item = re.sub(r"\s*\/\/.*$", "", item)
-                            Logger.debug(f"line {idx + 1} item {item}")
+                            # gg(f"line {idx + 1} item {item}")
                             if re.match(r"^\s*$", item):
                                 continue
                             item = json.loads(item)
@@ -327,7 +327,7 @@ def read_file_v2(filename, error_info=""):
                                 del item["C"]
                             else:
                                 item["choice"] = ["*"]
-                            Logger.debug(f"replaced item {item}")
+                            # Logger.debug(f"replaced item {item}")
                             choice = item.get("choice", ["*"])
                             if "choice" in item:
                                 del item["choice"]
@@ -528,12 +528,12 @@ def choice_v2(array):
 def prompt_random_v2(yml, max_number, input=[]):
     weighted_variables = {}
     if not yml.get("weight_calced"):
-        Logger.debug("weight calc")
+        # Logger.debug("weight calc")
         appends = yml.get("variables", {})
         keys = list(appends.keys())
         for key in keys:
             try:
-                Logger.debug(f"process weight calc {key}")
+                # Logger.debug(f"process weight calc {key}")
                 weighted = weight_calc_v2(appends[key], key=key)
                 weighted_variables[key] = weighted
             except Exception as e:
@@ -687,33 +687,33 @@ def create_text_v2(opt):
     options["api_mode"] = (
         opt.get("api_mode") if opt.get("api_mode") else options.get("api_mode", False)
     )
-    Logger.debug(f"options {options}")
+    # Logger.debug(f"options {options}")
     yml["weight_calced"] = False
 
     variables = yml.get("variables", {})
     for key, item in variables.items():
-        Logger.debug(f"key {key}")
+        # Logger.debug(f"key {key}")
         if type(item) is str:
             variables[key] = read_file_v2(item, error_info=f"variables {key}")
         elif type(item) is list:
-            Logger.debug(f"type list item {item}")
+            # Logger.debug(f"type list item {item}")
             variables[key] = []
             for i, txt in enumerate(item):
                 variables[key].append(
                     item_split_txt(txt, error_info=f"variables {key} {i}")
                 )
-        Logger.debug(f"variables {key} {variables[key]}")
+        # Logger.debug(f"variables {key} {variables[key]}")
 
     Logger.debug("array")
     array = yml.get("array", {})
 
     for key, item in array.items():
         array[key] = []
-        Logger.debug(f"key {key}")
+        # Logger.debug(f"key {key}")
         if type(item) is str:
             array[key] = read_file_v2(item, error_info=f"array {key}")
         elif type(item) is list:
-            Logger.debug(f"type list item {item}")
+            # Logger.debug(f"type list item {item}")
             array[key] = []
             for i, txt in enumerate(item):
                 array[key].append(
