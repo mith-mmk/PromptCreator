@@ -482,7 +482,8 @@ if __name__ == "__main__":
     try:
         result = run_from_args()
         if not result:
+            print("Not result Error")
             exit(1)
-    except Exception:
-        print("Error")
+    except Exception as e:
+        print(f"Error, help is --help option {e}")
         exit(1)

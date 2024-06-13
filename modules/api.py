@@ -1,7 +1,6 @@
 import asyncio
 import base64
 import json
-import sys
 import time
 
 import httpx
@@ -51,13 +50,13 @@ async def async_post(url, data, userpass=None):
                 timeout=(share.get("timeout"), share.get("max_timeout")),
             )
         except httpx.ReadTimeout:
-            print("Read timeout", file=sys.stderr)
+            print("Read timeout")
             return None
         except httpx.TimeoutException:
-            print("Connect Timeout", file=sys.stderr)
+            print("Connect Timeout")
             return None
         except BaseException as error:
-            print("Exception: ", error, file=sys.stderr)
+            print("Exception: ", error)
             return None
 
 
@@ -122,7 +121,7 @@ async def progress_writer(url, data, progress_url, userpass=None):
                 except Exception:
                     retry += 1
                     if retry >= 20:
-                        print("Progress is unknown", file=sys.stderr)
+                        print("Progress is unknown")
                         return
 
         async def post_wrapper(url, data, headers, timeout):
@@ -151,13 +150,13 @@ def progress_interrupt(url, userpass=None):
             headers = {"Authorization": "Basic " + base64.b64encode(userpass.encode())}
         return httpx.post(url, headers=headers)
     except httpx.ReadTimeout:
-        print("Read timeout", file=sys.stderr)
+        print("Read timeout")
         return None
     except httpx.TimeoutException:
-        print("Connect Timeout", file=sys.stderr)
+        print("Connect Timeout")
         return None
     except BaseException as error:
-        print(str(error), file=sys.stderr)
+        print(str(error))
         return None
 
 
@@ -170,17 +169,14 @@ def request_post_wrapper(url, data, progress_url=None, base_url=None, userpass=N
     except KeyboardInterrupt:
         if base_url:
             progress_interrupt(base_url + "/sdapi/v1/skip")  # chage api?
-        Logger.error("enter Ctrl-c, Process stopping", file=sys.stderr)
+        Logger.error("enter Ctrl-c, Process stopping")
         raise KeyboardInterrupt
     except httpx.ConnectError:
-        Logger.error(
-            "All connection attempts failed,Is the server down?", file=sys.stderr
-        )
+        Logger.error("All connection attempts failed,Is the server down?")
         raise httpx.ConnectError
     except httpx.ConnectTimeout:
         Logger.error(
-            "Connection Time out,Is the server down or server address mistake?",
-            file=sys.stderr,
+            "Connection Time out,Is the server down or server address mistake?"
         )
         raise httpx.ConnectTimeout
     return result

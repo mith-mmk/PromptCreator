@@ -84,6 +84,8 @@ class LogPrint:
             return
         print(self.logging_level, self.log_dir, self.log_days)
         # self.log_dir ファイルがなければ作成
+        if self.log_dir is None:
+            return
         logfile = self.log_dir
         dirs = os.path.split(logfile)
         if not os.path.exists(dirs[0]):
