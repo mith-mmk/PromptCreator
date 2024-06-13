@@ -1,5 +1,5 @@
 # Create prompt V2
-  Create prompt V2 は AUTOMATIC1111/stable-diffusion-webui のためのプロンプト作成ツールです（日本語と英語の両方記述することにしました）
+  Create prompt V2 は AUTOMATIC1111/stable-diffusion-webui のためのプロンプト作成ツールです
 
   Create prompt V2 is a prompt creator for AUTOMATIC1111/stable-diffusion-webui
 
