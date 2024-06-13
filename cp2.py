@@ -192,7 +192,12 @@ def main(args):
                             if args.v1json:
                                 text = json.dumps(text, indent=2)  # escape unicode
                             else:
-                                text = json.dumps(text, ensure_ascii=False, indent=2)
+                                if args.json_escape:
+                                    text = json.dumps(text, indent=2)
+                                else:
+                                    text = json.dumps(
+                                        text, ensure_ascii=False, indent=2
+                                    )
                         f.write(text)
                 except Exception as e:
                     Logger.error(f"output error {e}")
@@ -466,6 +471,14 @@ def run_from_args(command_args=None):
         const=True,
         default=False,
         help="output v1 json",
+    )
+    parser.add_argument(
+        "--json-escape",
+        type=bool,
+        nargs="?",
+        const=True,
+        default=False,
+        help="multibyte escaped json",
     )
 
     args = parser.parse_args(command_args)
