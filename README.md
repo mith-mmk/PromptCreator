@@ -295,7 +295,7 @@ This case is preload profile defaut next animal, last xl (この場合、デフ�
 load_profile is not suport nested profile(プロファイルは入れ子にできません)
 
 
-### パーサー
+### Parser(パーサー)
  sentence in \$\{ \} can be parsed (\$\{= \}の中に式が書けます)
 
 Example(例)
@@ -304,7 +304,23 @@ Example(例)
     width: ${=int(${size}) * 2} # width = size * 2(幅 = サイズ * 2)
 
 ```
-### current functions(現在の関数)
+
+#### Parse tester (パーサーテスター)
+```
+> python tools.py parser_test '2 + x * y' 'x=3,y=4'
+...
+...
+...
+14.0
+
+> python tools.py parser_test '"test" == str' 'str=test'
+...
+...
+...
+1       # true
+```
+
+#### current functions(現在の関数)
 no debug(デバッグしていません)
 
 functions(関数) str1,str2,.. are string(文字列) and x,y... are number(数値)
