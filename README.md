@@ -1,11 +1,13 @@
 # Create prompt V2
-  Create prompt V2 は AUTOMATIC1111/stable-diffusion-webui のためのプロンプト作成ツールです
+  Create prompt V2 は AUTOMATIC1111/stable-diffusion-webui のためのプロンプト作成ツールです(定義ファイルを作るUIも作らないと)
 
   Create prompt V2 is a prompt creator for AUTOMATIC1111/stable-diffusion-webui
 
 # enviroment(環境)
 - AUTOMATIC1111/stable-diffusion-web-ui (最新のバージョン) のAPIを有効にする
   - --APIオプションを追加する
+  - リモートから実行する場合は、リモートアクセスを有効にする
+  - settingを変更できるようにする(overrideを使う場合)
 -　python 3.10以降 
 
 - automatic1111/stable-diffusion-web-ui (newest commit) enable remote access 
@@ -89,14 +91,17 @@ usage: cp2.py [-h] [--append-dir APPEND_DIR] [--output OUTPUT] [--json [JSON]] [
     - V2 is not compatible with V1(旧バージョンとの互換性はありません)
 
 # Installation(インストール)
+python 3.10 and later is required(3.10以降が必要です)
+
+install required packages(必要なパッケージをインストール)
 ```
 pip install pyyaml
 pip install Pillow
 pip install httpx
 ```
-# yamlモード(textモードは廃止になりました)
+# yaml mode(textモードは廃止になりました)
 
-## V1との違い
+## difference from V1(V1との違い)
 - only variable mode(変数モードのみ)
 - appends is obsolete(appendsは廃止になりました)
   - change variables and array (variablesとarrayに変更)
@@ -104,7 +109,8 @@ pip install httpx
 - enable jsonl read for list file(jsonlの読み込みが可能になりました)
 - category query for jsonl(カテゴリークエリーが可能になりました)
 - variables nest is max 10, ignore define order(変数のネストは最大10, 定義の順番は関係ありません)
-## 書き方
+
+## method(メソッド)
 - random is generate random prompt(randomはランダムプロンプトを生成します)
 - multiple is generate multiple prompt(multipleは配列から複数のプロントを作成します)
 - cleanup is clean up prompt(cleanupはプロンプトをクリーンアップします)
@@ -141,11 +147,11 @@ command:
 ```
  This case is generate 10 * 4 * 4 = 160 prompts, beacuse multiple mode uses char number is and place number 4. (この場合、160のプロンプトが生成されます。multipleモードでcharが4つ、placeが4つ指定されているため10 * 4 * 4 = 160になります。)
 
-### 配列変数
+### array variables(配列変数)
 ```yaml
     char: 
         - 0.1;cat;dog;bird;fish
-    cat: ${char[1]}
+    cat: ${char[1]} # array is start 1, zero is not support(配列は1から始まります)
     dog: ${char[2]}
     bird: ${char[3]}
     fish: ${char[4]}
@@ -162,6 +168,23 @@ array variables can set weight at first of array. In this case, char has array o
 ```
 This case is replace char to \$\{animal\} and \$\{human\} (この場合、\$\{char\}が\$\{animal\}と\$\{human\}に置き換えられます)
 
+### associative array(連想配列)
+jsonl file(beings.jsonl)
+```jsonl
+{"W":0.1, "C":["animal"], V:"day", animal:"cat", size:"small"}
+{"W":0.1, "C":["animal"], V:"day", animal:"dog", size:"big"}
+{"W":0.1, "C":["animal"], V:"night", animal:"bird", size:"small"}
+{"W":0.1, "C":["animal"], V:"night", animal:"fish", size:"big"}
+```
+
+```yaml
+    being: jsonl/being.jsonl[animal]
+    animal: ${being["animal"]}
+    size: ${being["size"]}
+```
+
+ issue #1 nseted associative array is not supported(入れ子の連想配列はサポートされていません)
+
 ### ファイルの読み込み
 #### text
 ```yaml
@@ -172,7 +195,7 @@ This case is read text file date.txt. (この場合、date.txtファイルを読
 0.1;day
 0.1;night
 ```
-textではクエリーと連想配列はサポートされていません
+text is not support query and associative array(textではクエリーと連想配列はサポートされていません)
 
 #### jsonl
 ```yaml
@@ -188,7 +211,7 @@ This case is read jsonl file date.jsonl and query category animal. (この場合
 {"W":0.1, "C":["animal","human"], V:"night", animal:"human"} // multiple category(複数のカテゴリー)
 {"W":0.1, "C":["insect"], V:"night", animal:"ant"} // not query(クエリーされない)
 ```
-shortcut W=weight, C=category, V=variables(W,C,Vはweight, category, variablesのショートカットです) V can be array or string(Vは配列または文字列になります)
+shortcut "W"="weight", "C"="category", "V"="variable" (W,C,Vはweight, category, variablesのショートカットです) V can be array or string(Vは配列または文字列になります)
 
 This case is suppot query and associative array(このケースで連想配列がサポートされています)
 
@@ -204,8 +227,20 @@ Example(例)
         animal: ${date["animal"]} # associative array(連想配列)
         beings: jsonl/date.jsonl[animal,human] # multiple category(複数のカテゴリー) saparated by comma(カンマで区切る) not support space(スペースはサポートされません)
 ```
+#### DB query
+ issue #2 DB query is not supported(DBクエリーはサポートされていません)
+```yaml
+options:
+    db: sqlite3 # db connection(データベース接続)
+    db_connection: db/date.sqlite3  # db connection(データベース接続)
+    # connection string can use .env file(接続文字列は.envファイルを使用できます)
+    #db_connection: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@${MYSQL_HOST}/${MYSQL_DATABASE}
+    query: select * from TABLE where animal = ? # query(クエリー)
+variables:
+    date: date[animal] # ? is replaced to animal(？はanimalに置き換えられます)
+```
 
-#### profile(プロファイル)
+### profile(プロファイル)
 profile is override config file(設定ファイルをprofileで上書きします)
 ```yaml
 command:
@@ -214,13 +249,24 @@ command:
     enable_hr: true
     hr_scale: 2
 
-profiles: # override from default profile
+profiles: # override from default profile(デフォルトプロファイルから上書き)
     xl:
         command:
             width: 1024
             height: 1024
             enable_hr: false
             refiner_switch_at: 0.7
+    pory:
+        load_profile: [xl]                                  # before Load profile xl(プロファイルxlを先に読み込む)      
+        command:
+            override_settings:                              # WebUIのSettingを上書きする
+                CLIP_stop_at_last_layers: 2                 # CLIPの最終層を変更する(推奨 2)
+                emphasis: "No norm"                         # 強調の設定
+                fp8_storage: "Enable for SDXL"              # SDXLの時modelをfp8でロード    
+                cache_fp16_weight: true                     # Lora をfp16でキャッシュする
+                auto_vae_precision_bfloat16: true           # VAEがfp16で破綻する場合、bf16に変更
+                auto_vae_precision: true                    # VAEがfp16で破綻する場合f32に戻す
+                override_settings_restore_afterwards: true  # 実行後にオプションを書き戻す
 ```
 
 run profile(プロファイルを実行)
@@ -240,12 +286,12 @@ load_profile is profile load in profile(プロファイルから他のプロフ�
             prompt: "animal"
 ```
 
-This case is preload profile defaut -> animal (この場合、デフォルトプロファイル -> animalを先に読み込みます)
+This case is preload profile defaut next animal, last xl (この場合、デフォルトプロファイル -> animalを先に読み込みます)
 load_profile is not suport nested profile(プロファイルは入れ子にできません)
 
 
-#### パーサー
- sentence in \$\{ \} can be parsed(\$\{= \}の中に式が書けます)
+### パーサー
+ sentence in \$\{ \} can be parsed (\$\{= \}の中に式が書けます)
 
 Example(例)
 ```yaml
@@ -253,7 +299,7 @@ Example(例)
     width: ${=int(${size}) * 2} # width = size * 2(幅 = サイズ * 2)
 
 ```
-#### current functions(現在の関数)
+### current functions(現在の関数)
 no debug(デバッグしていません)
 
 functions(関数) str1,str2,.. are string(文字列) and x,y... are number(数値)
