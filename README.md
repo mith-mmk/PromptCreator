@@ -99,12 +99,16 @@ pip install pyyaml
 pip install Pillow
 pip install httpx
 ```
-# yaml mode(textモードは廃止になりました)
+# yaml mode
+  text mode is obsolete(textモードは廃止になりました)
+　yaml mode is create prompt list file from yaml file(yamlモードはyamlファイルからプロンプトリストファイルを作成します)
 
 ## difference from V1(V1との違い)
 - only variable mode(変数モードのみ)
 - appends is obsolete(appendsは廃止になりました)
   - change variables and array (variablesとarrayに変更)
+- multipe, aftermultipe is obsolete(multipe, aftermultipeは廃止になりました)
+  - change methods (methodsに変更)
 - enable associative array(連想配列をサポートしました)
 - enable jsonl read for list file(jsonlの読み込みが可能になりました)
 - category query for jsonl(カテゴリークエリーが可能になりました)
@@ -114,6 +118,7 @@ pip install httpx
 - random is generate random prompt(randomはランダムプロンプトを生成します)
 - multiple is generate multiple prompt(multipleは配列から複数のプロントを作成します)
 - cleanup is clean up prompt(cleanupはプロンプトをクリーンアップします)
+- default is random 0(defaultはランダム0です)
 
 ```yaml
 version: 2          # must(必須)
@@ -125,8 +130,8 @@ options:
     number: 10   # number of prompt(プロンプトの数) multipleの場合は配列数がかけ算される
 methods:  # random: 1  or multiple: array
     - multiple: char place # array char と place から複数のプロンプトを生成
-    - random 0 # random 0 is default(ランダム0はデフォルト)
-    - creanup prompt # clean up prompt (promptをクリーンアップ)
+    - random: 0 # random 0 is use options.number(0はoptions.numberを使用)
+    - creanup: prompt # clean up prompt (promptをクリーンアップ)
 variables:
     actions:
         - standing
@@ -210,8 +215,9 @@ This case is read jsonl file date.jsonl and query category animal. (この場合
 {"W":0.1, "C":["*"], V:"moonnight", animal:"bird"} // * is wlde card (*はワイルドカードです)
 {"W":0.1, "C":["animal","human"], V:"night", animal:"human"} // multiple category(複数のカテゴリー)
 {"W":0.1, "C":["insect"], V:"night", animal:"ant"} // not query(クエリーされない)
+{"weight":0.1, "category":["insect"],  "variable":"night", "animal":"ant"} // same as above(上と同じ)
 ```
-shortcut "W"="weight", "C"="category", "V"="variable" (W,C,Vはweight, category, variablesのショートカットです) V can be array or string(Vは配列または文字列になります)
+"W","C","V" are shortcuts "weight", "category", "variable" (W,C,Vはweight, category, variablesのショートカットです) V can be array or string(Vは配列または文字列になります)
 
 This case is suppot query and associative array(このケースで連想配列がサポートされています)
 
@@ -231,13 +237,12 @@ Example(例)
  issue #2 DB query is not supported(DBクエリーはサポートされていません)
 ```yaml
 options:
-    db: sqlite3 # db connection(データベース接続)
+    db: true
+database:
+    db: sqlite3 # [sqlite3, mysql, postgresql, mongodb]
     db_connection: db/date.sqlite3  # db connection(データベース接続)
-    # connection string can use .env file(接続文字列は.envファイルを使用できます)
-    #db_connection: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@${MYSQL_HOST}/${MYSQL_DATABASE}
-    query: select * from TABLE where animal = ? # query(クエリー)
 variables:
-    date: date[animal] # ? is replaced to animal(？はanimalに置き換えられます)
+    date: date[category = `animal`] # select * from date where category = `animal`'
 ```
 
 ### profile(プロファイル)
