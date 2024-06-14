@@ -176,10 +176,10 @@ This case is replace char to \$\{animal\} and \$\{human\} (この場合、\$\{ch
 ### associative array(連想配列)
 jsonl file(beings.jsonl)
 ```jsonl
-{"W":0.1, "C":["animal"], V:"day", "animal":"cat", size:"small"}
-{"W":0.1, "C":["animal"], V:"day", "animal":"dog", size:"big"}
-{"W":0.1, "C":["animal"], V:"night", "animal":"bird", size:"small"}
-{"W":0.1, "C":["animal"], V:"night", "animal":"fish", size:"big"}
+{"W":0.1, "C":["animal"], "V":"day", "animal":"cat", size:"small"}
+{"W":0.1, "C":["animal"], "V":"day", "animal":"dog", size:"big"}
+{"W":0.1, "C":["animal"], "V":"night", "animal":"bird", size:"small"}
+{"W":0.1, "C":["animal"], "V":"night", "animal":"fish", size:"big"}
 ```
 
 ```yaml
