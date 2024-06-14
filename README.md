@@ -168,7 +168,7 @@ array variables can set weight at first of array. In this case, char has array o
     char: 
         - ${animal}
         - ${human}
-    animal: [cat, dog, bird, fish]
+    "animal": [cat, dog, bird, fish]
     human: [girl,boy]
 ```
 This case is replace char to \$\{animal\} and \$\{human\} (この場合、\$\{char\}が\$\{animal\}と\$\{human\}に置き換えられます)
@@ -176,15 +176,15 @@ This case is replace char to \$\{animal\} and \$\{human\} (この場合、\$\{ch
 ### associative array(連想配列)
 jsonl file(beings.jsonl)
 ```jsonl
-{"W":0.1, "C":["animal"], V:"day", animal:"cat", size:"small"}
-{"W":0.1, "C":["animal"], V:"day", animal:"dog", size:"big"}
-{"W":0.1, "C":["animal"], V:"night", animal:"bird", size:"small"}
-{"W":0.1, "C":["animal"], V:"night", animal:"fish", size:"big"}
+{"W":0.1, "C":["animal"], V:"day", "animal":"cat", size:"small"}
+{"W":0.1, "C":["animal"], V:"day", "animal":"dog", size:"big"}
+{"W":0.1, "C":["animal"], V:"night", "animal":"bird", size:"small"}
+{"W":0.1, "C":["animal"], V:"night", "animal":"fish", size:"big"}
 ```
 
 ```yaml
     being: jsonl/being.jsonl[animal]
-    animal: ${being["animal"]}
+    "animal": ${being["animal"]}
     size: ${being["size"]}
 ```
 
@@ -208,13 +208,13 @@ text is not support query and associative array(textではクエリーと連想�
 ```
 This case is read jsonl file date.jsonl and query category animal. (この場合、date.jsonlファイルを読み込み、カテゴリーanimalをクエリします)
 ```jsonl
-{"W":0.1, "C":["animal"], V:"day", animal:"cat"}
-{"W":0.1, "C":["animal"], V:"day", animal:"dog"}
-{"W":0.1, "C":["animal"], V:"night", animal:"bird"}
-{"W":0.1, "C":["animal"], V:"night", animal:"fish"}
-{"W":0.1, "C":["*"], V:"moonnight", animal:"bird"} // * is wlde card (*はワイルドカードです)
-{"W":0.1, "C":["animal","human"], V:"night", animal:"human"} // multiple category(複数のカテゴリー)
-{"W":0.1, "C":["insect"], V:"night", animal:"ant"} // not query(クエリーされない)
+{"W":0.1, "C":["animal"], "V":"day", "animal":"cat"}
+{"W":0.1, "C":["animal"], "V":"day", "animal":"dog"}
+{"W":0.1, "C":["animal"], "V":"night", "animal":"bird"}
+{"W":0.1, "C":["animal"], "V":"night", "animal":"fish"}
+{"W":0.1, "C":["*"], "V":"moonnight", "animal":"bird"} // * is wlde card (*はワイルドカードです)
+{"W":0.1, "C":["animal","human"], "V":"night", "animal":"human"} // multiple category(複数のカテゴリー)
+{"W":0.1, "C":["insect"], "V":"night", "animal":"ant"} // not query(クエリーされない)
 {"weight":0.1, "category":["insect"],  "variable":"night", "animal":"ant"} // same as above(上と同じ)
 ```
 "W","C","V" are shortcuts "weight", "category", "variable" (W,C,Vはweight, category, variablesのショートカットです) V can be array or string(Vは配列または文字列になります)
@@ -230,7 +230,7 @@ Example(例)
         all: jsonl/all.jsonl # all category(全てのカテゴリー)
         date: jsonl/date.jsonl[animal] # category query(カテゴリークエリー)
         day: ${date} # variable = ${date[1]}
-        animal: ${date["animal"]} # associative array(連想配列)
+        "animal": ${date["animal"]} # associative array(連想配列)
         beings: jsonl/date.jsonl[animal,human] # multiple category(複数のカテゴリー) saparated by comma(カンマで区切る) not support space(スペースはサポートされません)
 ```
 #### DB query
@@ -287,7 +287,7 @@ load_profile is profile load in profile(プロファイルから他のプロフ�
     profile:
         xl:
             load_profile: [animal]
-        animal:
+        "animal":
             prompt: "animal"
 ```
 
