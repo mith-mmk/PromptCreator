@@ -5,6 +5,7 @@ list*
 __pycache__
 .vscode
 .env
+$jsonl
 test/
 plugins/**
 !plugins/curl
