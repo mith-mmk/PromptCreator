@@ -189,6 +189,11 @@ def main(args):
                                             del t["verbose"]
                                         if "array" in t:
                                             del t["array"]
+                            if args.prompt:
+                                new_text = []
+                                for item in text:
+                                    new_text.append(item.get("prompt", ""))
+                                text = new_text
                             if args.v1json:
                                 text = json.dumps(text, indent=2)  # escape unicode
                             else:
@@ -472,6 +477,15 @@ def run_from_args(command_args=None):
         default=False,
         help="output v1 json",
     )
+    parser.add_argument(
+        "--prompt",
+        type=bool,
+        nargs="?",
+        const=True,
+        default=False,
+        help="output prompt only",
+    )
+
     parser.add_argument(
         "--json-escape",
         type=bool,
