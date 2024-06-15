@@ -143,7 +143,7 @@ class FormulaCompute:
                     break
                 weight *= next_multiply
         except Exception as e:
-            print(e)
+            debug_print(e)
             raise e
         return text.strip()
 
@@ -305,7 +305,6 @@ class FormulaCompute:
                     TOKENTYPE.ERROR,
                 )
                 return False
-            print(parsed_token)
 
             if parsed_token["type"] == TOKENTYPE.NUMBER:
                 j = len(parsed_tokens)
@@ -657,7 +656,6 @@ class FormulaCompute:
                 )
                 count += len(typeVariable3.match(current).group(0))
             elif typeVariable6.match(current) and self.version >= 2:
-                print(f"typeVariable6: {typeVariable6.match(current).group(0)}")
                 self.tokens.append(
                     {
                         "type": TOKENTYPE.VARIABLE,
@@ -677,7 +675,6 @@ class FormulaCompute:
                 )
                 count += len(typeVariable2.match(current).group(0))
             elif typeVariable1.match(current):
-                print(f"typeVariable1: {typeVariable1.match(current).group(0)}")
                 self.token_type = TOKENTYPE.VARIABLE
                 self.token_start = count
                 self.token_end = count + len(typeVariable1.match(current).group(0))
