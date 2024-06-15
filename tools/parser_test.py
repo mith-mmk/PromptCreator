@@ -11,6 +11,7 @@ args = os.sys.argv
 if len(args) > 1:
     formula = args[1]
     variables = {}
+    attributes = {}
     if len(args) > 2:
         vals = args[2]  # width=100, height=200, name="test, weight=0.1"
         vals = vals.split(",")
@@ -29,18 +30,14 @@ if len(args) > 1:
                 if "." in key:
                     print(key)
                     key, subkey = key.split(".")
-                    if key in variables:
-                        if isinstance(variables[key], dict):
-                            variables[key][subkey] = value
-                        else:
-                            variables[key] = {subkey: value}
+                    if key in attributes:
+                        attributes[key][subkey] = value
                     else:
-                        variables[key] = {subkey: value}
+                        attributes[key] = {subkey: value}
                     continue
 
                 if key in variables:
                     # key width.xl=1280 => width = {xl: 1280}
-
                     if isinstance(variables[key], list):
                         variables[key].append(value)
                     else:
@@ -49,7 +46,12 @@ if len(args) > 1:
                     variables[key] = value
     print(f"Formula: {formula}")
     print(f"Variables: {variables}")
-    compute = FormulaCompute(formula, variables=variables, debug=True)
+    print(f"attributes: {attributes}")
+    version = float(variables.get("version", 1))
+
+    compute = FormulaCompute(
+        formula, variables=variables, attributes=attributes, debug=True, version=version
+    )
     res = compute.getCompute()
     if res is None:
         error = compute.getError()

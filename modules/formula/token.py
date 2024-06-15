@@ -16,5 +16,6 @@ class TOKENTYPE:
     STRING = 14
     OTHER = 15
     ARRAYBRACKET = 16
+    ARRAYOBJECT = 17
     END = 100
     ERROR = 99

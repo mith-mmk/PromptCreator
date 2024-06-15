@@ -59,7 +59,7 @@ operator_order = {
 
 
 class FormulaCompute:
-    def __init__(self, formula="", variables={}, attributes={}, debug=False):
+    def __init__(self, formula="", variables={}, attributes={}, debug=False, version=1):
         self.formula = formula
         self.variables = variables
         self.attributes = attributes
@@ -68,6 +68,10 @@ class FormulaCompute:
         self.chained_variables = {}
         self.chained_attriblutes = {}
         self.mode = "init"
+        self.version = version
+
+    def setVersion(self, version):
+        self.version = version
 
     def setDebug(self, debug):
         self.debug = debug
@@ -190,57 +194,62 @@ class FormulaCompute:
             # variable or array
             if token["type"] == TOKENTYPE.VARIABLE:
                 # key,1 => key[1] -> variables[key][0]
-                if "," in token["value"]:
-                    var, num = token["value"].split(",")
-                    num = int(num) - 1
-                else:
-                    var = token["value"]
-                    num = 0
-                debug_print("var", var, num, debug=self.debug)
-
-                # v1 の処理　v2 は []　内を式として処理する
-                array = re.compile(r"(.*)\[([0-9]+)\]")
-                if array.match(var):
-                    var, num = array.match(var).groups()
-                    num = int(num) - 1
-                    debug_print("array", var, num, debug=self.debug)
-                # dict key["subkey"] => variables[key]["subkey"]
-                subkey = None
-                dict = re.compile(r"(.*)\[\"(.*)\"\]")
-                if dict.match(var):
-                    var, subkey = dict.match(var).groups()
-                    debug_print("dict var subkey", var, subkey, debug=self.debug)
-                if var in self.variables:
-                    values = self.variables[var]
-                    if subkey:
-                        debug_print(f"subkey: {subkey}", debug=self.debug)
-                        value = self.attributes.get(var, {}).get(subkey, None)
-                    elif type(values) is list:
-                        value = values[num]
+                if self.version < 2:
+                    if "," in token["value"]:
+                        var, num = token["value"].split(",")
+                        num = int(num) - 1
                     else:
-                        value = values
-                    if type(value) is int or type(value) is float:
-                        parsed_token["type"] = TOKENTYPE.NUMBER
-                    elif type(value) is str:
-                        parsed_token["type"] = TOKENTYPE.STRING
+                        var = token["value"]
+                        num = 0
+                    debug_print("var", var, num, debug=self.debug)
+
+                    # v1 の処理　v2 は []　内を式として処理する
+
+                    array = re.compile(r"(.*)\[([0-9]+)\]")
+                    if array.match(var):
+                        var, num = array.match(var).groups()
+                        num = int(num) - 1
+                        debug_print("array", var, num, debug=self.debug)
+                    # dict key["subkey"] => variables[key]["subkey"]
+                    subkey = None
+                    dict = re.compile(r"(.*)\[\"(.*)\"\]")
+                    if dict.match(var):
+                        var, subkey = dict.match(var).groups()
+                        debug_print("dict var subkey", var, subkey, debug=self.debug)
+                    if var in self.variables:
+                        values = self.variables[var]
+                        if subkey:
+                            debug_print(f"subkey: {subkey}", debug=self.debug)
+                            value = self.attributes.get(var, {}).get(subkey, None)
+                        elif type(values) is list:
+                            value = values[num]
+                        else:
+                            value = values
+                        if type(value) is int or type(value) is float:
+                            parsed_token["type"] = TOKENTYPE.NUMBER
+                        elif type(value) is str:
+                            parsed_token["type"] = TOKENTYPE.STRING
+                        else:
+                            self.setTokenError(
+                                "Unknown variable type",
+                                self.token_start,
+                                self.token_end,
+                                TOKENTYPE.ERROR,
+                            )
+                        parsed_token["value"] = value
+                        debug_print("value", parsed_token, debug=self.debug)
                     else:
                         self.setTokenError(
-                            "Unknown variable type",
+                            "Unknown variable",
                             self.token_start,
                             self.token_end,
                             TOKENTYPE.ERROR,
                         )
-                    parsed_token["value"] = value
-                    debug_print("value", parsed_token, debug=self.debug)
+                        debug_print("Unknown variable", var, debug=self.debug)
+                        return False
                 else:
-                    self.setTokenError(
-                        "Unknown variable",
-                        self.token_start,
-                        self.token_end,
-                        TOKENTYPE.ERROR,
-                    )
-                    debug_print("Unknown variable", var, debug=self.debug)
-                    return False
+                    # V2 では変数の処理は後で行う
+                    parsed_token = token
             # number
             elif token["type"] == TOKENTYPE.NUMBER:
                 # int or float
@@ -271,6 +280,8 @@ class FormulaCompute:
                 parsed_token = token
             elif token["type"] == TOKENTYPE.BRACKET:
                 parsed_token = token
+            elif token["type"] == TOKENTYPE.ARRAYBRACKET:
+                parsed_token = token
             elif token["type"] == TOKENTYPE.COMMA:
                 parsed_token = token
             elif token["type"] == TOKENTYPE.SPACE:
@@ -294,6 +305,7 @@ class FormulaCompute:
                     TOKENTYPE.ERROR,
                 )
                 return False
+            print(parsed_token)
 
             if parsed_token["type"] == TOKENTYPE.NUMBER:
                 j = len(parsed_tokens)
@@ -304,6 +316,11 @@ class FormulaCompute:
                 elif j >= 2 and parsed_tokens[j - 1]["type"] == TOKENTYPE.OPERATOR:
                     ope = parsed_tokens[j - 1]["value"]
                     if parsed_tokens[j - 2]["type"] == TOKENTYPE.OPERATOR:
+                        head = True
+                    elif (
+                        parsed_tokens[j - 2]["type"] == TOKENTYPE.ARRAYBRACKET
+                        and parsed_tokens[j - 2]["value"] == "["
+                    ):
                         head = True
                     elif (
                         parsed_tokens[j - 2]["type"] == TOKENTYPE.BRACKET
@@ -368,7 +385,7 @@ class FormulaCompute:
         # 逆ポーランド記法に変換する
         reversed_polish = []
         stack = []
-        debug_print(self.tokens, debug=self.debug)
+        debug_print(f"tokens {self.tokens}", debug=self.debug)
         for token in self.tokens:
             debug_print(token, debug=self.debug)
             if (
@@ -385,6 +402,16 @@ class FormulaCompute:
                     if stack[-1]["type"] == TOKENTYPE.BRACKET:
                         break
                     reversed_polish.append(stack.pop())
+            elif token["type"] == TOKENTYPE.ARRAYBRACKET:
+                if token["value"] == "[":
+                    stack.append({"type": TOKENTYPE.ARRAYOBJECT, "value": "(object)"})
+                    stack.append({"type": TOKENTYPE.BRACKET, "value": "("})
+                else:
+                    while len(stack) > 0:
+                        if stack[-1]["type"] == TOKENTYPE.BRACKET:
+                            stack.pop()
+                            break
+                        reversed_polish.append(stack.pop())
             elif token["type"] == TOKENTYPE.BRACKET:
                 if token["value"] == "(":
                     stack.append(token)
@@ -460,6 +487,42 @@ class FormulaCompute:
                     stack.append(token)
                 case TOKENTYPE.VARIABLE:
                     stack.append(token)
+                case TOKENTYPE.ARRAYOBJECT:
+                    # 1つ前と2つ前のTOKENを取得する　(key)
+                    if len(stack) >= 2:
+                        key = stack.pop()
+                        var = stack.pop()
+                        debug_print(
+                            f"var {var['value']}[{key['value']}]", debug=self.debug
+                        )
+                        if var["type"] == TOKENTYPE.VARIABLE:
+                            values = self.variables.get(var["value"], [])
+                            attributes = self.attributes.get(var["value"], {})
+                            if key["value"] in attributes:
+                                stack.append(
+                                    {
+                                        "type": TOKENTYPE.NUMBER,
+                                        "value": attributes[key["value"]],
+                                    }
+                                )
+                            else:
+                                try:
+                                    stack.append(
+                                        {
+                                            "type": TOKENTYPE.NUMBER,
+                                            "value": values[int(key["value"]) - 1],
+                                        }
+                                    )
+                                except Exception as e:
+                                    debug_print(e, debug=self.debug)
+                                    stack.append(
+                                        {
+                                            "type": TOKENTYPE.NUMBER,
+                                            "value": values[0],
+                                        }
+                                    )
+                        debug_print(stack, debug=self.debug)
+
                 case TOKENTYPE.FUNCTION:
                     # TOKENから引数の数が分からないので、関数ごとに処理する
                     function = token["value"]
@@ -496,19 +559,24 @@ class FormulaCompute:
         count = 0
         typeSpace = re.compile(r"^\s+")
         typeNumber = re.compile(r"^[0-9]+(\.[0-9]+)?")
-        typeVariable1 = re.compile(r"^[a-zA-Z_$][a-zA-Z0-9_$]*")
+        typeVariable1 = re.compile(
+            r"^[a-zA-Z_$][a-zA-Z0-9_$]*|^([a-zA-Z_$][a-zA-Z0-9__$]*\:)*[a-zA-Z_\-$][a-zA-Z0-9_$]"
+        )
         # info:abc[1]
         typeVariable2 = re.compile(
             r"^([a-zA-Z_$][a-zA-Z0-9__$]*\:)*[a-zA-Z_\-$][a-zA-Z0-9_$]*(\[([0-9]+|\*)\])*"
         )
-        # abc,1
+        # abc,1 V1 only
         typeVariable3 = re.compile(r"^[a-zA-Z_$][a-zA-Z0-9_]*\,[0-9]+")
-        # abc["abc"]
+        # abc["abc"] V1 only
         typeVariable4 = re.compile(r"^[a-zA-Z_$][a-zA-Z0-9_]*\[\".*?\"\]")
-        # abc['abc']
+        # abc['abc'] V1 only
         typeVariable5 = re.compile(r"^[a-zA-Z_$][a-zA-Z0-9_]*\[\'.*?\'\]")
+        # abc.abc V2 only
+        typeVariable6 = re.compile(r"^[a-zA-Z_$][a-zA-Z0-9_]*\.[a-zA-Z_$][a-zA-Z0-9_]*")
         typeOperator = re.compile(r"^(\+|\-|\*{1,2}|\/|\%|\^|>|<|>=|<=|==|!=|&&|\|\|)")
         typeBracket = re.compile(r"^(\(|\))")
+        typeArrayBracket = re.compile(r"^\[|\]")
         typeFunction = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*\s*\(")
         typeComma = re.compile(r"^,")
         # " \" "
@@ -555,7 +623,7 @@ class FormulaCompute:
                     }
                 )
                 count += len(typeOperator.match(current).group(0))
-            elif typeVariable5.match(current):
+            elif typeVariable5.match(current) and self.version < 2:
                 self.token_type = TOKENTYPE.VARIABLE
                 self.token_start = count
                 self.token_end = count + len(typeVariable5.match(current).group(0))
@@ -566,7 +634,7 @@ class FormulaCompute:
                     }
                 )
                 count += len(typeVariable5.match(current).group(0))
-            elif typeVariable4.match(current):
+            elif typeVariable4.match(current) and self.version < 2:
                 self.token_type = TOKENTYPE.VARIABLE
                 self.token_start = count
                 self.token_end = count + len(typeVariable4.match(current).group(0))
@@ -577,7 +645,7 @@ class FormulaCompute:
                     }
                 )
                 count += len(typeVariable4.match(current).group(0))
-            elif typeVariable3.match(current):
+            elif typeVariable3.match(current) and self.version < 2:
                 self.token_type = TOKENTYPE.VARIABLE
                 self.token_start = count
                 self.token_end = count + len(typeVariable3.match(current).group(0))
@@ -588,7 +656,16 @@ class FormulaCompute:
                     }
                 )
                 count += len(typeVariable3.match(current).group(0))
-            elif typeVariable2.match(current):
+            elif typeVariable6.match(current) and self.version >= 2:
+                print(f"typeVariable6: {typeVariable6.match(current).group(0)}")
+                self.tokens.append(
+                    {
+                        "type": TOKENTYPE.VARIABLE,
+                        "value": typeVariable6.match(current).group(0),
+                    }
+                )
+                count += len(typeVariable6.match(current).group(0))
+            elif typeVariable2.match(current) and self.version < 2:
                 self.token_type = TOKENTYPE.VARIABLE
                 self.token_start = count
                 self.token_end = count + len(typeVariable2.match(current).group(0))
@@ -600,6 +677,7 @@ class FormulaCompute:
                 )
                 count += len(typeVariable2.match(current).group(0))
             elif typeVariable1.match(current):
+                print(f"typeVariable1: {typeVariable1.match(current).group(0)}")
                 self.token_type = TOKENTYPE.VARIABLE
                 self.token_start = count
                 self.token_end = count + len(typeVariable1.match(current).group(0))
@@ -621,6 +699,17 @@ class FormulaCompute:
                     }
                 )
                 count += len(typeBracket.match(current).group(0))
+            elif typeArrayBracket.match(current) and self.version >= 2:
+                self.token_type = TOKENTYPE.ARRAYBRACKET
+                self.token_start = count
+                self.token_end = count + len(typeArrayBracket.match(current).group(0))
+                self.tokens.append(
+                    {
+                        "type": TOKENTYPE.ARRAYBRACKET,
+                        "value": typeArrayBracket.match(current).group(0),
+                    }
+                )
+                count += len(typeArrayBracket.match(current).group(0))
             elif typeComma.match(current):
                 self.token_type = TOKENTYPE.COMMA
                 self.token_start = count
@@ -667,20 +756,24 @@ class FormulaCompute:
 
     # 静的関数
     @staticmethod
-    def calculate(formula, variables={}, debug=False):
+    def calculate(formula, variables={}, debug=False, version=1):
         from .compute import FormulaCompute
 
-        compute = FormulaCompute(formula, variables, attributes={}, debug=debug)
+        compute = FormulaCompute(
+            formula, variables, attributes={}, debug=debug, version=version
+        )
         if compute.compute():
             return compute.getCompute()
         else:
             return None
 
     @staticmethod
-    def calculate_debug(formula, variables={}):
+    def calculate_debug(formula, variables={}, attributes={}, version=1):
         from .compute import FormulaCompute
 
-        compute = FormulaCompute(formula, variables, debug=True)
+        compute = FormulaCompute(
+            formula, variables, attributes={}, debug=True, version=version
+        )
         if compute.compute():
             return compute.getCompute(), None
         else:
