@@ -103,7 +103,7 @@ class FormulaCompute:
         text = ""
         try:
             array = re.compile(r"(.+?)\[(\d+)\]")
-            dict = re.compile(r"(.+?)\[\"(.+?)\"\]")
+            dict = re.compile(r"(.+?)\[\"(.+?)\"\]|(.+?)\[\'(.+?)\'\]")
             subkey = None
             flag = "array"
             if array.match(variable):
@@ -197,7 +197,8 @@ class FormulaCompute:
                     var = token["value"]
                     num = 0
                 debug_print("var", var, num, debug=self.debug)
-                # array key[1] => variables[key][0]
+
+                # v1 の処理　v2 は []　内を式として処理する
                 array = re.compile(r"(.*)\[([0-9]+)\]")
                 if array.match(var):
                     var, num = array.match(var).groups()
@@ -349,7 +350,7 @@ class FormulaCompute:
         # or        :=  <formula> || <formula>
         # function     <function>(<formula> , <formula>,...)
         # number       <number>
-        # variable     <variable>
+        # variable     <variable>　| <variable>[<formula>] | <variable>.<variable>
         # string       <string>
         # bracket      (<formula>)
         # formula       <expression> | <term> | <factor> | <compare> | <function> | <number> | <variable> | <string> | <bracket>
