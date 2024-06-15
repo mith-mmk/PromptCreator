@@ -898,9 +898,10 @@ def run_txt2img(config, args=None):
         vae = model["vae"]
         mode = model["mode"]
         Logger.info(f"Set model {model_name} vae {vae} mode {mode}")
-        info["$MODEL"] = model_name
-        info["$VAE"] = vae
-        info["$MODE"] = mode
+        if info != "":
+            info = f"$MODEL={model_name},$VAE={vae},$MODE={mode}," + info
+        else:
+            info = f"$MODEL={model_name},$VAE={vae},$MODE={mode}"
 
         if model.get("overrides"):
             # model overrides is only text
