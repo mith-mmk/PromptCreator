@@ -132,12 +132,12 @@ def text_formula_v2(text, variables, error_info="", attributes={}):
 
 # in test
 def prompt_formula_v2(
-    new_prompt, variables, info=None, error_info="", nested=0, attributes={}
+    new_prompt, variables, opt={}, error_info="", nested=0, attributes={}
 ):
     try:
-        if info is not None:
-            for key, item in info.items():
-                variables[f"info:{key}"] = item
+        info = opt.get("info", {})
+        for key, item in info.items():
+            variables[f"info:{key}"] = item
     except Exception as e:
         Logger.error(f"Error happen info get info {info}, {error_info}")
         Logger.error(e)
@@ -448,7 +448,7 @@ def prompt_multiple_v2(yml, variable, array, input=[], attributes=None):
             if attributes:
                 verbose["attributes"] = attributes
             output[i] = prompt_formula_v2(
-                output[i], args, info=None, attributes=attributes
+                output[i], args, opt=yml, attributes=attributes
             )
             output[i]["verbose"] = verbose
             i = i + 1
@@ -488,6 +488,8 @@ def weight_calc_v2(variable, default_weight=0.1, key=""):
     for i, item in enumerate(variable):
         start_weight = weight
         weight = item.get("weight", default_weight) * coef + weight
+        if weight == 0.0:
+            continue
         # deep copy item to variable
         keys = list(item.keys())
         weight_txt = {}
@@ -527,6 +529,7 @@ def choice_v2(array):
 
 def prompt_random_v2(yml, max_number, input=[]):
     weighted_variables = {}
+
     if not yml.get("weight_calced"):
         # Logger.debug("weight calc")
         appends = yml.get("variables", {})
@@ -579,14 +582,14 @@ def prompt_random_v2(yml, max_number, input=[]):
                 verbose[key] = yml["info"][key]
             current["verbose"] = verbose
         current = prompt_formula_v2(
-            current, current_variables, None, error_info="", attributes=attributes
+            current, current_variables, opt=yml, error_info="", attributes=attributes
         )
         current.get("verbose", {})["variables"] = current_variables
         if attributes:
             current.get("verbose", {})["attributes"] = attributes
         values = copy.deepcopy(current_variables)
         values = prompt_formula_v2(
-            values, current_variables, None, attributes=attributes
+            values, current_variables, opt=yml, attributes=attributes
         )
         current.get("verbose", {})["values"] = values
         output[idx] = current
