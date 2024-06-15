@@ -769,6 +769,8 @@ def create_text_v2(opt):
                         if key in item:
                             # remove space
                             item[key] = re.sub(r"\s+", " ", item[key])
+                            # remove (,\s*)+ => ,
+                            item[key] = re.sub(r"(,\s*)+", ",", item[key])
                             # remove space after ,
                             item[key] = re.sub(r"\s*,+\s*", ", ", item[key])
                             # remove space after (
@@ -779,6 +781,10 @@ def create_text_v2(opt):
                             item[key] = re.sub(r"\[\s*", "[", item[key])
                             # remove space before ]
                             item[key] = re.sub(r"\s*\]", "]", item[key])
+                            # remove last , and space
+                            item[key] = re.sub(r",\s*$", "", item[key])
+                            # trim
+                            item[key] = item[key].strip()
 
         else:
             Logger.error(f"method {key} is not support, skip")
