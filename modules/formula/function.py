@@ -309,6 +309,53 @@ def callFunction(compute, function, stack):
             stack.append({"type": TOKENTYPE.NUMBER, "value": int(time.strftime("%w"))})
         case "week":  # week() as 0-53
             stack.append({"type": TOKENTYPE.NUMBER, "value": int(time.strftime("%W"))})
+        case (
+            "chained"
+        ):  # chained("variable", weight, max_number, joiner) # variabel is string
+            # weight is 0.0 - 1.0   max_number is int > 0
+            max_number = stack.pop()
+            max_number = max_number["value"]
+            if isinstance(max_number, int) is False or max_number <= 0:
+                compute.setTokenError(
+                    "Chained max_number must be int > 0",
+                    compute.token_start,
+                    compute.token_end,
+                    TOKENTYPE.ERROR,
+                )
+                return False
+            weight = stack.pop()
+            weight = weight["value"]
+            if isinstance(weight, float) is False or (weight < 0 and weight > 1):
+                compute.setTokenError(
+                    "Chained weight must be float >= 0",
+                    compute.token_start,
+                    compute.token_end,
+                    TOKENTYPE.ERROR,
+                )
+                return False
+            variable = stack.pop()
+            variable = variable["value"]
+            if isinstance(variable, str) is False:
+                compute.setTokenError(
+                    "Chained variable must be string",
+                    compute.token_start,
+                    compute.token_end,
+                    TOKENTYPE.ERROR,
+                )
+                return False
+            value = compute.getChained(variable, weight, max_number)
+            if isinstance(value, int) or isinstance(value, float):
+                stack.append({"type": TOKENTYPE.NUMBER, "value": value})
+            elif isinstance(value, str):
+                stack.append({"type": TOKENTYPE.STRING, "value": value})
+            else:
+                compute.setTokenError(
+                    "Chained parse error, must be int, float or string",
+                    compute.token_start,
+                    compute.token_end,
+                    TOKENTYPE.ERROR,
+                )
+            return False
         case _:
             compute.setTokenError(
                 "Unknown function",

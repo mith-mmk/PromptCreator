@@ -46,25 +46,32 @@ Logger = getDefaultLogger()
 # commands:
 
 
-def text_formula_v2(text, variables, error_info="", attributes={}):
-    compute = FormulaCompute()
+def text_formula_v2(text, args):
+    variables = args.get("variables", {})
+    error_info = args.get("error_info", "")
+    attributes = args.get("attributes", {})
+    chained_var = args.get("chained_var", {})
+    chained_attr = args.get("chained_attr", {})
     # Logger.debug(f"text_formula_v2 {text}")
     # Logger.debug(f"attributes {attributes}")
 
+    compute = FormulaCompute()
+    compute.setChainedVariables(chained_var, chained_attr)
     formulas = re.findall(r"\$\{\=(.+?)\}", text)
     for formula in formulas:
-        replace_text = compute.getCompute(formula, variables)
+        replace_text = compute.getCompute(formula, variables, attributes)
         if replace_text is not None:
             text = text.replace("${=" + formula + "}", str(replace_text))
         else:
             error = compute.getError()
             Logger.error(f"Error happen formula {error_info} {formula}, {error}")
+            return text
     simple_formulas = re.findall(r"\$\{(.+?)\}", text)
     # Logger.debug(f"simple_formulas {simple_formulas}")
     for formula in simple_formulas:
         _formula = formula.strip()
         # v1 formula ${variable,n} n = 1, 2, 3, ...
-        if re.match(r"(.+?)\,(\d+)", _formula):
+        if re.match(r"([a-zA-Z\-\_]?)\,(\d+)", _formula):
             # array formula
             try:
                 array_formula = re.match(r"(.+?)\,(\d+)", formula)
@@ -82,7 +89,7 @@ def text_formula_v2(text, variables, error_info="", attributes={}):
             except Exception as e:
                 Logger.verbose(f"Error happen array formula {error_info} {formula} {e}")
         # v2 formula
-        elif re.match(r"(.+?)\s*\[\s*(\d+)\s*\]", _formula):
+        elif re.match(r"([a-zA-Z\-\_].*?)\s*\[\s*(\d+)\s*\]", _formula):
             # array formula ${variable[n]} n = 0, 1, 2, ...
             array_formula = re.match(r"(.+?)\s*\[\s*(\d+)\s*\]", formula)
             variable = array_formula.group(1)
@@ -100,7 +107,7 @@ def text_formula_v2(text, variables, error_info="", attributes={}):
             except Exception as e:
                 Logger.verbose(f"Error happen array formula {error_info} {formula} {e}")
         # dict formula ${variable["key"]}
-        elif re.match(r"(.+?)\s*\[\s*\"(.+?)\"\s*\]", _formula):
+        elif re.match(r"([a-zA-Z\-\_].*?)\s*\[\s*\"(.+?)\"\s*\]", _formula):
             dict_formula = re.match(r"(.+?)\s*\[\s*\"(.+?)\"\s*\]", formula)
             variable = dict_formula.group(1)
             key = dict_formula.group(2)
@@ -135,57 +142,61 @@ def prompt_formula_v2(
     new_prompt, variables, opt={}, error_info="", nested=0, attributes={}
 ):
     try:
-        info = opt.get("info", {})
-        for key, item in info.items():
-            variables[f"info:{key}"] = item
+        if nested == 0:
+            info = opt.get("info", {})
+            for key, item in info.items():
+                variables[f"info:{key}"] = item
     except Exception as e:
         Logger.error(f"Error happen info get info {info}, {error_info}")
         Logger.error(e)
 
+    args = {
+        "variables": variables,
+        "error_info": error_info,
+        "attributes": attributes,
+        "chained_var": opt.get("weighted_variables", {}),
+        "chained_attr": opt.get("attributes", {}),
+    }
+
     if type(new_prompt) is str:
-        return text_formula_v2(new_prompt, variables, error_info, attributes)
+        return text_formula_v2(new_prompt, args)
     elif type(new_prompt) is dict:
         for key in new_prompt:
             # verbose は変換しない
             if key == "verbose":
                 continue
             if type(new_prompt[key]) is str:
-                new_prompt[key] = text_formula_v2(
-                    new_prompt[key], variables, error_info, attributes
-                )
+                new_prompt[key] = text_formula_v2(new_prompt[key], args)
             elif type(new_prompt[key]) is dict:
                 for key2 in new_prompt[key]:
                     if type(new_prompt[key][key2]) is str:
                         new_prompt[key][key2] = text_formula_v2(
-                            new_prompt[key][key2], variables, error_info, attributes
+                            new_prompt[key][key2], args
                         )
             elif type(new_prompt[key]) is list:
                 for i, item in enumerate(new_prompt[key]):
                     if type(item) is str:
-                        new_prompt[key][i] = text_formula_v2(
-                            item, variables, error_info, attributes
-                        )
+                        new_prompt[key][i] = text_formula_v2(item, args)
                     elif type(item) is dict:
                         for key2 in item:
                             if type(item[key2]) is str:
                                 new_prompt[key][i][key2] = text_formula_v2(
-                                    item[key2], variables, error_info, attributes
+                                    item[key2], args
                                 )
     elif type(new_prompt) is list:
         for i, item in enumerate(new_prompt):
             if type(item) is str:
-                new_prompt[i] = text_formula_v2(item, variables, error_info, attributes)
+                new_prompt[i] = text_formula_v2(item, args)
             elif type(item) is dict:
                 for key in item:
                     if type(item[key]) is str:
-                        new_prompt[i][key] = text_formula_v2(
-                            item[key], variables, error_info, attributes
-                        )
+                        new_prompt[i][key] = text_formula_v2(item[key], args)
     # シリアライズして ${.*?}があるか探す
     json_str = json.dumps(new_prompt)
     formulas = re.findall(r"\$\{(.+?)\}", json_str)
     # あれば再帰する
     if len(formulas) > 0:
+        error_info = error_info.replace(" nested formula " + str(nested), "")
         nested = nested + 1
         error_info = error_info + " nested formula " + str(nested)
         if nested > 10:  # arrayの場合があるので10回まで
@@ -193,7 +204,7 @@ def prompt_formula_v2(
         new_prompt = prompt_formula_v2(
             new_prompt,
             variables,
-            info=info,
+            opt=opt,
             error_info=error_info,
             nested=nested,
             attributes=attributes,
@@ -527,16 +538,13 @@ def choice_v2(array):
     return array[0]["variables"], attributes
 
 
-def prompt_random_v2(yml, max_number, input=[]):
+def calc_weighted_variables(yml):
     weighted_variables = {}
-
     if not yml.get("weight_calced"):
-        # Logger.debug("weight calc")
         appends = yml.get("variables", {})
         keys = list(appends.keys())
         for key in keys:
             try:
-                # Logger.debug(f"process weight calc {key}")
                 weighted = weight_calc_v2(appends[key], key=key)
                 weighted_variables[key] = weighted
             except Exception as e:
@@ -545,7 +553,10 @@ def prompt_random_v2(yml, max_number, input=[]):
                 raise e
         yml["weighted_variables"] = weighted_variables
         yml["weight_calced"] = True
+    return yml
 
+
+def prompt_random_v2(yml, max_number, input=[]):
     # Logger.debug(f"prompt_random_v2 {max_number}")
     variables = yml.get("weighted_variables", {})
     # Logger.debug(f"variables {variables}")
@@ -727,6 +738,9 @@ def create_text_v2(opt):
             an_array.append(item.get("variables", []))
         array[key] = an_array
     output = []
+
+    calc_weighted_variables(yml)
+
     if "methods" not in yml:
         yml["methods"] = []
         yml["methods"].append({"random": 0})

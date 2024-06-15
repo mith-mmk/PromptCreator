@@ -59,11 +59,14 @@ operator_order = {
 
 
 class FormulaCompute:
-    def __init__(self, formula="", variables={}, debug=False):
+    def __init__(self, formula="", variables={}, attributes={}, debug=False):
         self.formula = formula
         self.variables = variables
+        self.attributes = attributes
         self.reslut = None
         self.debug = debug
+        self.chained_variables = {}
+        self.chained_attriblutes = {}
         self.mode = "init"
 
     def setDebug(self, debug):
@@ -77,15 +80,68 @@ class FormulaCompute:
         self.variables = variables
         self.result = None
 
-    def getCompute(self, formula=None, variables={}):
+    def setChainedVariables(self, variables={}, attriblutes={}):
+        self.chained_variables = variables
+        self.chained_attriblutes = attriblutes
+        self.result = None
+
+    def getCompute(self, formula=None, variables={}, attributes={}):
         if formula is None:
             debug_print(f"formula: {formula}", debug=self.debug)
             self.compute()
             return self.result
         self.formula = formula
         self.variables = variables
+        self.attributes = attributes
         self.compute()
         return self.result
+
+    # V2 only function
+    def getChained(self, variable, weight, max_number, next_multiply=1.0, joiner=", "):
+        # get variavle var or var[1] or var["key"]
+        # (.+?)\[\d+\]
+        text = ""
+        try:
+            array = re.compile(r"(.+?)\[(\d+)\]")
+            dict = re.compile(r"(.+?)\[\"(.+?)\"\]")
+            subkey = None
+            flag = "array"
+            if array.match(variable):
+                var, num = array.match(variable).groups()
+                num = int(num) - 1
+                flag = "array"
+            elif dict.match(variable):
+                var, subkey = dict.match(variable).groups()
+                subkey = subkey
+                flag = "dict"
+            else:
+                var = variable
+                num = 0
+            if num < 0:
+                num = 0
+            if var in self.chained_variables:
+                values = self.chained_variables[var]
+            import random
+
+            from modules.prompt_v2 import choice_v2
+
+            thresh = random.random()
+            for _ in range(max_number):
+                if thresh < weight:
+                    choiced, attribute = choice_v2(values)
+                    if flag == "array":
+                        choice = choiced[num]
+                    elif flag == "dict":
+                        choice = attribute[subkey]
+                    text = text.replace(choice + joiner, "")
+                    text += choice + joiner
+                else:
+                    break
+                weight *= next_multiply
+        except Exception as e:
+            print(e)
+            raise e
+        return text.strip()
 
     def getError(self):
         return self.token_error_message
@@ -155,16 +211,11 @@ class FormulaCompute:
                     debug_print("dict var subkey", var, subkey, debug=self.debug)
                 if var in self.variables:
                     values = self.variables[var]
-                    debug_print(f"values: {values} {type(values)}", debug=self.debug)
-                    if type(values) is list:
-                        value = values[num]
-                    # if dict
-                    elif subkey:
+                    if subkey:
                         debug_print(f"subkey: {subkey}", debug=self.debug)
-                        if subkey in values:
-                            value = values[subkey]
-                        else:
-                            value = None
+                        value = self.attributes.get(var, {}).get(subkey, None)
+                    elif type(values) is list:
+                        value = values[num]
                     else:
                         value = values
                     if type(value) is int or type(value) is float:
@@ -452,7 +503,9 @@ class FormulaCompute:
         # abc,1
         typeVariable3 = re.compile(r"^[a-zA-Z_$][a-zA-Z0-9_]*\,[0-9]+")
         # abc["abc"]
-        typeVariable4 = re.compile(r"^[a-zA-Z_$][a-zA-Z0-9_]*\[\"[a-zA-Z0-9_]*\"\]")
+        typeVariable4 = re.compile(r"^[a-zA-Z_$][a-zA-Z0-9_]*\[\".*?\"\]")
+        # abc['abc']
+        typeVariable5 = re.compile(r"^[a-zA-Z_$][a-zA-Z0-9_]*\[\'.*?\'\]")
         typeOperator = re.compile(r"^(\+|\-|\*{1,2}|\/|\%|\^|>|<|>=|<=|==|!=|&&|\|\|)")
         typeBracket = re.compile(r"^(\(|\))")
         typeFunction = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*\s*\(")
@@ -501,6 +554,17 @@ class FormulaCompute:
                     }
                 )
                 count += len(typeOperator.match(current).group(0))
+            elif typeVariable5.match(current):
+                self.token_type = TOKENTYPE.VARIABLE
+                self.token_start = count
+                self.token_end = count + len(typeVariable5.match(current).group(0))
+                self.tokens.append(
+                    {
+                        "type": TOKENTYPE.VARIABLE,
+                        "value": typeVariable5.match(current).group(0),
+                    }
+                )
+                count += len(typeVariable5.match(current).group(0))
             elif typeVariable4.match(current):
                 self.token_type = TOKENTYPE.VARIABLE
                 self.token_start = count
@@ -605,7 +669,7 @@ class FormulaCompute:
     def calculate(formula, variables={}, debug=False):
         from .compute import FormulaCompute
 
-        compute = FormulaCompute(formula, variables, debug=debug)
+        compute = FormulaCompute(formula, variables, attributes={}, debug=debug)
         if compute.compute():
             return compute.getCompute()
         else:
