@@ -102,6 +102,7 @@ class FormulaCompute:
 
     # V2 only function
     def getChained(self, variable, weight, max_number, next_multiply=1.0, joiner=", "):
+        
         # get variavle var or var[1] or var["key"]
         # (.+?)\[\d+\]
         text = ""
@@ -164,9 +165,8 @@ class FormulaCompute:
             if not self.reverce_polish_notation():
                 return False
         except Exception as e:
-            debug_print(e, debug=self.debug)
             self.setTokenError(
-                "Unknown error", self.token_start, self.token_end, TOKENTYPE.ERROR
+                e, self.token_start, self.token_end, TOKENTYPE.ERROR
             )
             return False
         return True
@@ -399,6 +399,7 @@ class FormulaCompute:
                     if stack[-1]["type"] == TOKENTYPE.BRACKET:
                         break
                     reversed_polish.append(stack.pop())
+                reversed_polish.append(token)
             elif token["type"] == TOKENTYPE.ARRAYBRACKET:
                 if token["value"] == "[":
                     # 一つ前がVARIABLEならば、ARRAYOBJECTに変換する
@@ -414,6 +415,7 @@ class FormulaCompute:
                         reversed_polish.append(stack.pop())
             elif token["type"] == TOKENTYPE.BRACKET:
                 if token["value"] == "(":
+                    reversed_polish.append(token)
                     stack.append(token)
                 else:
                     while len(stack) > 0:
@@ -421,6 +423,9 @@ class FormulaCompute:
                             stack.pop()
                             break
                         reversed_polish.append(stack.pop())
+                    # ) を挿入
+                    reversed_polish.append(token)
+
             elif token["type"] == TOKENTYPE.OPERATOR:
                 if len(stack) > 0 and stack[-1]["type"] == TOKENTYPE.BRACKET:
                     while len(stack) > 0:
@@ -477,17 +482,42 @@ class FormulaCompute:
         stack.reverse()
         reversed_polish.extend(stack)
         stack = []
-        debug_print(
-            "reverce porlad:", reversed_polish, stack, mode="value", debug=self.debug
-        )
+        # blancket check
+        if self.version >= 2:
+            nest = 0
+            is_function = False
+            pos = len(reversed_polish) - 1
+            while pos > 0:
+                token = reversed_polish[pos]
+                if token["type"] == TOKENTYPE.FUNCTION:
+                    is_function = True
+                    pos -= 1
+                    continue
+                if token["type"] == TOKENTYPE.BRACKET and is_function:
+                    if token["value"] == ")":
+                        nest += 1
+                    else:
+                        nest -= 1
+                    if nest == 0:
+                        is_function = False
+                        token["type"] = TOKENTYPE.FUNCTIONEND
+                        token["value"] = "$$$FUNCTIONEND$$$"
+                pos -= 1
+            debug_print(
+                "reverce porlad:", reversed_polish, mode="value", debug=self.debug
+            )
+
         # 逆ポーランド記法を計算する
-        for token in reversed_polish:
+        # for token in reversed_polish:
+        while len(reversed_polish) > 0:
+            token = reversed_polish.pop(0)
             debug_print(token, stack, debug=self.debug)
             match token["type"]:
                 case TOKENTYPE.NUMBER:
                     stack.append(token)
                 case TOKENTYPE.STRING:
                     stack.append(token)
+
                 case TOKENTYPE.VARIABLE:
                     var = token["value"]
                     if var in self.variables:
@@ -540,12 +570,34 @@ class FormulaCompute:
                                     }
                                 )
                         debug_print(stack, debug=self.debug)
-
                 case TOKENTYPE.FUNCTION:
                     # TOKENから引数の数が分からないので、関数ごとに処理する
                     function = token["value"]
-                    callFunction(self, function, stack)
+                    if self.version >= 2:
+                        args = []
+                        # FANCTIONENDまでの引数を取得する
+                        while len(stack) > 0:
+                            arg = stack.pop()
+                            if arg["type"] == TOKENTYPE.FUNCTIONEND:
+                                break
+                            args.append(arg)
+                        debug_print(
+                            f"function {function} args {args}",
+                            mode="value",
+                            debug=self.debug,
+                        )
+                        ret, val = callFunction(self, function, args, args)
+                    else:
+                        ret, val = callFunction(self, function, stack)
+                    if not ret:
+                        debug_print(f"function error {function}", debug=self.debug)
+                        raise Exception(f"function error {function}")
+                    stack.append(val)
+
                     debug_print(stack, debug=self.debug)
+                case TOKENTYPE.FUNCTIONEND:
+                    if self.version >= 2:
+                        stack.append(token)
                 case TOKENTYPE.OPERATOR:
                     operation(self, token, stack)
                 case TOKENTYPE.END:
@@ -577,10 +629,11 @@ class FormulaCompute:
         count = 0
         typeSpace = re.compile(r"^\s+")
         typeNumber = re.compile(r"^[0-9]+(\.[0-9]+)?")
+        # V2では配列に式を入れることができる
         typeVariable1 = re.compile(
             r"^[a-zA-Z_$][a-zA-Z0-9_$]*|^([a-zA-Z_$][a-zA-Z0-9__$]*\:)*[a-zA-Z_\-$][a-zA-Z0-9_$]"
         )
-        # info:abc[1]
+        # info:abc[1] V1 only
         typeVariable2 = re.compile(
             r"^([a-zA-Z_$][a-zA-Z0-9__$]*\:)*[a-zA-Z_\-$][a-zA-Z0-9_$]*(\[([0-9]+|\*)\])*"
         )

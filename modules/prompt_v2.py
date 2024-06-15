@@ -65,8 +65,9 @@ def text_formula_v2(text, args):
             text = text.replace("${=" + formula + "}", str(replace_text))
         else:
             error = compute.getError()
-            Logger.error(f"Error happen formula {error_info} {formula}, {error}")
-            return text
+            raise Exception(f"Error happen formula {error_info} {formula}, {error}")
+            # Logger.error(f"Error happen formula {error_info} {formula}, {error}")
+            # return text
     simple_formulas = re.findall(r"\$\{(.+?)\}", text)
     # Logger.debug(f"simple_formulas {simple_formulas}")
     for formula in simple_formulas:
