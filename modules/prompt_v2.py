@@ -56,6 +56,7 @@ def text_formula_v2(text, args):
     # Logger.debug(f"attributes {attributes}")
 
     compute = FormulaCompute()
+    compute.setVersion(2)
     compute.setChainedVariables(chained_var, chained_attr)
     formulas = re.findall(r"\$\{\=(.+?)\}", text)
     for formula in formulas:
