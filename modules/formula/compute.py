@@ -387,12 +387,10 @@ class FormulaCompute:
         debug_print(f"tokens {self.tokens}", debug=self.debug)
         for token in self.tokens:
             debug_print(token, debug=self.debug)
-            if (
-                token["type"] == TOKENTYPE.NUMBER
-                or token["type"] == TOKENTYPE.STRING
-                or token["type"] == TOKENTYPE.VARIABLE
-            ):
+            if token["type"] == TOKENTYPE.NUMBER or token["type"] == TOKENTYPE.STRING:
                 reversed_polish.append(token)
+            elif token["type"] == TOKENTYPE.VARIABLE:
+                stack.append(token)
             elif token["type"] == TOKENTYPE.FUNCTION:
                 debug_print(token["value"], debug=self.debug)
                 stack.append(token)
@@ -403,11 +401,14 @@ class FormulaCompute:
                     reversed_polish.append(stack.pop())
             elif token["type"] == TOKENTYPE.ARRAYBRACKET:
                 if token["value"] == "[":
-                    stack.append({"type": TOKENTYPE.ARRAYOBJECT, "value": "(object)"})
-                    stack.append({"type": TOKENTYPE.BRACKET, "value": "("})
+                    # 一つ前がVARIABLEならば、ARRAYOBJECTに変換する
+                    if len(stack) > 0 and stack[-1]["type"] == TOKENTYPE.VARIABLE:
+                        stack[-1]["type"] = TOKENTYPE.ARRAYOBJECT
+                        stack[-1]["value"] = stack[-1]["value"]
+                    stack.append(token)
                 else:
                     while len(stack) > 0:
-                        if stack[-1]["type"] == TOKENTYPE.BRACKET:
+                        if stack[-1]["type"] == TOKENTYPE.ARRAYBRACKET:
                             stack.pop()
                             break
                         reversed_polish.append(stack.pop())
@@ -430,7 +431,10 @@ class FormulaCompute:
                 else:
                     if (
                         len(stack) > 0
-                        and stack[-1]["type"] == TOKENTYPE.FUNCTION
+                        and (
+                            stack[-1]["type"] == TOKENTYPE.FUNCTION
+                            or stack[-1]["type"] == TOKENTYPE.ARRAYOBJECT
+                        )
                         and token["value"]
                         in [
                             "+",
@@ -485,41 +489,56 @@ class FormulaCompute:
                 case TOKENTYPE.STRING:
                     stack.append(token)
                 case TOKENTYPE.VARIABLE:
-                    stack.append(token)
+                    var = token["value"]
+                    if var in self.variables:
+                        values = self.variables[var]
+                        if type(values) is list:
+                            stack.append(
+                                {
+                                    "type": TOKENTYPE.NUMBER,
+                                    "value": values[0],
+                                }
+                            )
+                        else:
+                            stack.append(
+                                {
+                                    "type": TOKENTYPE.NUMBER,
+                                    "value": values,
+                                }
+                            )
                 case TOKENTYPE.ARRAYOBJECT:
-                    # 1つ前と2つ前のTOKENを取得する　(key)
-                    if len(stack) >= 2:
-                        key = stack.pop()
-                        var = stack.pop()
-                        debug_print(
-                            f"var {var['value']}[{key['value']}]", debug=self.debug
-                        )
-                        if var["type"] == TOKENTYPE.VARIABLE:
-                            values = self.variables.get(var["value"], [])
-                            attributes = self.attributes.get(var["value"], {})
-                            if key["value"] in attributes:
+                    if len(stack) > 0:
+                        var = token["value"]
+                        key = stack.pop()["value"]
+                        debug_print(f"var {var}[{key}]", debug=self.debug)
+                        values = self.variables.get(var, [])
+                        attributes = self.attributes.get(var, {})
+                        if key in attributes:
+                            stack.append(
+                                {
+                                    "type": TOKENTYPE.NUMBER,
+                                    "value": attributes[key],
+                                }
+                            )
+                        else:
+                            try:
+                                num = int(key) - 1
+                                if num < 0:
+                                    num = 0
                                 stack.append(
                                     {
                                         "type": TOKENTYPE.NUMBER,
-                                        "value": attributes[key["value"]],
+                                        "value": values[num],
                                     }
                                 )
-                            else:
-                                try:
-                                    stack.append(
-                                        {
-                                            "type": TOKENTYPE.NUMBER,
-                                            "value": values[int(key["value"]) - 1],
-                                        }
-                                    )
-                                except Exception as e:
-                                    debug_print(e, debug=self.debug)
-                                    stack.append(
-                                        {
-                                            "type": TOKENTYPE.NUMBER,
-                                            "value": values[0],
-                                        }
-                                    )
+                            except Exception as e:
+                                debug_print(e, debug=self.debug)
+                                stack.append(
+                                    {
+                                        "type": TOKENTYPE.NUMBER,
+                                        "value": values[0],
+                                    }
+                                )
                         debug_print(stack, debug=self.debug)
 
                 case TOKENTYPE.FUNCTION:
