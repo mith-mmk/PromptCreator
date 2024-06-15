@@ -321,9 +321,9 @@ Example(例)
 ```
 
 #### current functions(現在の関数)
-no debug(デバッグしていません)
 
 functions(関数) str1,str2,.. are string(文字列) and x,y... are number(数値)
+- chained("objects", 0.8, 3) : create chained stringt(連鎖変数) "object" = ${object} 0.8 is threshhold, 3 is count(0.8は閾値、3は回数)  
 - pow(x,y) : x^y
 - sqrt(x) : square root(平方根)
 - abs(x) : absolute value(絶対値)
@@ -364,6 +364,5 @@ functions(関数) str1,str2,.. are string(文字列) and x,y... are number(数�
 - second(): current second(現在の秒)
 - weekday(): current weekday(現在の曜日)
 - week(): current week(現在の週)
-
 # V1(旧バージョン)
  see [READMEV1.md](READMEV1.md)
