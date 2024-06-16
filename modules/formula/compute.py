@@ -102,7 +102,6 @@ class FormulaCompute:
 
     # V2 only function
     def getChained(self, variable, weight, max_number, next_multiply=1.0, joiner=", "):
-        
         # get variavle var or var[1] or var["key"]
         # (.+?)\[\d+\]
         text = ""
@@ -165,9 +164,7 @@ class FormulaCompute:
             if not self.reverce_polish_notation():
                 return False
         except Exception as e:
-            self.setTokenError(
-                e, self.token_start, self.token_end, TOKENTYPE.ERROR
-            )
+            self.setTokenError(e, self.token_start, self.token_end, TOKENTYPE.ERROR)
             return False
         return True
 

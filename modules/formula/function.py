@@ -338,6 +338,8 @@ def callFunction(compute, function, stack, args=None):
         ):  # chained("variable", weight, max_number, joiner) # variabel is string
             # weight is 0.0 - 1.0   max_number is int > 0
             joiner = " "
+            next_multiply = 1
+
             if args is None:
                 values = getValues(3, stack, args=args)
                 max_number = values[0]["value"]
@@ -361,6 +363,8 @@ def callFunction(compute, function, stack, args=None):
                     max_number = 10
                 if len(args) > 3:
                     joiner = args[3]["value"]
+                if len(args) > 4:
+                    next_multiply = args[4]["value"]
 
             if isinstance(weight, float) is False or (weight < 0 and weight > 1):
                 compute.setTokenError(
@@ -379,7 +383,13 @@ def callFunction(compute, function, stack, args=None):
                 )
                 raise Exception("Chained variable must be string")
             try:
-                value = compute.getChained(variable, weight, max_number, joiner=joiner)
+                value = compute.getChained(
+                    variable,
+                    weight,
+                    max_number,
+                    joiner=joiner,
+                    next_multiply=next_multiply,
+                )
             except Exception as e:
                 compute.setTokenError(
                     "Chained error",
