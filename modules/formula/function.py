@@ -333,6 +333,58 @@ def callFunction(compute, function, stack, args=None):
             return True, {"type": TOKENTYPE.NUMBER, "value": int(time.strftime("%w"))}
         case "week":  # week() as 0-53
             return True, {"type": TOKENTYPE.NUMBER, "value": int(time.strftime("%W"))}
+        case "contains":  # contains(string, substring)
+            values = getValues(2, stack, args=args)
+            substring = values[0]["value"]
+            string = values[1]["value"]
+            if substring in string:
+                return True, {"type": TOKENTYPE.NUMBER, "value": 1}
+            else:
+                return True, {"type": TOKENTYPE.NUMBER, "value": 0}
+        case "value":
+            # value( a ) return  expanned value
+            string = getValues(1, stack, args=args)[0]["value"]
+            value = compute.getValue(string)
+            if isinstance(string, str):
+                return True, {
+                    "type": TOKENTYPE.STRING,
+                    "value": compute.getValue(string),
+                }
+            else:
+                return True, {"type": TOKENTYPE.STRING, "value": str(string)}
+        case "choice":
+            # choice("a") a is variable name = chained("a", 1, 1)
+            variable = getValues(1, stack, args=args)[0]["value"]
+            if isinstance(variable, str) is False:
+                compute.setTokenError(
+                    "Chained variable must be string",
+                    compute.token_start,
+                    compute.token_end,
+                    TOKENTYPE.ERROR,
+                )
+                raise Exception("Chained variable must be string")
+            try:
+                value = compute.getChained(variable, 1, 1)
+            except Exception as e:
+                compute.setTokenError(
+                    "Chained error",
+                    compute.token_start,
+                    compute.token_end,
+                    TOKENTYPE.ERROR,
+                )
+                raise e
+            if isinstance(value, int) or isinstance(value, float):
+                return True, {"type": TOKENTYPE.NUMBER, "value": value}
+            elif isinstance(value, str):
+                return True, {"type": TOKENTYPE.STRING, "value": value}
+            else:
+                compute.setTokenError(
+                    "Chained parse error, must be int, float or string",
+                    compute.token_start,
+                    compute.token_end,
+                    TOKENTYPE.ERROR,
+                )
+            return False
         case (
             "chained"
         ):  # chained("variable", weight, max_number, joiner) # variabel is string

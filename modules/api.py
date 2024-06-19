@@ -217,6 +217,7 @@ def get_sd_model(base_url="http://127.0.0.1:7860", sd_model=None):
     try:
         Logger.verbose(f"Try get sd model from {model_url}")
         res = httpx.get(model_url, headers=headers, timeout=(share.get("timeout")))
+        Logger.verbose(f"Get sd model from {json.dumps(res.json())}")
         for model in res.json():
             if (
                 model["model_name"] == sd_model
@@ -267,10 +268,15 @@ def set_sd_model(sd_model, base_url="http://127.0.0.1:7860", sd_vae="Automatic")
         res = httpx.get(model_url, headers=headers, timeout=(share.get("timeout")))
         load_model = None
         for model in res.json():
+            import os
+
+            title = os.path.basename(model["title"]).replace(".safetensors", "")
+
             if (
                 model["model_name"] == sd_model
                 or model["hash"] == sd_model
                 or model["title"] == sd_model
+                or title == sd_model  # for backward compatibility
             ):
                 load_model = model["title"]
                 break

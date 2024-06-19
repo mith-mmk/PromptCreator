@@ -147,6 +147,25 @@ class FormulaCompute:
             raise e
         return text.strip()
 
+    # call from modules.prompt_v2 import prompt_formula_v2
+    def getValue(self, variable):
+        try:
+            from modules.prompt_v2 import text_formula_v2
+
+            variable = text_formula_v2(
+                variable,
+                args={
+                    "variables": self.variables,
+                    "attributes": self.attributes,
+                    "chained_variables": self.chained_variables,
+                    "chained_attriblutes": self.chained_attriblutes,
+                },
+            )
+        except Exception as e:
+            debug_print(e)
+            raise e
+        return variable
+
     def getError(self):
         return self.token_error_message
 
