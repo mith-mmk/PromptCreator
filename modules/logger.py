@@ -211,18 +211,18 @@ class LogPrint:
             final_logfile = self.log_dir + "." + str(i)
             if os.path.exists(final_logfile):
                 os.remove(final_logfile)
-            while i > 0:
-                # log_dir + '.' + str(i-1) は log_dir + '.' + str(i) にrename
-                logfile = self.log_dir + "." + str(i - 1)
-                if os.path.exists(logfile):
-                    os.rename(logfile, final_logfile)
-                final_logfile = logfile
-                i -= 1
             # log_dir は log_dir + '.' + str(1) にrename
             logfile = self.log_dir
             if os.path.exists(logfile):
                 try:
-                    os.rename(logfile, logfile + "." + str(1))
+                    while i > 0:
+                        # log_dir + '.' + str(i-1) は log_dir + '.' + str(i) にrename
+                        rn_logfile = self.log_dir + "." + str(i - 1)
+                        if os.path.exists(rn_logfile):
+                            os.rename(rn_logfile, final_logfile)
+                        final_logfile = rn_logfile
+                        i -= 1
+                    os.rename(logfile, f"{logfile}.1")
                 except Exception as e:
                     print(e)
             open(logfile, "w").close()
