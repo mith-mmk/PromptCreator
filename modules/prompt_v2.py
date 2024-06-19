@@ -385,6 +385,19 @@ def read_file_v2(filename, error_info=""):
 # create_prompt v2
 def item_split_txt(item, error_info="", default_weight=0.1):
     if type(item) is not str:
+        if type(item) is dict:
+            item["variables"] = item.get("V", [])
+            if item["variables"] is not list:
+                item["variables"] = [item["variables"]]
+            if "V" in item:
+                del item["V"]
+            item["weight"] = item.get("W", default_weight)
+            if "W" in item:
+                del item["W"]
+            if "C" in item:
+                del item["C"]
+            return item
+        Logger.warning(f"item {item} is not str {type(item)}")
         return {"variables": [str(item)], "weight": default_weight}
     item = item.replace("\n", " ").strip().replace(r"\;", r"${semicolon}")
     split = item.split(";")
