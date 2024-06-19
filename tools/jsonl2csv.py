@@ -54,8 +54,10 @@ def jsonl2csv(input_dir, output_file):
                 "prompt",
                 "append",
                 "neg",
-                "multipy",
                 "variables",
+                "multipy",
+                "width",
+                "height",
                 "attirbutes",
                 "comment",
             ]
@@ -93,9 +95,11 @@ def jsonl2csv(input_dir, output_file):
                 lora = item.get("lora", "")
                 loras_in_prompt = re.findall(r"\[lora\](.*?)\[/lora\]", prompt)
                 for lora_in_prompt in loras_in_prompt:
-                    prompt = prompt.replace("lora_in_prompt", " ")
+                    prompt = prompt.replace(lora_in_prompt, " ")
                 prompt.strip()
                 lora = lora + " ".join(loras_in_prompt)
+                width = item.get("width", "")
+                height = item.get("height", "")
                 if isinstance(variables, list):
                     variables = ";".join(variables)
                 attributes = {}
@@ -113,6 +117,8 @@ def jsonl2csv(input_dir, output_file):
                         "do",
                         "append",
                         "neg",
+                        "width",
+                        "height",
                         "multiply",
                         "comment",
                     ]:
@@ -128,8 +134,10 @@ def jsonl2csv(input_dir, output_file):
                         prompt,
                         item.get("append", ""),
                         item.get("neg", ""),
-                        item.get("multiply", ""),
                         variables,
+                        item.get("multiply", ""),
+                        width,
+                        height,
                         json.dumps(attributes, ensure_ascii=False),
                         item.get("comment", ""),
                     ]
