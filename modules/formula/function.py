@@ -333,6 +333,7 @@ def callFunction(compute, function, stack, args=None):
             return True, {"type": TOKENTYPE.NUMBER, "value": int(time.strftime("%w"))}
         case "week":  # week() as 0-53
             return True, {"type": TOKENTYPE.NUMBER, "value": int(time.strftime("%W"))}
+        # V2 functions
         case "contains":  # contains(string, substring)
             values = getValues(2, stack, args=args)
             substring = values[0]["value"]
@@ -470,4 +471,3 @@ def callFunction(compute, function, stack, args=None):
                 TOKENTYPE.ERROR,
             )
             return False
-    return True

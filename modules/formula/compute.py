@@ -97,6 +97,7 @@ class FormulaCompute:
         self.formula = formula
         self.variables = variables
         self.attributes = attributes
+        self.error_stacks = ""
         self.compute()
         return self.result
 
@@ -198,6 +199,10 @@ class FormulaCompute:
                 f"Error: {mode}: {message} start: {start} end: {end} type: {type}",
                 debug=self.debug,
             )
+        self.error_stacks = (
+            self.error_stacks
+            + f"Error: {mode}: {message} start: {start} end: {end} type: {type}\n"
+        )
 
     def parse(self):
         self.mode = "parse"

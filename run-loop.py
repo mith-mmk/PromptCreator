@@ -11,7 +11,6 @@ import time
 import yaml
 
 import create_prompts
-
 # import logging
 import img2img
 import modules.logger as logger
@@ -749,7 +748,7 @@ def run_img2txt2img(config, args):
     divide = profile.get("divide", 0)
     if divide > 0:
         Logger.verbose(f"trunsuction {divide}")
-        file_sets = [imgfiles[i : i + divide] for i in range(0, len(imgfiles), divide)]
+        file_sets = [imgfiles[i:i + divide] for i in range(0, len(imgfiles), divide)]
     else:
         file_sets = [imgfiles]
 
