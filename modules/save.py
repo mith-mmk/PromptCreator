@@ -4,6 +4,7 @@ import io
 import json
 import os
 import re
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from hashlib import sha256
 from zoneinfo import ZoneInfo
@@ -36,24 +37,15 @@ async def save_images(r, opt={"dir": "./outputs"}):
 
 
 def save_images(r, opt={"dir": "./outputs"}):
-    return save_img(r, opt=opt)
-
-
-#    return asyncio.run(save_img_wrapper(r, opt))
+    #    return save_img(r, opt=opt)
+    return asyncio.run(save_img_wrapper(r, opt))
 
 
 async def save_img_wrapper(r, opt):
-    loop = api.share.get("loop")
-    if loop is None:
-        loop = asyncio.new_event_loop()
-        api.share["loop"] = loop
-
-    if loop:
-        loop.run_in_executor(None, save_img(r, opt=opt))
-        return len(r["images"])
-    else:
-        save_img(r, opt=opt)
-        return len(r["images"])
+    # saveプロセスを分離することで高速化する
+    with ThreadPoolExecutor() as executor:
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(executor, save_img, r, opt)
 
 
 def save_img(r, opt={"dir": "./outputs"}):
