@@ -4,7 +4,6 @@ import io
 import json
 import os
 import re
-from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from hashlib import sha256
 from zoneinfo import ZoneInfo
@@ -37,15 +36,24 @@ async def save_images(r, opt={"dir": "./outputs"}):
 
 
 def save_images(r, opt={"dir": "./outputs"}):
-    #    return save_img(r, opt=opt)
-    return asyncio.run(save_img_wrapper(r, opt))
+    return save_img(r, opt=opt)
+
+
+#    return asyncio.run(save_img_wrapper(r, opt))
 
 
 async def save_img_wrapper(r, opt):
-    # saveプロセスを分離することで高速化する
-    with ThreadPoolExecutor() as executor:
-        loop = asyncio.get_event_loop()
-        await loop.run_in_executor(executor, save_img, r, opt)
+    loop = api.share.get("loop")
+    if loop is None:
+        loop = asyncio.new_event_loop()
+        api.share["loop"] = loop
+
+    if loop:
+        loop.run_in_executor(None, save_img(r, opt=opt))
+        return len(r["images"])
+    else:
+        save_img(r, opt=opt)
+        return len(r["images"])
 
 
 def save_img(r, opt={"dir": "./outputs"}):
@@ -100,18 +108,20 @@ def save_img(r, opt={"dir": "./outputs"}):
         num = opt["startnum"]
     else:
         num = -1
-        files = os.listdir(dir)
         num_start = 0 + count
         num_end = num_length + count
 
-        for file in files:
-            if os.path.isfile(os.path.join(dir, file)):
-                name = file[num_start:num_end]
+        start_time = datetime.now()
+        for entry in os.scandir(dir):
+            if entry.is_file():
+                name = entry.name[num_start:num_end]
                 try:
                     num = max(num, int(name))
                 except ValueError:
                     pass
         num += 1
+        end_time = datetime.now()
+        Logger.verbose("scan time", end_time - start_time)
 
     if type(r["info"]) is str:
         info = json.loads(r["info"])
