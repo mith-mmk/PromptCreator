@@ -12,8 +12,47 @@ import modules.share as share
 
 Logger = logger.getDefaultLogger()
 
+# connect timeout
 share.set("timeout", 5)
+# read timeout / txt2img, img2img timeout
 share.set("max_timeout", 1000)
+
+client = None
+
+
+def get_client():
+    global client
+    if client is None:
+        # connect timeout is 0.1 sec and read timeout is 1000 sec
+        client = httpx.Client(timeout=(0.1, share.get("max_timeout")))
+
+    return client
+
+
+def get_response(url, userpass=None):
+    headers = {
+        "Content-Type": "application/json",
+    }
+    if userpass:
+        headers["Authorization"] = "Basic " + base64.b64encode(userpass.encode())
+    current_timeout = 0.1  # fast trick
+    start_time = time.time()
+    while True:
+        try:
+            timeout = (current_timeout, share.get("max_timeout"))
+            duration = time.time() - start_time
+            if duration > share.get("max_timeout"):
+                Logger.error(f"Failed to get {url} connect timeout {duration} sec")
+                raise httpx.ReadTimeout
+            res = get_client().get(url, headers=headers, timeout=timeout)
+
+            if res.status_code == 200:
+                return res
+        except httpx.TimeoutException:
+            current_timeout += 3.0
+        except Exception as e:
+            Logger.error(f"Failed to get {url} {e}")
+            return None
 
 
 def set_timeout(timeout):
@@ -31,6 +70,9 @@ def init():
 
 
 def shutdown():
+    if "httpx_client" in share:
+        share["httpx_client"].close()
+        share["httpx_client"] = None
     pass
 
 
@@ -42,22 +84,28 @@ async def async_post(url, data, userpass=None):
         headers["Authorization"] = "Basic " + base64.b64encode(userpass.encode())
 
     async with httpx.AsyncClient() as client:
-        try:
-            return await client.post(
-                url,
-                data=data,
-                headers=headers,
-                timeout=(share.get("timeout"), share.get("max_timeout")),
-            )
-        except httpx.ReadTimeout:
-            print("Read timeout")
-            return None
-        except httpx.TimeoutException:
-            print("Connect Timeout")
-            return None
-        except BaseException as error:
-            print("Exception: ", error)
-            return None
+        start_time = time.time()
+        current_timeout = 0.1  # fast trick
+        while True:
+            try:
+                return await client.post(
+                    url,
+                    data=data,
+                    headers=headers,
+                    timeout=(current_timeout, share.get("max_timeout")),
+                )
+            except httpx.ReadTimeout:
+                Logger.error("Read timeout")
+                return None
+            except httpx.TimeoutException:
+                current_timeout += 3.0
+                duration = time.time() - start_time
+                if duration > share.get("timeout"):
+                    Logger.error(f"Failed to post {url} connect timeout {duration} sec")
+                    return None
+            except BaseException as error:
+                Logger.error(str(error))
+                return None
 
 
 isRunning = False
@@ -112,20 +160,23 @@ async def progress_writer(url, data, progress_url, userpass=None):
                 await asyncio.sleep(0.2)
                 try:
                     response = await client.get(progress_url, timeout=1)
-                    retry = 0
+                    retry_start = time.time()
                     result = response.json()
                     right = result["progress"]
                     elapsed_time = await write_progress(result, start_time)
                     if not isRunning:
                         break
                 except Exception:
-                    retry += 1
-                    if retry >= 20:
+                    retry_duration = time.time() - retry_start
+                    if retry_duration >= share.get("max_timeout"):
                         print("Progress is unknown")
                         return
 
         async def post_wrapper(url, data, headers, timeout):
-            result = await client.post(url, data=data, headers=headers, timeout=timeout)
+            #            result = await client.post(url, data=data, headers=headers, timeout=timeout)
+            result = await client.post(
+                url, data=data, headers=headers, timeout=share.get("max_timeout")
+            )
             global isRunning
             isRunning = False
             return result
@@ -133,7 +184,7 @@ async def progress_writer(url, data, progress_url, userpass=None):
         global isRunning
         isRunning = True
         tasks = [
-            post_wrapper(url, data, headers, (share.get("timeout"), None)),
+            post_wrapper(url, data, headers, share.get("max_timeout")),
             progress_get(progress_url, userpass),
         ]
         result = await asyncio.gather(*tasks, return_exceptions=False)
@@ -148,7 +199,8 @@ def progress_interrupt(url, userpass=None):
         headers = {}
         if userpass:
             headers = {"Authorization": "Basic " + base64.b64encode(userpass.encode())}
-        return httpx.post(url, headers=headers)
+        client = get_client()
+        return client.post(url, headers=headers)
     except httpx.ReadTimeout:
         print("Read timeout")
         return None
@@ -191,13 +243,10 @@ def normalize_base_url(base_url):
 def get_api(
     base_url="http://localhost:7860", apiname=None, options=None, userpass=None
 ):
-    headers = {
-        "Content-Type": "application/json",
-    }
     base_url = normalize_base_url(base_url)
     model_url = base_url + "/sdapi/v1/" + apiname
     try:
-        res = httpx.get(model_url, headers=headers, timeout=(share.get("timeout")))
+        res = get_response(model_url, userpass)
         if res.status_code != 200:
             Logger.error(f"Failed to get {apiname} {res.status_code}")
             return None
@@ -208,15 +257,12 @@ def get_api(
     return results
 
 
-def get_sd_model(base_url="http://127.0.0.1:7860", sd_model=None):
-    headers = {
-        "Content-Type": "application/json",
-    }
+def get_sd_model(base_url="http://127.0.0.1:7860", sd_model=None, userpass=None):
     base_url = normalize_base_url(base_url)
     model_url = base_url + "/sdapi/v1/sd-models"
     try:
-        Logger.verbose(f"Try get sd model from {model_url}")
-        res = httpx.get(model_url, headers=headers, timeout=(share.get("timeout")))
+        Logger.verifbose(f"Try get sd model from {model_url}")
+        res = get_response(model_url, userpass)
         Logger.verbose(f"Get sd model from {json.dumps(res.json())}")
         for model in res.json():
             if (
@@ -230,10 +276,7 @@ def get_sd_model(base_url="http://127.0.0.1:7860", sd_model=None):
     return None
 
 
-def get_vae(base_url="http://127.0.0.1:7860", vae=None):
-    headers = {
-        "Content-Type": "application/json",
-    }
+def get_vae(base_url="http://127.0.0.1:7860", vae=None, userpass=None):
     if vae == "Automatic":
         return "Automatic"
     if vae == "None":
@@ -241,7 +284,7 @@ def get_vae(base_url="http://127.0.0.1:7860", vae=None):
     base_url = normalize_base_url(base_url)
     model_url = base_url + "/sdapi/v1/sd-vae"
     try:
-        res = httpx.get(model_url, headers=headers, timeout=(share.get("timeout")))
+        res = get_response(model_url, userpass=userpass)
         # automatic1111 1.6 <- no yet hash support but use metadata?
         for model in res.json():
             if (
@@ -255,19 +298,28 @@ def get_vae(base_url="http://127.0.0.1:7860", vae=None):
     return None
 
 
-def set_sd_model(sd_model, base_url="http://127.0.0.1:7860", sd_vae="Automatic"):
+def set_sd_model(
+    sd_model, base_url="http://127.0.0.1:7860", sd_vae="Automatic", userpass=None
+):
     Logger.info(f"Try change sd model to {sd_model}")
     headers = {
         "Content-Type": "application/json",
     }
+    if userpass:
+        headers["Authorization"] = "Basic " + base64.b64encode(userpass.encode())
     base_url = normalize_base_url(base_url)
     model_url = base_url + "/sdapi/v1/sd-models"
+    options_url = base_url + "/sdapi/v1/options"
 
     url = base_url + "/sdapi/v1/options"
+
     try:
-        res = httpx.get(model_url, headers=headers, timeout=(share.get("timeout")))
+        sd_opts = get_response(options_url, userpass).json()
+        sd_models = get_response(model_url, userpass).json()
+
         load_model = None
-        for model in res.json():
+
+        for model in sd_models:
             import os
 
             title = os.path.basename(model["title"]).replace(".safetensors", "")
@@ -280,27 +332,33 @@ def set_sd_model(sd_model, base_url="http://127.0.0.1:7860", sd_vae="Automatic")
             ):
                 load_model = model["title"]
                 break
+
         if load_model is None:
             Logger.info(f"{sd_model} model is not found")
             raise Exception(f"{sd_model} model is not found")
         sd_model = load_model
-        Logger.info(f"checkpoint {sd_model} ,vae {sd_vae} models loading...")
-        payload = {"sd_model_checkpoint": sd_model, "sd_vae": sd_vae}
+        if load_model == sd_opts.get("sd_model_checkpoint"):
+            if sd_vae == sd_opts.get("sd_vae"):
+                Logger.info(f"Checkpoint {sd_model} and {sd_vae} are already loaded")
+                return
+            else:
+                Logger.info(f"Checkpoint {sd_model} is already loaded")
+                payload = {"sd_vae": sd_vae}
+        elif sd_vae == sd_opts.get("sd_vae"):
+            payload = {"sd_model_checkpoint": sd_model}
+        else:
+            payload = {"sd_model_checkpoint": sd_model, "sd_vae": sd_vae}
+        Logger.info(f"Checkpoint {sd_model} and {sd_vae} are loading...")
         data = json.dumps(payload)
-        res = httpx.post(
-            url,
-            data=data,
-            headers=headers,
-            timeout=(share.get("timeout"), share.get("max_timeout")),
-        )
+        res = request_post_wrapper(url, data, None, base_url, userpass)
         # Version Return null only
         if res.status_code == 200:
             Logger.info("change success sd_model")
         else:
             Logger.info("change failed")
 
-    except Exception:
-        Logger.error("Change SD Model Error")
+    except Exception as e:
+        Logger.error(f"Change SD Model Error {e}")
         raise
 
 
@@ -366,21 +424,21 @@ def refresh(
     return result
 
 
-def get_upscalers(base_url="http://localhost:7860"):
-    return get_api(base_url, "upscalers")
+def get_upscalers(base_url="http://localhost:7860", userpass=None):
+    return get_api(base_url, "upscalers", userpass=userpass)
 
 
-def get_samplers(base_url="http://localhost:7860"):
-    return get_api(base_url, "samplers")
+def get_samplers(base_url="http://localhost:7860", userpass=None):
+    return get_api(base_url, "samplers", userpass=userpass)
 
 
-def get_sd_models(base_url="http://127.0.0.1:7860"):
-    return get_api(base_url, "sd-models")
+def get_sd_models(base_url="http://127.0.0.1:7860", userpass=None):
+    return get_api(base_url, "sd-models", userpass=userpass)
 
 
-def get_sd_vaes(base_url="http://127.0.0.1:7860"):
-    return get_api(base_url, "sd-vae")
+def get_sd_vaes(base_url="http://127.0.0.1:7860", userpass=None):
+    return get_api(base_url, "sd-vae", userpass=userpass)
 
 
-def get_loras(base_url="http://127.0.0.1:7860"):
-    return get_api(base_url, "loras")
+def get_loras(base_url="http://127.0.0.1:7860", userpass=None):
+    return get_api(base_url, "loras", userpass=userpass)

@@ -11,7 +11,6 @@ import time
 import yaml
 
 import create_prompts
-
 # import logging
 import img2img
 import modules.logger as logger
@@ -958,10 +957,11 @@ def run_txt2img(config, args=None):
 
             number = int(number * coef + 0.5)
             output = os.path.join(output_dir, folder + folder_suffix)
-            Logger.info(f"{model_name}, {prompt_name}, {output}, {genre}, {profile}")
+            Logger.debug(f"choice {model_name}, {prompt_name}, {output}, {genre}, {profile}")
             if number < 1:
-                Logger.info(f"skip number {number} < 1")
+                Logger.debug(f"skip number {number} < 1")
                 continue
+            Logger.info(f"{model_name}, {prompt_name}, {output}, {genre}, {profile}")
 
             # If direct call is True, call modules/txt2img.py
             if (
@@ -1031,7 +1031,7 @@ def run_txt2img(config, args=None):
                             base_url=host, sd_model=model_name, sd_vae=vae
                         )
                         end_time = time.time()
-                        Logger.info(f"set model time {end_time - start_time}")
+                        Logger.info(f"set model time {end_time - start_time} sec")
                     except Exception as e:
                         Logger.error("set model failed")
                         Logger.error(e.with_traceback())
