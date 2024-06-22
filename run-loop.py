@@ -11,6 +11,7 @@ import time
 import yaml
 
 import create_prompts
+
 # import logging
 import img2img
 import modules.logger as logger
@@ -748,7 +749,7 @@ def run_img2txt2img(config, args):
     divide = profile.get("divide", 0)
     if divide > 0:
         Logger.verbose(f"trunsuction {divide}")
-        file_sets = [imgfiles[i:i + divide] for i in range(0, len(imgfiles), divide)]
+        file_sets = [imgfiles[i : i + divide] for i in range(0, len(imgfiles), divide)]
     else:
         file_sets = [imgfiles]
 
@@ -1025,9 +1026,12 @@ def run_txt2img(config, args=None):
                     import modules.api
 
                     try:
+                        start_time = time.time()
                         modules.api.set_sd_model(
                             base_url=host, sd_model=model_name, sd_vae=vae
                         )
+                        end_time = time.time()
+                        Logger.info(f"set model time {end_time - start_time}")
                     except Exception as e:
                         Logger.error("set model failed")
                         Logger.error(e.with_traceback())
