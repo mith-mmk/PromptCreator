@@ -95,9 +95,7 @@ python 3.10 and later is required(3.10以降が必要です)
 
 install required packages(必要なパッケージをインストール)
 ```
-pip install pyyaml
-pip install Pillow
-pip install httpx
+pip install -r requirements.txt
 ```
 # yaml mode
   text mode is obsolete(textモードは廃止になりました)
