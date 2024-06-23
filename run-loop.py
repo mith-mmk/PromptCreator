@@ -11,6 +11,7 @@ import time
 import yaml
 
 import create_prompts
+
 # import logging
 import img2img
 import modules.logger as logger
@@ -98,7 +99,7 @@ def load_models_csv(filename):
     if not (os.path.exists(filename)):
         return []
     models = []
-    with open(filename) as f:
+    with open(filename, encoding="utf-8") as f:
         reader = csv.reader(f)
         # model_name,vae,mode,
         for i, row in enumerate(reader):
@@ -130,7 +131,7 @@ def load_prompts_csv(filename):
     if not (os.path.exists(filename)):
         return []
     prompts = []
-    with open(filename) as f:
+    with open(filename, encoding="utf-8") as f:
         reader = csv.reader(f)
         # prompt_name,folder,number,genre,
         for i, row in enumerate(reader):
@@ -160,7 +161,7 @@ def load_prompts_csv(filename):
 
 def load_not_default(filename):
     if os.path.exists(filename):
-        with open(filename, "r") as f:
+        with open(filename, "r", encoding="utf-8") as f:
             not_default = f.read().splitlines()
         return not_default
     else:
@@ -716,7 +717,7 @@ def run_img2txt2img(config, args):
     modelsFile = iti_config.get("modelfile")
     models = {}
     if os.path.exists(modelsFile):
-        with open(modelsFile, "r") as f:
+        with open(modelsFile, "r", encoding="utf-8") as f:
             csv_reader = csv.reader(f)
             for row in csv_reader:
                 models[row[0]] = row[1:]
@@ -957,7 +958,9 @@ def run_txt2img(config, args=None):
 
             number = int(number * coef + 0.5)
             output = os.path.join(output_dir, folder + folder_suffix)
-            Logger.debug(f"choice {model_name}, {prompt_name}, {output}, {genre}, {profile}")
+            Logger.debug(
+                f"choice {model_name}, {prompt_name}, {output}, {genre}, {profile}"
+            )
             if number < 1:
                 Logger.debug(f"skip number {number} < 1")
                 continue
