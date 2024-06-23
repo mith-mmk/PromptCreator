@@ -1122,6 +1122,54 @@ def wait_ping(config):
             time.sleep(5)
 
 
+def check_launch(config, verbose=True):
+    host = config["host"]
+    if verbose:
+        Logger.info(f"wait api {host}")
+    url = f"{host}/sdapi/v1/memory"
+    import httpx
+
+    try:
+        with httpx.Client(timeout=(1, 5)) as client:
+            response = client.get(url)
+            if response.status_code == 200:
+                if verbose:
+                    Logger.info("api is ready")
+                return True
+            else:
+                Logger.error(f"api is return error {response.status_code}")
+                return False
+    except Exception as e:
+        if verbose:
+            Logger.error(f"api is not ready {e}")
+        return False
+
+
+def wait_launch(config):
+    res = False
+    is_fist = True
+    max_wait_time = config.get("max_wait_time", 300)
+    start_time = time.time()
+    Logger.info("wait api")
+    while not res:
+        res = check_launch(config, verbose=False)
+        if not res:
+            if is_fist:
+                Logger.info("api is not ready waiting...")
+                is_fist = False
+            Logger.verbose("api is not ready wait 5 sec")
+            duration = time.time() - start_time
+            if duration > max_wait_time:
+                res = check_launch(config, verbose=True)
+                if not res:
+                    Logger.error("api is not ready timeout")
+                    return False
+                return True
+            time.sleep(5)
+    Logger.info("api is ready")
+    return True
+
+
 def compare(args):
     Logger.verbose(f"compare {args}")
     length = len(args)
@@ -1312,6 +1360,8 @@ def run_command(command, config_file, config, next=True):
                 next = compare(commands[1:])
             case "ping":
                 wait_ping(config)
+            case "launch":
+                wait_launch(config)
             case "txt2img":
                 run_txt2img(config, args)
             case "img2img":
