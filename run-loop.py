@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import time
 
+import httpx
 import yaml
 
 import create_prompts
@@ -1127,7 +1128,6 @@ def check_launch(config, verbose=True):
     if verbose:
         Logger.info(f"wait api {host}")
     url = f"{host}/sdapi/v1/memory"
-    import httpx
 
     try:
         with httpx.Client(timeout=(1, 5)) as client:
@@ -1157,7 +1157,6 @@ def wait_launch(config):
             if is_fist:
                 Logger.info("api is not ready waiting...")
                 is_fist = False
-            Logger.verbose("api is not ready wait 5 sec")
             duration = time.time() - start_time
             if duration > max_wait_time:
                 res = check_launch(config, verbose=True)
@@ -1165,6 +1164,7 @@ def wait_launch(config):
                     Logger.error("api is not ready timeout")
                     return False
                 return True
+            Logger.verbose("api is not ready wait 5 sec")
             time.sleep(5)
     Logger.info("api is ready")
     return True
