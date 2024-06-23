@@ -12,7 +12,13 @@ import modules.share as share
 
 Logger = logger.getDefaultLogger()
 
-# connect timeout
+# workaround
+# httpx connection timeout time is influence response time for localhost Web UI
+# set 5sec is duration 2sec or 6sec, hut set 0.1sec is duration 0.3 sec
+
+
+# connect timeout for local connection case, remote connection case is 5 sec
+share.set("timeout_c", 0.1)
 share.set("timeout", 5)
 # read timeout / txt2img, img2img timeout
 share.set("max_timeout", 1000)
@@ -24,7 +30,9 @@ def get_client():
     global client
     if client is None:
         # connect timeout is 0.1 sec and read timeout is 1000 sec
-        client = httpx.Client(timeout=(0.1, share.get("max_timeout")))
+        client = httpx.Client(
+            timeout=(share.get("timeout_c"), share.get("max_timeout"))
+        )
 
     return client
 
@@ -35,7 +43,7 @@ def get_response(url, userpass=None):
     }
     if userpass:
         headers["Authorization"] = "Basic " + base64.b64encode(userpass.encode())
-    current_timeout = 0.1  # fast trick
+    current_timeout = share.get("timeout_c")  # fast trick
     start_time = time.time()
     while True:
         try:
@@ -48,8 +56,14 @@ def get_response(url, userpass=None):
 
             if res.status_code == 200:
                 return res
+        except httpx.ReadTimeout:
+            Logger.error(f"Read timeout {duration} sec")
+            return None
         except httpx.TimeoutException:
-            current_timeout += 3.0
+            if duration > share.get("max_timeout"):
+                Logger.error(f"Failed to get {url} connect timeout {duration} sec")
+                return None
+            current_timeout = share.get("timeout")
         except Exception as e:
             Logger.error(f"Failed to get {url} {e}")
             return None
@@ -85,7 +99,7 @@ async def async_post(url, data, userpass=None):
 
     async with httpx.AsyncClient() as client:
         start_time = time.time()
-        current_timeout = 0.1  # fast trick
+        current_timeout = share.get("timeout_c")  # fast trick
         while True:
             try:
                 return await client.post(
@@ -95,14 +109,15 @@ async def async_post(url, data, userpass=None):
                     timeout=(current_timeout, share.get("max_timeout")),
                 )
             except httpx.ReadTimeout:
-                Logger.error("Read timeout")
+                duration = time.time() - start_time
+                Logger.error(f"Read timeout {duration} sec")
                 return None
             except httpx.TimeoutException:
-                current_timeout += 3.0
                 duration = time.time() - start_time
-                if duration > share.get("timeout"):
+                if duration > share.get("max_timeout"):
                     Logger.error(f"Failed to post {url} connect timeout {duration} sec")
                     return None
+                current_timeout = share.get("timeout")
             except BaseException as error:
                 Logger.error(str(error))
                 return None
@@ -149,13 +164,13 @@ async def progress_writer(url, data, progress_url, userpass=None):
                 headers["Authorization"] = "Basic " + base64.b64encode(
                     userpass.encode()
                 )
-            retry = 0
             start_time = time.time()
             response = await client.get(progress_url, headers=headers)
             result = response.json()
             right = 1.0
             elapsed_time = await write_progress(result, start_time)
             await asyncio.sleep(0.5)  # initializing wait
+            retry_start = time.time()
             while right != 0.0 and elapsed_time <= share.get("max_timeout"):
                 await asyncio.sleep(0.2)
                 try:
@@ -168,7 +183,7 @@ async def progress_writer(url, data, progress_url, userpass=None):
                         break
                 except Exception:
                     retry_duration = time.time() - retry_start
-                    if retry_duration >= share.get("max_timeout"):
+                    if retry_duration >= share.get("timeout"):
                         print("Progress is unknown")
                         return
 
