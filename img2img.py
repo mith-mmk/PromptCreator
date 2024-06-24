@@ -172,7 +172,7 @@ def run_from_args_img2img(command_args=None):
         set_sd_model(
             dicted_args.get("sd_model"),
             base_url=base_url,
-            sd_vae=dicted_args.get("sd_vae"),
+            sd_vae=dicted_args.get("sd_vae", "Automatic"),
         )
 
     opt = {}

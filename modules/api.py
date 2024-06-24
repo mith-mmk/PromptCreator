@@ -42,7 +42,7 @@ def get_response(url, userpass=None):
         "Content-Type": "application/json",
     }
     if userpass:
-        headers["Authorization"] = "Basic " + base64.b64encode(userpass.encode())
+        headers["Authorization"] = "Basic " + str(base64.b64encode(userpass.encode()))
     current_timeout = share.get("timeout_c")  # fast trick
     start_time = time.time()
     while True:
@@ -51,22 +51,22 @@ def get_response(url, userpass=None):
             duration = time.time() - start_time
             if duration > share.get("max_timeout"):
                 Logger.error(f"Failed to get {url} connect timeout {duration} sec")
-                raise httpx.ReadTimeout
+                raise httpx.ReadTimeout(
+                    f"Failed to get {url} connect timeout {duration} sec"
+                )
             res = get_client().get(url, headers=headers, timeout=timeout)
 
             if res.status_code == 200:
                 return res
         except httpx.ReadTimeout:
             Logger.error(f"Read timeout {duration} sec")
-            return None
+            raise httpx.ReadTimeout(f"Read timeout {duration} sec")
         except httpx.TimeoutException:
             if duration > share.get("max_timeout"):
-                Logger.error(f"Failed to get {url} connect timeout {duration} sec")
-                return None
+                raise httpx.TimeoutException(f"Failed to get {url} connect timeout")
             current_timeout = share.get("timeout")
         except Exception as e:
-            Logger.error(f"Failed to get {url} {e}")
-            return None
+            raise e
 
 
 def set_timeout(timeout):
@@ -95,7 +95,7 @@ async def async_post(url, data, userpass=None):
         "Content-Type": "application/json",
     }
     if userpass:
-        headers["Authorization"] = "Basic " + base64.b64encode(userpass.encode())
+        headers["Authorization"] = "Basic " + str(base64.b64encode(userpass.encode()))
 
     async with httpx.AsyncClient() as client:
         start_time = time.time()
@@ -131,7 +131,7 @@ async def progress_writer(url, data, progress_url, userpass=None):
         "Content-Type": "application/json",
     }
     if userpass:
-        headers["Authorization"] = "Basic " + base64.b64encode(userpass.encode())
+        headers["Authorization"] = "Basic " + str(base64.b64encode(userpass.encode()))
     result = None
 
     async with httpx.AsyncClient() as client:
@@ -161,8 +161,8 @@ async def progress_writer(url, data, progress_url, userpass=None):
         async def progress_get(progress_url, userpass=None):
             headers = {}
             if userpass:
-                headers["Authorization"] = "Basic " + base64.b64encode(
-                    userpass.encode()
+                headers["Authorization"] = "Basic " + str(
+                    base64.b64encode(userpass.encode())
                 )
             start_time = time.time()
             response = await client.get(progress_url, headers=headers)
@@ -213,7 +213,9 @@ def progress_interrupt(url, userpass=None):
     try:
         headers = {}
         if userpass:
-            headers = {"Authorization": "Basic " + base64.b64encode(userpass.encode())}
+            headers = {
+                "Authorization": "Basic " + str(base64.b64encode(userpass.encode()))
+            }
         client = get_client()
         return client.post(url, headers=headers)
     except httpx.ReadTimeout:
@@ -240,12 +242,17 @@ def request_post_wrapper(url, data, progress_url=None, base_url=None, userpass=N
         raise KeyboardInterrupt
     except httpx.ConnectError:
         Logger.error("All connection attempts failed,Is the server down?")
-        raise httpx.ConnectError
+        raise httpx.ConnectError("All connection attempts failed,Is the server down?")
     except httpx.ConnectTimeout:
         Logger.error(
             "Connection Time out,Is the server down or server address mistake?"
         )
-        raise httpx.ConnectTimeout
+        raise httpx.ConnectTimeout(
+            "Connection Time out,Is the server down or server address mistake?"
+        )
+    if result is None:
+        Logger.error("Failed to post")
+        raise Exception("Failed to post")
     return result
 
 
@@ -255,9 +262,7 @@ def normalize_base_url(base_url):
     return base_url
 
 
-def get_api(
-    base_url="http://localhost:7860", apiname=None, options=None, userpass=None
-):
+def get_api(base_url="http://localhost:7860", apiname="", options=None, userpass=None):
     base_url = normalize_base_url(base_url)
     model_url = base_url + "/sdapi/v1/" + apiname
     try:
@@ -276,7 +281,7 @@ def get_sd_model(base_url="http://127.0.0.1:7860", sd_model=None, userpass=None)
     base_url = normalize_base_url(base_url)
     model_url = base_url + "/sdapi/v1/sd-models"
     try:
-        Logger.verifbose(f"Try get sd model from {model_url}")
+        Logger.verbose(f"Try get sd model from {model_url}")
         res = get_response(model_url, userpass)
         Logger.verbose(f"Get sd model from {json.dumps(res.json())}")
         for model in res.json():
@@ -321,7 +326,7 @@ def set_sd_model(
         "Content-Type": "application/json",
     }
     if userpass:
-        headers["Authorization"] = "Basic " + base64.b64encode(userpass.encode())
+        headers["Authorization"] = "Basic " + str(base64.b64encode(userpass.encode()))
     base_url = normalize_base_url(base_url)
     model_url = base_url + "/sdapi/v1/sd-models"
     options_url = base_url + "/sdapi/v1/options"

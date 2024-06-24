@@ -2,9 +2,9 @@ from formula import FormulaCompute
 
 # commandline
 if __name__ == "__main__":
-    import os
+    import sys
 
-    args = os.sys.argv
+    args = sys.argv
     if len(args) > 1:
         formula = args[1]
         compute = FormulaCompute(formula, variables={}, debug=True)

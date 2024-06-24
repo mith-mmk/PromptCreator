@@ -6,7 +6,7 @@ import modules.logger as logger
 import modules.share as share
 from modules.interrogate import interrogate
 from modules.parse import create_img2json
-from modules.save import save_img
+from modules.save import save_images as save_img
 
 Logger = logger.getDefaultLogger()
 # Call img2img API from webui, it has many bugs
@@ -83,18 +83,22 @@ def img2img(
         if overrides is not None:
             if type(overrides) is list:
                 override = overrides[n]
-            else:
+            elif type(overrides) is dict:
                 override = overrides
+            else:
+                override = {}
             override_settings = {}
             if "model" in override:
-                model = api.get_sd_model(
-                    sd_model=override["model"], base_url=base_url, sd_vae=None
-                )
+                model = api.get_sd_model(sd_model=override["model"], base_url=base_url)
                 del override["model"]
-                override_settings["sd_model_checkpoint"] = model.title
+                if model is None:
+                    continue
+                override_settings["sd_model_checkpoint"] = model["title"]
             if "vae" in override:
                 vae = api.get_vae(base_url=base_url, vae=override["vae"])
                 del override["vae"]
+                if vae is None:
+                    continue
                 override_settings["sd_vae"] = vae.title
             if "clip_skip" in override:
                 override_settings["CLIP_stop_at_last_layers"] = override["clip_skip"]

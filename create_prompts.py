@@ -188,7 +188,7 @@ def main(args):
 
     if args.api_mode:
         sd_model = args.api_set_sd_model or options.get("sd_model")
-        sd_vae = args.api_set_sd_vae or options.get("sd_vae")
+        sd_vae = args.api_set_sd_vae or options.get("sd_vae", "Automatic")
         opt["sd_model"] = sd_model
         opt["sd_vae"] = sd_vae
         opt["base_url"] = args.api_base
@@ -378,7 +378,7 @@ def run_from_args(command_args=None):
 
     args = parser.parse_args(command_args)
     if args.input is None and not (args.api_mode and args.api_input_json is not None):
-        parser.Logger.info_help()
+        parser.print_help()
         Logger.info("need [input] or --api-mode --api_input_json [filename]")
         return False
     return main(args)

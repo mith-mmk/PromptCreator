@@ -12,7 +12,6 @@ import httpx
 import yaml
 
 import create_prompts
-
 # import logging
 import img2img
 import modules.logger as logger
@@ -154,7 +153,7 @@ def load_prompts_csv(filename):
             if len(row) > 5:
                 prompt["profile"] = row[5]
             else:
-                prompt["profile"] = None
+                prompt["profile"] = ""
             prompts.append(prompt)
     Logger.debug(f"load_prompts_csv {filename} {prompts}")
     return prompts
@@ -1010,6 +1009,9 @@ def run_txt2img(config, args=None):
                     Logger.error(e)
                     continue
                 # Logger.debug(f"create prompt finished {result}")
+                if result is None:
+                    Logger.error("create prompt failed")
+                    continue
                 payloads = result["output_text"]
                 opt = options.copy()
                 opt["filename_pattern"] = file_pattern
@@ -1038,12 +1040,11 @@ def run_txt2img(config, args=None):
                         Logger.info(f"set model time {end_time - start_time} sec")
                     except Exception as e:
                         Logger.error("set model failed")
-                        Logger.error(e.with_traceback())
+                        Logger.error(e)
                 # txt2img
                 Logger.debug(f"txt2img {opt}")
                 import modules.txt2img
 
-                Logger.verbose(f"txt2img {opt}")
                 try:
                     modules.txt2img.txt2img(
                         payloads,
@@ -1130,7 +1131,7 @@ def check_launch(config, verbose=True):
     url = f"{host}/sdapi/v1/memory"
 
     try:
-        with httpx.Client(timeout=(1, 5)) as client:
+        with httpx.Client(timeout=httpx.Timeout(1, read=5)) as client:
             response = client.get(url)
             if response.status_code == 200:
                 if verbose:
@@ -1332,7 +1333,7 @@ def prepare_custom(config, args):
     if len(args) == 0:
         Logger.warning("custom command not found")
         #         logging.info('custom command not found')
-        return False
+        return False, None
     plugin = args[0]
     if "custom" in config["custom"] and plugin in config["custom"][plugin]:
         plugin_config = config["custom"][plugin]

@@ -146,10 +146,12 @@ def main(args):
             opt = vars(args)
             Logger.debug(opt)
             result = create_text_v2(opt)
-            options = result.get("options")
-            output_text = result.get("output_text")
-            yml = result.get("yml")
-            output_filename = yml.get("options").get("output")
+            if result is None:
+                return False
+            options = result.get("options", {})
+            output_text = result.get("output_text", [])
+            yml = result.get("yml", {})
+            output_filename = yml.get("options", {}).get("output")
             if isinstance(output_filename, str):  # Replace '==' with 'is'
                 Logger.debug(f"output_filename: {output_filename}")
                 try:
@@ -261,7 +263,7 @@ def main(args):
 
     if args.api_mode:
         sd_model = args.api_set_sd_model or options.get("sd_model")
-        sd_vae = args.api_set_sd_vae or options.get("sd_vae")
+        sd_vae = args.api_set_sd_vae or options.get("sd_vae", "Automatic")
         opt["sd_model"] = sd_model
         opt["sd_vae"] = sd_vae
         opt["base_url"] = args.api_base
@@ -499,7 +501,7 @@ def run_from_args(command_args=None):
     if args.debug:
         Logger.print_levels = ["info", "warning", "error", "critical", "debug"]
     if args.input is None and not (args.api_mode and args.api_input_json is not None):
-        parser.Logger.info_help()
+        parser.print_help()
         Logger.info("need [input] or --api-mode --api_input_json [filename]")
         return False
     return main(args)

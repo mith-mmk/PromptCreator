@@ -217,8 +217,8 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None):
         if os.path.isfile(mask_imagefile):
             with open(mask_imagefile, "rb") as f:
                 Logger.info(f"\033[KUse image mask {mask_imagefile}")
-                if "line_count" in api.share:
-                    api.share["line_count"] += 1
+                if api.share.get("line_count"):
+                    api.share.set("line_count", api.share.get("line_count") + 1)
                 mask_image = base64.b64encode(f.read()).decode("ascii")
                 json_raw["mask"] = "data:image/png;base64," + mask_image
                 json_raw["mask_blur"] = 4

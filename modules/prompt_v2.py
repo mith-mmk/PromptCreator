@@ -77,8 +77,9 @@ def text_formula_v2(text, args):
             # array formula
             try:
                 array_formula = re.match(r"(.+?)\,(\d+)", formula)
-                variable = array_formula.group(1)
-                array_index = int(array_formula.group(2)) - 1
+                if array_formula is not None:
+                    variable = array_formula.group(1)
+                    array_index = int(array_formula.group(2)) - 1
                 if variable in variables:
                     try:
                         replace_text = variables.get(variable)[array_index]
@@ -94,8 +95,9 @@ def text_formula_v2(text, args):
         elif re.match(r"([a-zA-Z\-\_].*?)\s*\[\s*(\d+)\s*\]", _formula):
             # array formula ${variable[n]} n = 0, 1, 2, ...
             array_formula = re.match(r"(.+?)\s*\[\s*(\d+)\s*\]", formula)
-            variable = array_formula.group(1)
-            array_index = int(array_formula.group(2)) - 1
+            if array_formula is not None:
+                variable = array_formula.group(1)
+                array_index = int(array_formula.group(2)) - 1
             try:
                 if variable in variables:
                     try:
@@ -111,8 +113,9 @@ def text_formula_v2(text, args):
         # dict formula ${variable["key"]}
         elif re.match(r"([a-zA-Z\-\_].*?)\s*\[\s*\"(.+?)\"\s*\]", _formula):
             dict_formula = re.match(r"(.+?)\s*\[\s*\"(.+?)\"\s*\]", formula)
-            variable = dict_formula.group(1)
-            key = dict_formula.group(2)
+            if dict_formula is not None:
+                variable = dict_formula.group(1)
+                key = dict_formula.group(2)
             Logger.debug(f"dict formula {variable} {key}")
             if variable in variables:
                 try:
@@ -298,8 +301,9 @@ def read_file_v2(filename, error_info=""):
                     queries = ["*"]
                 else:
                     q = re.match(r"(.+\.jsonl)\[(.+)\]", filename)
-                    filename = q.group(1)
-                    query = q.group(2)
+                    if q is not None:
+                        filename = q.group(1)
+                        query = q.group(2)
                     queries = query.split(",")
                     # trim space
                     for i, q in enumerate(queries):
@@ -423,7 +427,10 @@ def item_split_ct2(item, error_info="", default_weight=0.1):
     # "" で括られている , は無視
     items = re.split(r'(?<!")\s*,\s*(?!")', item)
     weight = 0.1
-    row = items[0].trim()
+    if len(items) > 0:
+        row = items[0]
+        if row is str:
+            row = row.trim()
     # [] で括られている場合は json に変換
     if row[0] == "[" and row[-1] == "]":
         # array なので json に変換
@@ -454,7 +461,7 @@ def item_split_ct2(item, error_info="", default_weight=0.1):
 
 def prompt_multiple_v2(yml, variable, array, input=[], attributes=None):
     Logger.debug("prompt_multiple_v2 start")
-    output = [None] * len(array) * len(input) if len(input) > 0 else [None] * len(array)
+    output = [{}] * len(array) * len(input) if len(input) > 0 else [{}] * len(array)
     i = 0
     if len(input) == 0:
         input = [copy.deepcopy(yml.get("command", {}))]
@@ -466,6 +473,8 @@ def prompt_multiple_v2(yml, variable, array, input=[], attributes=None):
             args = {}
             args[variable] = item
             # Logger.debug(f"item {args}")
+            if parts is None:
+                parts = {}
             output[i] = copy.deepcopy(parts)
             verbose = output[i].get("verbose", {})
             if "variables" not in verbose:
@@ -473,9 +482,11 @@ def prompt_multiple_v2(yml, variable, array, input=[], attributes=None):
             verbose["variables"][variable] = item
             if attributes:
                 verbose["attributes"] = attributes
-            output[i] = prompt_formula_v2(
-                output[i], args, opt=yml, attributes=attributes
-            )
+            output = prompt_formula_v2(output[i], args, opt=yml, attributes=attributes)
+            if output is None:
+                Logger.error(f"Error happen prompt_multiple_v2 return empty")
+                return None
+            output[i] = output
             output[i]["verbose"] = verbose
             i = i + 1
     Logger.debug("prompt_multiple_v2 end")
@@ -610,14 +621,15 @@ def prompt_random_v2(yml, max_number, input=[]):
         current = prompt_formula_v2(
             current, current_variables, opt=yml, error_info="", attributes=attributes
         )
-        current.get("verbose", {})["variables"] = current_variables
-        if attributes:
-            current.get("verbose", {})["attributes"] = attributes
-        values = copy.deepcopy(current_variables)
-        values = prompt_formula_v2(
-            values, current_variables, opt=yml, attributes=attributes
-        )
-        current.get("verbose", {})["values"] = values
+        if isinstance(current, dict):
+            current.get("verbose", {})["variables"] = current_variables
+            if attributes:
+                current.get("verbose", {})["attributes"] = attributes
+            values = copy.deepcopy(current_variables)
+            values = prompt_formula_v2(
+                values, current_variables, opt=yml, attributes=attributes
+            )
+            current.get("verbose", {})["values"] = values
         output[idx] = current
     return output
 
@@ -794,6 +806,9 @@ def create_text_v2(opt):
             if type(cleanup) is str:
                 keys = cleanup.split(" ")
             Logger.debug(f"cleanup {keys}")
+            if output is None:
+                Logger.error(f"output is None")
+                return None
             for item in output:
                 for key in keys:
                     if key in item:
@@ -823,6 +838,9 @@ def create_text_v2(opt):
 
     is_json = options.get("json", False)
     Logger.debug(f"is json {is_json}")
+
+    if output is None:
+        output = {}
 
     if not is_json:
         Logger.debug("text mode")

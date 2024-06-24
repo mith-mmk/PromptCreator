@@ -23,9 +23,10 @@ def getDefaultLogger() -> "LogPrint":
 
 
 def getLogger(service_name="root") -> "LogPrint":
-    if service_name in Logger:
-        logger = Logger[service_name]
-        return logger
+    if type(Logger) is dict:
+        if service_name in Logger:
+            logger = Logger[service_name]
+            return logger
     return LogPrint(service_name)
 
 

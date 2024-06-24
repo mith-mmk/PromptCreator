@@ -26,7 +26,7 @@ class BackgroundWorker:
             if work[0] == "save":
                 import modules.save as save
 
-                save.save_img_wrapper(work[1], work[2])
+                asyncio.create_task(save.save_images(work[1], work[2]))
 
     def put(self, work):
         self._tasks.append(work)
@@ -35,7 +35,7 @@ class BackgroundWorker:
         return id
 
     async def done(self):
-        await self.put(("done", None))
+        self.put(("done", None))
         await self._queue.join()
 
     def get(self, task_id):
