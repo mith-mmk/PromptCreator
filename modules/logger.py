@@ -94,6 +94,9 @@ class LogPrint:
         if not os.path.exists(logfile):
             open(logfile, "w").close()
 
+    def getPrintLevel(self):
+        return self.print_levels
+
     def setLogDirectory(self, log_dir):
         self.log_dir = log_dir
         self._initLogConfig()

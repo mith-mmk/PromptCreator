@@ -458,7 +458,7 @@ def run_from_args(command_args=None):
     )
 
     parser.add_argument(
-        "--mask_blur", type=int, default=None, help="Mask blur for img2img"
+        "--mask-blur", type=int, default=None, help="Mask blur for img2img"
     )
 
     parser.add_argument(
@@ -469,6 +469,10 @@ def run_from_args(command_args=None):
     )
     parser.add_argument(
         "--debug", type=bool, nargs="?", const=True, default=False, help="debug mode"
+    )
+
+    parser.add_argument(
+        "--verbose", type=bool, nargs="?", const=True, default=False, help="verbose"
     )
 
     parser.add_argument(
@@ -499,7 +503,16 @@ def run_from_args(command_args=None):
 
     args = parser.parse_args(command_args)
     if args.debug:
-        Logger.print_levels = ["info", "warning", "error", "critical", "debug"]
+        Logger.print_levels = [
+            "info",
+            "warning",
+            "error",
+            "critical",
+            "verbose",
+            "debug",
+        ]
+    if args.verbose:
+        Logger.print_levels = ["info", "warning", "error", "critical", "verbose"]
     if args.input is None and not (args.api_mode and args.api_input_json is not None):
         parser.print_help()
         Logger.info("need [input] or --api-mode --api_input_json [filename]")

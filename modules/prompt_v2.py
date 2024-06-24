@@ -86,7 +86,7 @@ def text_formula_v2(text, args):
                         text = text.replace("${" + formula + "}", replace_text)
                     except Exception:
                         Logger.verbose(
-                            f"{formula} index {array_index} is not, set use empty"
+                            f"{formula} index {array_index} is not, set use empty in {text}"
                         )
                         text = text.replace("${" + formula + "}", "")
             except Exception as e:
@@ -105,7 +105,7 @@ def text_formula_v2(text, args):
                         text = text.replace("${" + formula + "}", replace_text)
                     except Exception:
                         Logger.verbose(
-                            f"{formula} index {array_index} is not, set use empty"
+                            f"{formula} index {array_index} is not, set use empty in {text}"
                         )
                         text = text.replace("${" + formula + "}", "")
             except Exception as e:
@@ -579,6 +579,15 @@ def calc_weighted_variables(yml):
                 raise e
         yml["weighted_variables"] = weighted_variables
         yml["weight_calced"] = True
+        if "verbose" in Logger.getPrintLevel():
+            for key in weighted_variables:
+                Logger.verbose(f"key {key}")
+                for item in weighted_variables[key]:
+                    weight = (item.get("choice_end") - item.get("choice_start")) * 100
+                    item = copy.deepcopy(item)
+                    del item["choice_start"]
+                    del item["choice_end"]
+                    Logger.verbose(f"weight {weight:.3f}% {item}")
     return yml
 
 
