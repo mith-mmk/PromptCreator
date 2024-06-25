@@ -6,7 +6,7 @@ import modules.logger as logger
 import modules.share as share
 from modules.interrogate import interrogate
 from modules.parse import create_img2json
-from modules.save import save_images as save_img
+from modules.save import save_images
 
 Logger = logger.getDefaultLogger()
 # Call img2img API from webui, it has many bugs
@@ -137,7 +137,7 @@ def img2img(
             continue
 
         r = response.json()
-        prt_cnt = save_img(r, opt=opt)
+        prt_cnt = save_images(r, opt=opt)
         if share.get("line_count"):
             prt_cnt += share.get("line_count")
             share.set("line_count", 0)
