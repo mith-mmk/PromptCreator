@@ -1,105 +1,99 @@
 version: 2
-# python create-prompt.py samples/prompts-girls.yaml
 options:
-#   sd_model: anythingV5Anything_anythingV5PrtRE
-#   sd_vae: kl-f8-anime2-vae.safetensors
-    output: ./outputs/examples-kenzen.json
-    json: true # output JSON
-    # method: random # dispose
-    number: 100   # list limit, "multiple" is not use
-    # weight: true   # dipose
-    default_weight: 0.1  #
+    output: ./outputs/examples-kenzen.txt
+#    json: true # output JSON
+    number: 10
 methods:
-    - random 0 
-    - claenup prompt negative_prompt
+    - random: 0 
+    - cleanup: prompt negative_prompt
 variables:
-    negative: examples/appends/v1/000-negative.txt
+    negative: examples/V1/appends/000-negative.txt
     eyes: ['${eyeshape} ${eyeoddities} ${eyecolor}${eyemotion}']
-    eyecolor: examples/appends/v1/e01-eyescolor.txt
-    eyeshape: examples/appends/v1/e02-eyeshapes.txt
-    eyeoddities: examples/appends/v1/e03-eyeoddities.txt
-    eyemotion: examples/appends/v1/e04-eyemotion.txt
+    eyecolor: examples/V1/appends/e01-eyescolor.txt
+    eyeshape: examples/V1/appends/e02-eyeshapes.txt
+    eyeoddities: examples/V1/appends/e03-eyeoddities.txt
+    eyemotion: examples/V1/appends/e04-eyemotion.txt
     hair: ['${haircolor} ${hairvariation} ${hairtop} ${hairside} ${hairback} ${hairbang} ${hairlength}']
-    haircolor: examples/appends/v1/h01-haircolor.txt
-    hairvariation: examples/appends/v1/h07-hairvariation.txt
-    hairtop: examples/appends/v1/h06-hairtop.txt
-    hairside: examples/appends/v1/h04-hairside.txt
-    hairback: examples/appends/v1/h05-hairback.txt
-    hairbang: examples/appends/v1/h03-hairbangs.txt
-    hairlength: examples/appends/v1/h02-hairlength.txt
+    haircolor: examples/V1/appends/h01-haircolor.txt
+    hairvariation: examples/V1/appends/h07-hairvariation.txt
+    hairtop: examples/V1/appends/h06-hairtop.txt
+    hairside: examples/V1/appends/h04-hairside.txt
+    hairback: examples/V1/appends/h05-hairback.txt
+    hairbang: examples/V1/appends/h03-hairbangs.txt
+    hairlength: examples/V1/appends/h02-hairlength.txt
     clothes: ['${motif} ${clothes1} ${hair_ornament}','${clothes1}']
-    hair_ornament: examples/appends/v1/h08-hair-ornament.txt
-    hair_ornament_color: examples/appends/v1/s05-colors.txt
-    hair_ornnament_motif: examples/appends/v1/c09-motif.txt
-    motif: examples/appends/v1/c09-clothes-motif.txt
-    clothes1: examples/appends/v1/c00-clothes.txt
-    onepiece: examples/appends/v1/c01-onepiece.txt
-    setclothes: examples/appends/v1/c01-setclothes-open.txt examples/appends/v1/c01-setclothes-close.txt examples/appends/v1/c01-setclothes-lora.txt
-    cosplay: examples/appends/v1/c01-costume.txt
-    swimware: examples/appends/v1/c01-swimwear.txt
-    twopiece: examples/appends/v1/c01-twopiece.txt
-    tops: examples/appends/v1/c02-tops.txt
+    hair_ornament: examples/V1/appends/h08-hair-ornament.txt
+    hair_ornament_color: examples/V1/appends/s05-colors.txt
+    hair_ornnament_motif: examples/V1/appends/c09-motif.txt
+    motif: examples/V1/appends/c09-clothes-motif.txt
+    clothes1: examples/V1/appends/c00-clothes.txt
+    onepiece: examples/V1/appends/c01-onepiece.txt
+    setclothes: examples/V1/appends/c01-setclothes-open.txt examples/V1/appends/c01-setclothes-close.txt examples/V1/appends/c01-setclothes-lora.txt
+    cosplay: examples/V1/appends/c01-costume.txt
+    swimware: examples/V1/appends/c01-swimwear.txt
+    twopiece: examples/V1/appends/c01-twopiece.txt
+    tops: examples/V1/appends/c02-tops.txt
     bottoms: ['${skirt}','${pant}']
-    skirt: examples/appends/v1/c04-skirt.txt
-    pant: examples/appends/v1/c04-pant.txt
-    topsmotif: examples/appends/v1/c09-clothes-motif.txt
-    topscolor: examples/appends/v1/c03-topscolors.txt
-    bottomscolor: examples/appends/v1/c05-bottomscolors.txt
-    panty: examples/appends/v1/c06-panties.txt
-    pantymotif: examples/appends/v1/c09-motif.txt
-    pantycolor: examples/appends/v1/c05-bottomscolors.txt
-    bra: examples/appends/v1/c07-bra.txt
-    bramotif: examples/appends/v1/c09-motif.txt
-    bracolor: examples/appends/v1/c03-topscolors.txt
-    overware: examples/appends/v1/c08-overware.txt
-    overwarecolor: examples/appends/v1/c03-topscolors.txt
+    skirt: examples/V1/appends/c04-skirt.txt
+    pant: examples/V1/appends/c04-pant.txt
+    topsmotif: examples/V1/appends/c09-clothes-motif.txt
+    topscolor: examples/V1/appends/c03-topscolors.txt
+    bottomscolor: examples/V1/appends/c05-bottomscolors.txt
+    panty: examples/V1/appends/c06-panties.txt
+    pantymotif: examples/V1/appends/c09-motif.txt
+    pantycolor: examples/V1/appends/c05-bottomscolors.txt
+    bra: examples/V1/appends/c07-bra.txt
+    bramotif: examples/V1/appends/c09-motif.txt
+    bracolor: examples/V1/appends/c03-topscolors.txt
+    overware: examples/V1/appends/c08-overware.txt
+    overwarecolor: examples/V1/appends/c03-topscolors.txt
 
-    doing: examples/appends/v1/d01-doings.txt
-    motion: examples/appends/v1/d03-motions.txt
+    doing: examples/V1/appends/d01-doings.txt
+    motion: examples/V1/appends/d03-motions.txt
 
-    lookings: examples/appends/v1/s00-lookings.txt
-    coutenance: examples/appends/v1/s01-countenance.txt
-    breast: examples/appends/v1/s02-breast.txt
-    skin: examples/appends/v1/s03-skin.txt
+    lookings: examples/V1/appends/s00-lookings.txt
+    coutenance: examples/V1/appends/s01-countenance.txt
+    breast: examples/V1/appends/s02-breast.txt
+    skin: examples/V1/appends/s03-skin.txt
     accessories: ['${hat}${head_accessory}${neck_accessory}${body_accessory}${hand_accessory}${leg_accessory}${accessory}']
-    hand_accessory: examples/appends/v1/s04-hand-accessory.txt
-    hand_accessory_motif: examples/appends/v1/c09-motif.txt
-    hand_accessory_color: examples/appends/v1/s05-colors.txt
-    neck_accessory: examples/appends/v1/s04-neck-accessory.txt
-    neck_accessory_motif: examples/appends/v1/c09-motif.txt
-    neck_accessory_color: examples/appends/v1/s05-colors.txt
-    head_accessory: examples/appends/v1/s04-head-accessory.txt
-    head_accessory_motif: examples/appends/v1/c09-motif.txt
-    head_accessory_color: examples/appends/v1/s05-colors.txt
-    body_accessory: examples/appends/v1/s04-body-accessory.txt
-    body_accessory_motif: examples/appends/v1/c09-motif.txt
-    body_accessory_color: examples/appends/v1/s05-colors.txt
-    leg_accessory: examples/appends/v1/s04-leg-accessory.txt
-    leg_motif: examples/appends/v1/c09-motif.txt
-    leg_color: examples/appends/v1/s05-colors.txt
-    accessory: examples/appends/v1/s04-accessories.txt
-    accessory_motif: examples/appends/v1/c09-motif.txt
-    accessory_color: examples/appends/v1/s05-colors.txt
-    hat:  examples/appends/v1/s04-hat.txt
-    hat_motif: examples/appends/v1/c09-motif.txt
-    hat_color: examples/appends/v1/s05-colors.txt
+    hand_accessory: examples/V1/appends/s04-hand-accessory.txt
+    hand_accessory_motif: examples/V1/appends/c09-motif.txt
+    hand_accessory_color: examples/V1/appends/s05-colors.txt
+    neck_accessory: examples/V1/appends/s04-neck-accessory.txt
+    neck_accessory_motif: examples/V1/appends/c09-motif.txt
+    neck_accessory_color: examples/V1/appends/s05-colors.txt
+    head_accessory: examples/V1/appends/s04-head-accessory.txt
+    head_accessory_motif: examples/V1/appends/c09-motif.txt
+    head_accessory_color: examples/V1/appends/s05-colors.txt
+    body_accessory: examples/V1/appends/s04-body-accessory.txt
+    body_accessory_motif: examples/V1/appends/c09-motif.txt
+    body_accessory_color: examples/V1/appends/s05-colors.txt
+    leg_accessory: examples/V1/appends/s04-leg-accessory.txt
+    leg_motif: examples/V1/appends/c09-motif.txt
+    leg_color: examples/V1/appends/s05-colors.txt
+    accessory: examples/V1/appends/s04-accessories.txt
+    accessory_motif: examples/V1/appends/c09-motif.txt
+    accessory_color: examples/V1/appends/s05-colors.txt
+    hat:  examples/V1/appends/s04-hat.txt
+    hat_motif: examples/V1/appends/c09-motif.txt
+    hat_color: examples/V1/appends/s05-colors.txt
 
-    place: examples/appends/v1/p01-places.txt
-    date: examples/appends/v1/p02-date.txt
-    umbrella_motif: examples/appends/v1/c09-motif.txt
-    umbrella_color: examples/appends/v1/s05-colors.txt 
+    place: examples/V1/appends/p01-places.txt
+    date: examples/V1/appends/p02-date.txt
+    umbrella_motif: examples/V1/appends/c09-motif.txt
+    umbrella_color: examples/V1/appends/s05-colors.txt 
 
     artstyle: ['${creation} (${artstyle1},${artstyle2})']
-    artstyle1: examples/appends/v1/a01-artstyle.txt
-    artstyle2: examples/appends/v1/a01-artstyle.txt
-    creation: examples/appends/v1/a02-creation2.txt
+    artstyle1: examples/V1/appends/a01-artstyle.txt
+    artstyle2: examples/V1/appends/a01-artstyle.txt
+    creation: examples/V1/appends/a02-creation2.txt
     camera: ['${filter}${effect}${angle}${shot}${direction}']
 
-    filter: examples/appends/v1/a03-filter.txt
-    effect: examples/appends/v1/a04-effect.txt
-    angle: examples/appends/v1/a05-angle.txt
-    shot: examples/appends/v1/a06-shot.txt
-    direction: examples/appends/v1/a07-direction.txt
+    filter: examples/V1/appends/a03-filter.txt
+    effect: examples/V1/appends/a04-effect.txt
+    angle: examples/V1/appends/a05-angle.txt
+    shot: examples/V1/appends/a06-shot.txt
+    direction: examples/V1/appends/a07-direction.txt
     
 command:
     prompt: "(${lookings}) wearing (${clothes}) ${accessories}, ${eyes} eyes, ${coutenance}, ${hair} hair, (${breast}) ${doing[1]}, ${artstyle}, ${place} ${motion}${camera}"
@@ -110,24 +104,5 @@ command:
     steps: 30
     cfg_scale: 12.5
     sampler_name: DPM++ SDE # not accept DPM++ SDE Karras
-    # 1.9.0 new options
-#    scheduler: karras
-    # see more Samplers 
-    # % curl http://localhost:7960/sdapi/v1/samplers
-    # AUTOMATIC is set options ?
     batch_size: 1  # if you can use n size batch
     n_iter: 1 # also same butch count
-# higher.fix
-    enable_hr: true
-    denoising_strength: 0.4
-    hr_scale: 2.0
-    hr_second_pass_steps: 10
-#    hr_resize_x : 1024
-#    hr_resize_y : 1280
-    hr_upscaler: None
-
-#    firstphase_width: 512
-#    firstphase_height: 512
-    override_settings:
-       filter_nsfw: true # true / false
-#       CLIP_stop_at_last_layers: 2

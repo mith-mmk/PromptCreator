@@ -3,6 +3,138 @@
 
   Create prompt V2 is a prompt creator for AUTOMATIC1111/stable-diffusion-webui
 
+## objective(目的)
+ The Prompt Creator V2 is a prompt creator for AUTOMATIC1111/stable-diffusion-webui(Profileから、Stable Diffusion用のプロンプトを自動作成します)
+ You can also automatically generate images by using the API.(またAPIを叩くことにより画像の自動生成を可能にします)
+
+ - A config file is required(設定ファイルが必要です)
+ - A config file is written in yaml(設定ファイルはyaml形式で記述します)
+ - A config file is create prompt list file(設定ファイルはプロンプトリストファイルを作成します)
+ - A config file has methods, number of prompt, prompt command, prompt settings(設定ファイルには、メソッド、プロンプトの数、プロンプトコマンド、プロンプト設定が記述されます)
+ - A config file has variables, array, command, profiles, but can write in json or text(設定ファイルには、変数、配列、コマンド、プロファイルが記述されますが、jsonまたはテキストで記述できます)
+ - See examples for details(詳細はexamplesを参照してください)
+
+input.yaml
+```yaml
+version: 2.0  # must(必須)
+options:
+    output: ./outputs/v2/girls.json # output file(出力ファイル)
+    json: true # output json(jsonで出力)
+    number: 50   # number of prompt(プロンプトの数)
+methods:  # random: 1  or multiple: array
+    - random: 0 # random 0 is use options.number(0はoptions.numberを使用) randam is generate random prompt(randomはランダムプロンプトを生成します)
+    - cleanup: prompt negative_prompt # clean up prompt (promptをクリーンアップします)
+
+variables:  # variables(変数)
+    negative: ['nsfw, easynegative']  # If you define variables in the config, define them as an array(config内に変数を定義する場合は配列で定義します)
+    actions: $json/actions.jsonl      # actions(アクション)
+    outfits: $jsonl/outfits.json  # outfits(服)
+    place: $jsonl/places.jsonl[places] # place(場所)
+
+    eyes: $jsonl/eyes.jsonl[eyes] # ${eyes} 目
+    hair: $jsonl/hairs.jsonl[hair] # ${hair} 髪
+    
+command:  # prompt command(プロンプトコマンド) The content that will be output to the file(ファイルに出力される内容になります)
+    prompt: "${eyes} ${hair} girl wearing ${outfits} is ${actions} ${place} " # prompt command(プロンプトコマンド)
+    negative_prompt: "${negative}"
+    seed: -1
+    width: 512
+    height: 512
+    steps: 20
+    cfg_scale: 7.5
+    sampler_name: DPM++ SDE
+    batch_size: 1  # if you can use n size batch
+    n_iter: 1 # also same butch count
+# higher.fix
+    enable_hr: true
+    hr_scale: 2
+    hr_upscaler: R-ESRGAN 4x+ Anime6B
+    denoising_strength: 0.5
+    hr_second_pass_steps: 10
+    override_settings:        # override settings(設定を上書き)
+        CLIP_stop_at_last_layers: 2               # CLIP stop at last layers(CLIPを停止する階層を指定、2を推奨するケースが多い)
+```
+
+jsonl(eyes.jsonl)
+```jsonl
+/* 
+  If you want write comment in jsonl, you can it.(jsonl内でコメントを書く場合は、このようにします)
+*/
+// You can write like this(これでも可能です)
+{"W": 0.1, "C": ["eyes"], "V": "blue eyes"} // W C V is upper case(W C Vは大文字)
+{"W": 0.1, "C": ["eyes"], "V": "green eyes"}
+{"W": 0.1, "C": ["eyes"], "V": "black eyes"}
+{"W": 0.1, "C": ["eyes"], "V": "brown eyes"}
+{"W": 0.1, "C": ["eyes"], "V": ["red eyes"]}  // "V" is string or string array("V"は文字列または文字列配列)
+```
+
+You can write text file(semiclon separated), but cannot write category (テキスト(セミコロン区切り)でも書けまが、カテゴリーは書けません)
+
+eyes.txt
+```text
+0.1;blue eyes
+0.1;green eyes
+0.1;black eyes
+0.1;brown eyes
+0.1;red eyes
+```
+
+## 実行方法(How to run)
+```
+python cp2.py input.yaml
+```
+
+You can call API and generate images automatically by adding options(オプションを追加することで、APIを呼び出し画像を自動生成することができます)
+You need to add --api and --listen options to WebUI(ただし、WebUIに--apiと--listenオプションを追加する必要があります)
+
+If you use "Prompts from file or textbox" in WebUI, output in text format. If you call API, output in JSON format(WebUIの"Prompts from file or textbox"を使う場合はtext形式で出力します。APIを叩く場合はJSON形式で出力します)
+
+
+Outputs of examples(以下は、exampleの実行結果です)
+```
+python .\cp2.py .\examples\prompts-girls.yaml
+```
+
+Outputs
+```txt
+--prompt (petite kawaii girl) wearing (yellow camisor), normal yellow eyes, annoyed, brown curly twin-tail hair between eyes shiny long hair, (medium breasts) 2girls are serving dish, diorama style (hiten_1, Production I.G), on the fantasy field in the day, steam, (blur), (flock of birds), from side --negative_prompt nsfw, easynegative, ${doing, 2}, pixel_art, halftone, multiple views, monochrome, futanari, futa, yaoi, speech bubble, (low quality, worst quality:1.4), text, blurry, bad autonomy --seed -1 --width 512 --height 704 --steps 30 --cfg_scale 12.5 --sampler_name DPM++ SDE --batch_size 1 --n_iter 1
+--prompt (teenage girl) wearing (check pink t-shirt and black denim shorts), white grove, garter belt and knee sox, mole under eye white eyes, embarrassed, light orange wavy triple bun twin-tail dyed bangs short hair, (large breasts) 1girl is claw pose, super-deformed (tony_taka, grisaia_\(series\)), in the bus, vanishing point, long shot, from below --negative_prompt nsfw, easynegative, ${doing, 2}, pixel_art, halftone, multiple views, monochrome, futanari, futa, yaoi, speech bubble, (low quality, worst quality:1.4), text, blurry, bad autonomy --seed -1 --width 512 --height 704 --steps 30 --cfg_scale 12.5 --sampler_name DPM++ SDE --batch_size 1 --n_iter 1
+--prompt (teenage girl) wearing (white swim shirt and tight pants), normal green eyes, frown, pink straight flipped shiny medium hair, (small breasts) 2girls are back-to-back, anime_screencap (Production I.G, Charlie Bowater), on the poolside, (sharp focus), from below --negative_prompt nsfw, easynegative, ${doing, 2}, pixel_art, halftone, multiple views, monochrome, futanari, futa, yaoi, speech bubble, (low quality, worst quality:1.4), text, blurry, bad autonomy --seed -1 --width 512 --height 704 --steps 30 --cfg_scale 12.5 --sampler_name DPM++ SDE --batch_size 1 --n_iter 1
+--prompt (teenage girl) wearing (floral print black long skirt maid uniform with white apron and white hairband), normal grey eyes, excited, light grey straight hair between eyes shiny medium hair, (small breasts) 1girl is falling from sky, super-deformed (kantoku_\(style\), Unfairr), in the jinja shrine, (feathers effect), from side --negative_prompt nsfw, easynegative, ${doing, 2}, pixel_art, halftone, multiple views, monochrome, futanari, futa, yaoi, speech bubble, (low quality, worst quality:1.4), text, blurry, bad autonomy --seed -1 --width 512 --height 704 --steps 30 --cfg_scale 12.5 --sampler_name DPM++ SDE --batch_size 1 --n_iter 1
+--prompt (teen cute girl) wearing (geometric pattern helloween dress, GhostWhite rose motif hair ornament), check brown cap, camouflage emerald green chocar, normal emerald green eyes, nose blush, light orange straight single braid shiny short hair, (medium breasts) 6girl+ are dancing, thick outline, black outline (Ufotable, violet_evergarden), in the temple, (spot light) --negative_prompt nsfw, easynegative, ${doing, 2}, pixel_art, halftone, multiple views, monochrome, futanari, futa, yaoi, speech bubble, (low quality, worst quality:1.4), text, blurry, bad autonomy --seed -1 --width 512 --height 704 --steps 30 --cfg_scale 12.5 --sampler_name DPM++ SDE --batch_size 1 --n_iter 1
+--prompt (milf wife) wearing (black sweater dress), lemon print green cap, normal pink eyes, light smily, white straight side braid hair over one eye very short hair, (pointy breasts) 1girl opens a door, super-deformed (pixiv, kantoku_\(style\)), in the buddest temple in the day, motion lines, (confetti) --negative_prompt nsfw, easynegative, ${doing, 2}, pixel_art, halftone, multiple views, monochrome, futanari, futa, yaoi, speech bubble, (low quality, worst quality:1.4), text, blurry, bad autonomy --seed -1 --width 512 --height 704 --steps 30 --cfg_scale 12.5 --sampler_name DPM++ SDE --batch_size 1 --n_iter 1
+--prompt (teen cute girl) wearing (space print BlueViolet t-shirt and twotone microskirt), normal light blonde, eye reflection eyes, frown, purple straight twin-tail hair over shoulder hair, (medium breasts) 2girls are sweaping, super-deformed (Yuumei, momoco_\(momoco_haru\)), in the office room, trembling, full shot --negative_prompt nsfw, easynegative, ${doing, 2}, pixel_art, halftone, multiple views, monochrome, futanari, futa, yaoi, speech bubble, (low quality, worst quality:1.4), text, blurry, bad autonomy --seed -1 --width 512 --height 704 --steps 30 --cfg_scale 12.5 --sampler_name DPM++ SDE --batch_size 1 --n_iter 1
+--prompt (house wife) wearing (morning glory print silver tied shirt and pink pencil skirt on FireBrick jacket), normal brown, closed eyes eyes, jitome, white straight sidelocks twin-tail shiny floating long hair, (flat chests) 1girl is hand in own leg, game_cg (RossDraws, minori), in the school, (faint light), medium shot, from above --negative_prompt nsfw, easynegative, ${doing, 2}, pixel_art, halftone, multiple views, monochrome, futanari, futa, yaoi, speech bubble, (low quality, worst quality:1.4), text, blurry, bad autonomy --seed -1 --width 512 --height 704 --steps 30 --cfg_scale 12.5 --sampler_name DPM++ SDE --batch_size 1 --n_iter 1
+--prompt (curte slender girl) wearing (argylec white negligee, hair flower), camouflage gray boots, normal orange, closed one eye eyes, sleepy, blonde straight single hair bun very short hair, (medium breasts) 1girl is v sign, Lego style (egami, pixiv), in row of cherry blossom trees, (sharp focus), (breeze), full shot --negative_prompt nsfw, easynegative, ${doing, 2}, pixel_art, halftone, multiple views, monochrome, futanari, futa, yaoi, speech bubble, (low quality, worst quality:1.4), text, blurry, bad autonomy --seed -1 --width 512 --height 704 --steps 30 --cfg_scale 12.5 --sampler_name DPM++ SDE --batch_size 1 --n_iter 1
+--prompt (teenage girl) wearing (white blazer and uniform), normal silver eyes, doyagao, orange straight twin-tail dyed bangs very long hair, (medium breasts) 1girl is standing up, super-deformed (RossDraws, yuzusoft), in Taipei blue sky, wet, dynamic angle, medium shot --negative_prompt nsfw, easynegative, ${doing, 2}, pixel_art, halftone, multiple views, monochrome, futanari, futa, yaoi, speech bubble, (low quality, worst quality:1.4), text, blurry, bad autonomy --seed -1 --width 512 --height 704 --steps 30 --cfg_scale 12.5 --sampler_name DPM++ SDE --batch_size 1 --n_iter 1
+```
+
+Outputs of text style use copy and paste on Web UI(text形式の出力はWeb UIに貼り付けて使います)
+
+
+APIを叩く場合はJSON形式で出力します
+```
+python cp2.py input.yaml --json
+```
+
+You can write in config file, too(設定ファイルに直接記述することもできます)
+```yaml
+options:
+    json: true
+```
+
+
+You can direct run Web UI API(直接実行可能です)
+```
+python cp2.py input.yaml --api-mode --api-base http://localhost:7860 --api-output ./outputs/text-images --api-filename-pattern [num]-[seed]
+```
+
+If you run from JSON file, use --input-json option(JSONファイルを実行する場合は、--input-jsonを使います)
+```
+python cp2.py --input-json "./outputs/examples.json" --api-output ./outputs/text-images --api-filename_pattern [DATE]-[num]-[seed]
+```
+
+
 # enviroment(環境)
 - AUTOMATIC1111/stable-diffusion-web-ui (最新のバージョン) のAPIを有効にする
   - --APIオプションを追加する
@@ -16,16 +148,13 @@
 
 # Usage(使い方)
 ```
-usage: cp2.py [-h] [--append-dir APPEND_DIR] [--output OUTPUT] [--json [JSON]] [--api-mode [API_MODE]]
-              [--api-base API_BASE] [--api-userpass API_USERPASS] [--api-output-dir API_OUTPUT_DIR]
-              [--api-input-json API_INPUT_JSON] [--api-filename-pattern API_FILENAME_PATTERN]
-              [--max-number MAX_NUMBER] [--num-length NUM_LENGTH]
-              [--api-filename-variable [API_FILENAME_VARIABLE]] [--json-verbose [JSON_VERBOSE]]
-              [--num-once [NUM_ONCE]] [--api-set-sd-model API_SET_SD_MODEL] [--api-set-sd-vae API_SET_SD_VAE]       
-              [--override [OVERRIDE ...]] [--info [INFO ...]] [--save-extend-meta [SAVE_EXTEND_META]]
-              [--image-type IMAGE_TYPE] [--image-quality IMAGE_QUALITY] [--api-type API_TYPE]
-              [--interrogate INTERROGATE] [--alt-image-dir ALT_IMAGE_DIR] [--mask-dirs MASK_DIRS]
-              [--mask_blur MASK_BLUR] [--profile PROFILE] [--debug [DEBUG]] [--v1json [V1JSON]]
+usage: cp2.py [-h] [--append-dir APPEND_DIR] [--output OUTPUT] [--json [JSON]] [--api-mode [API_MODE]] [--api-base API_BASE] [--api-userpass API_USERPASS]
+              [--api-output-dir API_OUTPUT_DIR] [--api-input-json API_INPUT_JSON] [--api-filename-pattern API_FILENAME_PATTERN] [--max-number MAX_NUMBER]
+              [--num-length NUM_LENGTH] [--api-filename-variable [API_FILENAME_VARIABLE]] [--json-verbose [JSON_VERBOSE]] [--num-once [NUM_ONCE]]
+              [--api-set-sd-model API_SET_SD_MODEL] [--api-set-sd-vae API_SET_SD_VAE] [--override [OVERRIDE ...]] [--info [INFO ...]]
+              [--save-extend-meta [SAVE_EXTEND_META]] [--image-type IMAGE_TYPE] [--image-quality IMAGE_QUALITY] [--api-type API_TYPE] [--interrogate INTERROGATE]
+              [--alt-image-dir ALT_IMAGE_DIR] [--mask-dirs MASK_DIRS] [--mask-blur MASK_BLUR] [--profile PROFILE] [--debug [DEBUG]] [--verbose [VERBOSE]]
+              [--v1json [V1JSON]] [--prompt [PROMPT]] [--json-escape [JSON_ESCAPE]]
               [input]
 ```
 
@@ -63,7 +192,7 @@ usage: cp2.py [-h] [--append-dir APPEND_DIR] [--output OUTPUT] [--json [JSON]] [
   --max-number MAX_NUMBER
                         override option.number for yaml mode(出力数。コンフィグの設定を上書きする)
 
-  --api-filename-variables [API_FILENAME_VARIABLES]
+  --api-filename-variable
                         replace variables use filename(ファイル名に変数を使う)
 
   --api-set-sd-model SD_MODEL
@@ -87,19 +216,31 @@ usage: cp2.py [-h] [--append-dir APPEND_DIR] [--output OUTPUT] [--json [JSON]] [
   --image-quality
                         default 80, image quality for jpg(デフォルト80、jpgの画質)
                             
+  --debug
+                        debug mode(デバッグモード)
+  --verbose
+                        verbose(詳細モード)
+  --prompt
+                        output prompt only(プロンプトのみ出力する)
+  --json-escape
+                        multibyte escaped json(マルチバイトをエスケープしたjsonを出力する)
+
 ## Compatibility(互換性)
     - V2 is not compatible with V1(旧バージョンとの互換性はありません)
 
 # Installation(インストール)
-python 3.10 and later is required(3.10以降が必要です)
+
+    - python 3.10 and later is required(3.10以降が必要です)
+
 
 install required packages(必要なパッケージをインストール)
 ```
 pip install -r requirements.txt
 ```
 # yaml mode
-  text mode is obsolete(textモードは廃止になりました)
-　yaml mode is create prompt list file from yaml file(yamlモードはyamlファイルからプロンプトリストファイルを作成します)
+
+text mode is obsolete(textモードは廃止になりました)
+-　yaml mode is create prompt list file from yaml file(yamlモードはyamlファイルからプロンプトリストファイルを作成します)
 
 ## difference from V1(V1との違い)
 - only variable mode(変数モードのみ)
@@ -121,8 +262,6 @@ pip install -r requirements.txt
 ```yaml
 version: 2          # must(必須)
 options:
-#   sd_model: anythingV5Anything_anythingV5PrtRE
-#   sd_vae: kl-f8-anime2-vae.safetensors
     output: ./outputs/v2.json
     json: true
     number: 10   # number of prompt(プロンプトの数) multipleの場合は配列数がかけ算される
@@ -232,7 +371,8 @@ Example(例)
         beings: jsonl/date.jsonl[animal,human] # multiple category(複数のカテゴリー) saparated by comma(カンマで区切る) not support space(スペースはサポートされません)
 ```
 #### DB query
- issue #2 DB query is not supported(DBクエリーはサポートされていません)
+ issue #2 DB query is not supported, yet (DBクエリーはまだサポートされていません)
+
 ```yaml
 options:
     db: true
@@ -265,10 +405,6 @@ profiles: # override from default profile(デフォルトプロファイルか�
             override_settings:                              # WebUIのSettingを上書きする
                 CLIP_stop_at_last_layers: 2                 # CLIPの最終層を変更する(推奨 2)
                 emphasis: "No norm"                         # 強調の設定
-                fp8_storage: "Enable for SDXL"              # SDXLの時modelをfp8でロード    
-                cache_fp16_weight: true                     # Lora をfp16でキャッシュする
-                auto_vae_precision_bfloat16: true           # VAEがfp16で破綻する場合、bf16に変更
-                auto_vae_precision: true                    # VAEがfp16で破綻する場合f32に戻す
                 override_settings_restore_afterwards: true  # 実行後にオプションを書き戻す
 ```
 
@@ -285,8 +421,14 @@ load_profile is profile load in profile(プロファイルから他のプロフ�
     profile:
         xl:
             load_profile: [animal]
-        "animal":
-            prompt: "animal"
+            command:
+                width: 1024
+                height: 1024
+        animal:
+            command:
+                prompt: "animal"
+                width: 512
+                height: 512
 ```
 
 This case is preload profile defaut next animal, last xl (この場合、デフォルトプロファイル -> animalを先に読み込みます)
@@ -321,7 +463,9 @@ Example(例)
 #### current functions(現在の関数)
 
 functions(関数) str1,str2,.. are string(文字列) and x,y... are number(数値)
-- chained("objects", 0.8, 3) : create chained stringt(連鎖変数) "object" = ${object} 0.8 is threshhold, 3 is count(0.8は閾値、3は回数)  
+- 
+- chained("objects", 0.8, 3) : create chained string(連鎖変数) "object" = ${object} 0.8 is threshhold, 3 is count(0.8は閾値、3は回数)  
+- choice("objects") : choice one sobjects(オブジェクトの中から1つ選択)
 - pow(x,y) : x^y
 - sqrt(x) : square root(平方根)
 - abs(x) : absolute value(絶対値)
@@ -362,5 +506,12 @@ functions(関数) str1,str2,.. are string(文字列) and x,y... are number(数�
 - second(): current second(現在の秒)
 - weekday(): current weekday(現在の曜日)
 - week(): current week(現在の週)
+
+# issue(問題)
+ - issue #1 nseted associative array is not supported(入れ子の連想配列はサポートされていません)
+ - issue #2 DB query is not supported, yet (DBクエリーはまだサポートされていません)
+ - issue #3 nested profile is not supported(入れ子プロファイルはサポートされていません)
+ - issue #4 multi thread is not supported(マルチスレッドはサポートされていません)
+
 # V1(旧バージョン)
  see [READMEV1.md](READMEV1.md)
