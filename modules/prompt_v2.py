@@ -783,8 +783,14 @@ def create_text_v2(opt):
 
     for method in yml.get("methods", []):
         Logger.debug(f"method {method}")
-        key = list(method.keys())[0]
-        Logger.debug(f"method {key}")
+        try:
+            key = list(method.keys())[0]
+        except Exception as e:
+            Logger.error(
+                f"Error {method} is illigal syntax, write like 'random: 0' or 'multiple: variable'"
+            )
+            raise e
+        Logger.debug(f"method option {key}")
         if key == "random":
             Logger.debug(f"max_number is not set {option_max_number} {options}")
             if option_max_number < 0:

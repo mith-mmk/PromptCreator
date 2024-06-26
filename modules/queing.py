@@ -1,5 +1,6 @@
 import asyncio
 
+import modules.save as save
 from modules.logger import getDefaultLogger
 
 Logger = getDefaultLogger()
@@ -16,16 +17,13 @@ class BackgroundWorker:
     async def worker(self):
         Logger.info("BackgroundWorker start")
         while True:
-            while self._queue.empty():
-                await asyncio.sleep(0.01)
             work = await self._queue.get()
-            print("BackgroundWorker get", work[0])
+            Logger.verbose("BackgroundWorker get", work[0])
             if work[0] == "done":
                 Logger.info("BackgroundWorker end")
-                return
+                self._queue.task_done()
+                break
             if work[0] == "save":
-                import modules.save as save
-
                 asyncio.create_task(save.save_images(work[1], work[2]))
 
     def put(self, work):
