@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import json
+import shutil
 import time
 
 import httpx
@@ -31,7 +32,7 @@ def get_client():
     if client is None:
         # connect timeout is 0.1 sec and read timeout is 1000 sec
         client = httpx.Client(
-            timeout=(share.get("timeout_c"), share.get("max_timeout"))
+            timeout=httpx.Timeout(share.get("timeout_c"), read=share.get("max_timeout"))
         )
 
     return client
@@ -47,7 +48,7 @@ def get_response(url, userpass=None):
     start_time = time.time()
     while True:
         try:
-            timeout = (current_timeout, share.get("max_timeout"))
+            timeout = httpx.Timeout(current_timeout, read=share.get("max_timeout"))
             duration = time.time() - start_time
             if duration > share.get("max_timeout"):
                 Logger.error(f"Failed to get {url} connect timeout {duration} sec")
@@ -80,13 +81,13 @@ def set_max_timeout(timeout):
 def init():
     if share.get("loop") is None:
         loop = asyncio.new_event_loop()
-        share["loop"] = loop
+        share.set("loop", loop)
 
 
 def shutdown():
-    if "httpx_client" in share:
-        share["httpx_client"].close()
-        share["httpx_client"] = None
+    if share.get("httpx_client"):
+        share.get("httpx_client").close()
+        share.set("httpx_client", None)
     pass
 
 
@@ -106,7 +107,9 @@ async def async_post(url, data, userpass=None):
                     url,
                     data=data,
                     headers=headers,
-                    timeout=(current_timeout, share.get("max_timeout")),
+                    timeout=httpx.Timeout(
+                        current_timeout, read=share.get("max_timeout")
+                    ),
                 )
             except httpx.ReadTimeout:
                 duration = time.time() - start_time
@@ -137,19 +140,26 @@ async def progress_writer(url, data, progress_url, userpass=None):
     async with httpx.AsyncClient() as client:
 
         async def write_progress(result, start_time):
+            width = shutil.get_terminal_size().columns
             right = result["progress"] * 100
             state = result["state"]
             step = state["sampling_step"]
             steps = state["sampling_steps"]
             job = state["job"]
             elapsed_time = time.time() - start_time
-            sharp = "#" * int(right / 2)
-            space = " " * (50 - len(sharp))
             string = (
-                f"{right:.1f}%  {job} step ({step:d}/{steps:d}) {elapsed_time:.2f} sec"
+                f"{right:3.1f}%  {job} step ({step:d}/{steps:d}) {elapsed_time:.2f} sec"
             )
             if right >= 0.0:
-                string = f"\033[KCreate Image [{sharp}{space}] {string}"
+                usefull_width = width - len(f"Create Image || {string}") - 10
+                perblock = 100.0 / usefull_width
+                if usefull_width > 10:
+                    sharp = "█" * int(right / perblock + 0.5)
+                    space = " " * (usefull_width - len(sharp))
+                else:
+                    sharp = ""
+                    space = ""
+                string = f"\033[KCreate Image |{sharp}{space}| {string}"
             else:
                 right = -right
                 sharp = "#" * int(right / 2)

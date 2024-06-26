@@ -6,6 +6,7 @@ import re
 
 import yaml
 
+from modules.callback_function import CallbackFunctions as Callback
 from modules.formula import FormulaCompute
 from modules.logger import getDefaultLogger
 from modules.prompt import set_reserved
@@ -56,6 +57,8 @@ def text_formula_v2(text, args):
     # Logger.debug(f"attributes {attributes}")
 
     compute = FormulaCompute()
+    callback = Callback(compute)
+    compute.setCallback(callback)
     compute.setVersion(2)
     compute.setChainedVariables(chained_var, chained_attr)
     formulas = re.findall(r"\$\{\=(.+?)\}", text)
@@ -599,7 +602,7 @@ def calc_weighted_variables(yml):
     return yml
 
 
-def prompt_random_v2(yml, max_number, input=[]):
+def prompt_random_v2(yml, max_number, input=[], pre_choice=[]):
     Logger.debug(f"prompt_random_v2 count max {max_number}")
     try:
         variables = yml.get("weighted_variables", {})
@@ -618,12 +621,21 @@ def prompt_random_v2(yml, max_number, input=[]):
         current_variables = {}
         attributes = None
         Logger.debug(f"variables choices")
-        for key in variables:
-            current_variables[key], attribute = choice_v2(variables[key])
-            if attribute is not None:
+        for key in pre_choice:
+            parsed_choice = parced_choice(yml, key)
+            current_variables[key] = parsed_choice["variables"]
+            if "attributes" in parsed_choice:
                 if attributes is None:
                     attributes = {}
-                attributes[key] = attribute
+                    attributes[key] = parsed_choice["attributes"]
+
+        for key in variables:
+            if key not in pre_choice:
+                current_variables[key], attribute = choice_v2(variables[key])
+                if attributes is None:
+                    attributes = {}
+                if attribute is not None:
+                    attributes[key] = attribute
         if current is None:
             Logger.debug(f"copy current")
             current = {}
@@ -656,6 +668,43 @@ def prompt_random_v2(yml, max_number, input=[]):
             current.get("verbose", {})["values"] = values
         output[idx] = current
     return output
+
+
+def parced_choice(yml, key):
+    Logger.debug("parced_choice start")
+    try:
+        variables = yml.get("weighted_variables", {})
+    except Exception as e:
+        Logger.error(f"Error happen get weighted_variables {e}")
+        raise Exception(f"Error happen get weighted_variables {e}")
+    try:
+        current_variable, attribute = choice_v2(variables[key])
+        current_variable = copy.deepcopy(current_variable)
+        attribute = copy.deepcopy(attribute)
+    except Exception as e:
+        Logger.error(f"Error happen choice_v2 {e}")
+        raise Exception(f"Error happen choice_v2 {e}")
+    # precalc
+    for idx, value in enumerate(current_variable):
+        try:
+            value = text_formula_v2(
+                value,
+                {"variables": {key: current_variable}, "attributes": {key: attribute}},
+            )
+        except Exception as e:
+            Logger.error(f"Error happen text_formula_v2 in parced_choice {value}")
+            raise Exception(f"Error happen text_formula_v2 in parced_choice  {value}")
+        current_variable[idx] = value
+    if attribute is None:
+        attribute = {}
+    for key in attribute:
+        value = attribute[key]
+        attribute[key] = text_formula_v2(
+            value,
+            {"variables": {key: current_variable}, "attributes": {key: attribute}},
+        )
+    Logger.debug("parced_choice end")
+    return {"variables": current_variable, "attributes": attribute}
 
 
 def expand_arg_v2(args):
@@ -792,7 +841,7 @@ def create_text_v2(opt):
     output = []
 
     calc_weighted_variables(yml)
-
+    pre_choices = []
     if "methods" not in yml:
         yml["methods"] = []
         yml["methods"].append({"random": 0})
@@ -824,7 +873,7 @@ def create_text_v2(opt):
                 max_number = option_max_number
             Logger.debug(f"max_number {max_number}")
             try:
-                output = prompt_random_v2(yml, max_number, output)
+                output = prompt_random_v2(yml, max_number, output, pre_choices)
             except Exception as e:
                 Logger.error(f"Error happen prompt_random_v2 {e}")
                 raise Exception(f"Error happen random {e}")
@@ -841,6 +890,13 @@ def create_text_v2(opt):
                 except Exception as e:
                     Logger.error(f"Error happen prompt_multiple_v2 {e}")
                     raise Exception(f"Error happen multiple {e}")
+        elif key == "choice":
+            Logger.debug(f"choice {method}")
+            choices = method["choice"]
+            if type(choices) is str:
+                choices = choices.split(" ")
+            pre_choices.extend(choices)
+
         elif key == "cleanup":
             Logger.debug(f"cleanup {method}")
             cleanup = method["cleanup"]

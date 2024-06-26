@@ -59,7 +59,15 @@ operator_order = {
 
 
 class FormulaCompute:
-    def __init__(self, formula="", variables={}, attributes={}, debug=False, version=1):
+    def __init__(
+        self,
+        formula="",
+        variables={},
+        attributes={},
+        debug=False,
+        version=1,
+        callback=None,
+    ):
         self.formula = formula
         self.variables = variables
         self.attributes = attributes
@@ -69,6 +77,7 @@ class FormulaCompute:
         self.chained_attriblutes = {}
         self.mode = "init"
         self.version = version
+        self.callback = callback
 
     def setVersion(self, version):
         self.version = version
@@ -88,6 +97,9 @@ class FormulaCompute:
         self.chained_variables = variables
         self.chained_attriblutes = attriblutes
         self.result = None
+
+    def setCallback(self, callback):
+        self.callback = callback
 
     def getCompute(self, formula=None, variables={}, attributes={}):
         if formula is None:
@@ -159,6 +171,11 @@ class FormulaCompute:
             debug_print(e)
             raise Exception(f"getChained error {variable} {e}")
         return text.strip()
+
+    def callbackFunction(self, function, args):
+        if self.callback is None:
+            raise Exception("callback is None")
+        return self.callback._callback(function, args)
 
     # call from modules.prompt_v2 import prompt_formula_v2
     def getValue(self, variable):
@@ -667,9 +684,9 @@ class FormulaCompute:
                             mode="value",
                             debug=self.debug,
                         )
-                        ret, val = callFunction(self, function, args, args)
+                        ret, val = callFunction(self, function, args, args)  # type: ignore
                     else:
-                        ret, val = callFunction(self, function, stack)
+                        ret, val = callFunction(self, function, stack)  # type: ignore
                     if not ret:
                         debug_print(f"function error {function}", debug=self.debug)
                         raise Exception(f"function error {function}")
