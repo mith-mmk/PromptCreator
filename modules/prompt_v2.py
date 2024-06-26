@@ -487,12 +487,18 @@ def prompt_multiple_v2(yml, variable, array, input=[], attributes=None):
             verbose["variables"][variable] = item
             if attributes:
                 verbose["attributes"] = attributes
-            output = prompt_formula_v2(output[i], args, opt=yml, attributes=attributes)
-            if output is None:
+            _output = prompt_formula_v2(output[i], args, opt=yml, attributes=attributes)
+            Logger.debug(f"output {_output}")
+            if _output is None:
                 Logger.error(f"Error happen prompt_multiple_v2 return empty")
                 return None
-            output[i] = output
-            output[i]["verbose"] = verbose
+            if isinstance(_output, dict):
+                output[i] = _output
+                output[i]["verbose"] = verbose
+            else:
+                raise Exception(
+                    f"Error happen prompt_multiple_v2 return type{type(_output)} {_output}"
+                )
             i = i + 1
     Logger.debug("prompt_multiple_v2 end")
     return output
@@ -908,7 +914,9 @@ def create_text_v2(opt):
             if output is None:
                 Logger.error(f"output is None")
                 return None
+            Logger.debug(f"cleanup {output}")
             for item in output:
+                Logger.debug(f"cleanup {item}")
                 for key in keys:
                     if key in item:
                         Logger.debug(f"cleanup {key} {item[key]}")
@@ -931,7 +939,6 @@ def create_text_v2(opt):
                             item[key] = re.sub(r",\s*$", "", item[key])
                             # trim
                             item[key] = item[key].strip()
-
         else:
             Logger.error(f"method {key} is not support, skip")
 
