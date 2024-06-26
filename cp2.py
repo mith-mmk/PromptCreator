@@ -141,11 +141,16 @@ def main(args):
             return True
 
     if args.input is not None:
+        Logger.debug(f"input: {args.input}")
         try:
             # arg ->dict
             opt = vars(args)
             Logger.debug(opt)
-            result = create_text_v2(opt)
+            try:
+                result = create_text_v2(opt)
+            except Exception as e:
+                Logger.error(f"create_text error create_text_v2 in {e}")
+                raise Exception("create_text error")
             if result is None:
                 return False
             options = result.get("options", {})
@@ -208,11 +213,13 @@ def main(args):
                         f.write(text)
                 except Exception as e:
                     Logger.error(f"output error {e}")
+                    raise Exception("output error")
                     return False
                 Logger.info(f"outputed file creat {output_filename}")
         except Exception as e:
-            Logger.error(f"create_text error {e}")
+            Logger.error(f"create_text error create_text_v2 in {e}")
             return False
+
     elif args.api_input_json:
         options = {}
         yml = {}

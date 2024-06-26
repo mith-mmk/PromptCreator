@@ -101,7 +101,7 @@ class FormulaCompute:
         self.compute()
         return self.result
 
-    # V2 only function
+    # V2 only function Callbackに分割する
     def getChained(self, variable, weight, max_number, next_multiply=1.0, joiner=", "):
         # get variavle var or var[1] or var["key"]
         # (.+?)\[\d+\]
@@ -112,13 +112,21 @@ class FormulaCompute:
             subkey = None
             flag = "array"
             if array.match(variable):
-                var, num = array.match(variable).groups()
-                num = int(num) - 1
-                flag = "array"
+                match = array.match(variable)
+                if match:
+                    var, num = match.groups()
+                    num = int(num) - 1
+                    flag = "array"
+                else:
+                    raise Exception(f"getChained error {variable}")
             elif dict.match(variable):
-                var, subkey = dict.match(variable).groups()
-                subkey = subkey
-                flag = "dict"
+                match = dict.match(variable)
+                if match:
+                    var, subkey = match.groups()
+                    subkey = subkey
+                    flag = "dict"
+                else:
+                    raise Exception(f"getChained error {variable}")
             else:
                 var = variable
                 num = 0
@@ -134,18 +142,22 @@ class FormulaCompute:
             for _ in range(max_number):
                 if thresh < weight:
                     choiced, attribute = choice_v2(values)
+                    if attribute is None:
+                        attribute = {}
                     if flag == "array":
                         choice = choiced[num]
                     elif flag == "dict":
+                        if subkey in attribute:
+                            choice = attribute[subkey]
                         choice = attribute[subkey]
-                    text = text.replace(choice + joiner, "")
-                    text += choice + joiner
+                    text = text.replace(str(choice) + joiner, "")
+                    text += str(choice) + joiner
                 else:
                     break
                 weight *= next_multiply
         except Exception as e:
             debug_print(e)
-            raise e
+            raise Exception(f"getChained error {variable} {e}")
         return text.strip()
 
     # call from modules.prompt_v2 import prompt_formula_v2
@@ -164,8 +176,54 @@ class FormulaCompute:
             )
         except Exception as e:
             debug_print(e)
-            raise e
+            raise Exception(f"getValue error {variable} {e}")
         return variable
+
+    def getAttribute(self, variable, key, choice=None):
+        if isinstance(choice, float):
+            if choice < 0.0:
+                choice = 0.0
+            if choice > 1.0:
+                choice = 1.0
+            from modules.prompt_v2 import choice_v2
+
+            _, attribute = choice_v2(self.chained_variables[variable], choice)
+            if attribute is None:
+                attribute = {}
+            if key in attribute:
+                return attribute[key]
+            return None
+
+        if variable in self.attributes:
+            if key in self.attributes[variable]:
+                return self.attributes[variable][key]
+        return None
+
+    def getChoiceIndex(self, variable, choice, index=1):
+        from modules.prompt_v2 import choice_v2
+
+        try:
+            choiced, _attribute = choice_v2(self.chained_variables[variable], choice)
+        except Exception as e:
+            debug_print(e)
+            raise Exception(f"getChoiceIndex error {variable} {choice} {e}")
+        return choiced[index - 1]
+
+    def getChoiceAttribute(self, variable, choice, attribute):
+        from modules.prompt_v2 import choice_v2
+
+        try:
+            choiced, attributes = choice_v2(self.chained_variables[variable], choice)
+            if attributes is None:
+                attributes = {}
+        except Exception as e:
+            debug_print(e)
+            raise Exception(f"getChoiceAttribute error {variable} {choice} {e}")
+        if attribute in attributes:
+            return attributes.get(attribute, None)
+        return None
+
+    # ここまで Callback に分割する
 
     def getError(self):
         return self.token_error_message
@@ -227,15 +285,17 @@ class FormulaCompute:
                     # v1 の処理　v2 は []　内を式として処理する
 
                     array = re.compile(r"(.*)\[([0-9]+)\]")
-                    if array.match(var):
-                        var, num = array.match(var).groups()
+                    array_match = array.match(var)
+                    if array_match:
+                        var, num = array_match.groups()
                         num = int(num) - 1
                         debug_print("array", var, num, debug=self.debug)
                     # dict key["subkey"] => variables[key]["subkey"]
                     subkey = None
                     dict = re.compile(r"(.*)\[\"(.*)\"\]")
-                    if dict.match(var):
-                        var, subkey = dict.match(var).groups()
+                    dict_match = dict.match(var)
+                    if dict_match:
+                        var, subkey = dict_match.groups()
                         debug_print("dict var subkey", var, subkey, debug=self.debug)
                     if var in self.variables:
                         values = self.variables[var]
@@ -638,7 +698,7 @@ class FormulaCompute:
     def token(self):
         self.mode = "token"
         self.tokens = []
-        self.token = ""
+        # self.token = ""
         self.token_type = TOKENTYPE.NONE
         self.token_start = 0
         self.token_end = 0
@@ -678,144 +738,159 @@ class FormulaCompute:
         count = 0
         while count < len(self.formula):
             current = self.formula[count:]
-            if typeSpace.match(current):
+            typeSpace_match = typeSpace.match(current)
+            typeFunction_match = typeFunction.match(current)
+            typeNumber_match = typeNumber.match(current)
+            typeOperator_match = typeOperator.match(current)
+            typeVariable1_match = typeVariable1.match(current)
+            typeVariable2_match = typeVariable2.match(current)
+            typeVariable3_match = typeVariable3.match(current)
+            typeVariable4_match = typeVariable4.match(current)
+            typeVariable5_match = typeVariable5.match(current)
+            typeVariable6_match = typeVariable6.match(current)
+            typeBracket_match = typeBracket.match(current)
+            typeArrayBracket_match = typeArrayBracket.match(current)
+            typeComma_match = typeComma.match(current)
+            typeString_match = typeString.match(current)
+            typeEnd_match = typeEnd.match(current)
+            if typeSpace_match:
                 self.token_type = TOKENTYPE.SPACE
                 self.token_start = count
-                self.token_end = count + len(typeSpace.match(current).group(0))
-                count += len(typeSpace.match(current).group(0))
-            elif typeFunction.match(current):
+                self.token_end = count + len(typeSpace_match.group(0))
+                count += len(typeSpace_match.group(0))
+            elif typeFunction_match:
                 self.token_type = TOKENTYPE.FUNCTION
                 self.token_start = count
-                self.token_end = count + len(typeFunction.match(current).group(0))
-                function = typeFunction.match(current).group(0)
+                self.token_end = count + len(typeFunction_match.group(0))
+                function = typeFunction_match.group(0)
                 debug_print(function, debug=self.debug)
                 function = function.replace(" ", "", 1)
                 function = function[:-1]
                 self.tokens.append({"type": TOKENTYPE.FUNCTION, "value": function})
-                count += len(typeFunction.match(current).group(0)) - 1
-            elif typeNumber.match(current):
+                count += len(typeFunction_match.group(0)) - 1
+            elif typeNumber_match:
                 self.token_type = TOKENTYPE.NUMBER
                 self.token_start = count
-                self.token_end = count + len(typeNumber.match(current).group(0))
+                self.token_end = count + len(typeNumber_match.group(0))
                 self.tokens.append(
                     {
                         "type": TOKENTYPE.NUMBER,
-                        "value": typeNumber.match(current).group(0),
+                        "value": typeNumber_match.group(0),
                     }
                 )
-                count += len(typeNumber.match(current).group(0))
-            elif typeOperator.match(current):
+                count += len(typeNumber_match.group(0))
+            elif typeOperator_match:
                 self.token_type = TOKENTYPE.OPERATOR
                 self.token_start = count
-                self.token_end = count + len(typeOperator.match(current).group(0))
+                self.token_end = count + len(typeOperator_match.group(0))
                 self.tokens.append(
                     {
                         "type": TOKENTYPE.OPERATOR,
-                        "value": typeOperator.match(current).group(0),
+                        "value": typeOperator_match.group(0),
                     }
                 )
-                count += len(typeOperator.match(current).group(0))
-            elif typeVariable5.match(current) and self.version < 2:
+                count += len(typeOperator_match.group(0))
+            elif typeVariable5_match and self.version < 2:
                 self.token_type = TOKENTYPE.VARIABLE
                 self.token_start = count
-                self.token_end = count + len(typeVariable5.match(current).group(0))
+                self.token_end = count + len(typeVariable5_match.group(0))
                 self.tokens.append(
                     {
                         "type": TOKENTYPE.VARIABLE,
-                        "value": typeVariable5.match(current).group(0),
+                        "value": typeVariable5_match.group(0),
                     }
                 )
-                count += len(typeVariable5.match(current).group(0))
-            elif typeVariable4.match(current) and self.version < 2:
+                count += len(typeVariable5_match.group(0))
+            elif typeVariable4_match and self.version < 2:
                 self.token_type = TOKENTYPE.VARIABLE
                 self.token_start = count
-                self.token_end = count + len(typeVariable4.match(current).group(0))
+                self.token_end = count + len(typeVariable4_match.group(0))
                 self.tokens.append(
                     {
                         "type": TOKENTYPE.VARIABLE,
-                        "value": typeVariable4.match(current).group(0),
+                        "value": typeVariable4_match.group(0),
                     }
                 )
-                count += len(typeVariable4.match(current).group(0))
-            elif typeVariable3.match(current) and self.version < 2:
+                count += len(typeVariable4_match.group(0))
+            elif typeVariable3_match and self.version < 2:
                 self.token_type = TOKENTYPE.VARIABLE
                 self.token_start = count
-                self.token_end = count + len(typeVariable3.match(current).group(0))
+                self.token_end = count + len(typeVariable3_match.group(0))
                 self.tokens.append(
                     {
                         "type": TOKENTYPE.VARIABLE,
-                        "value": typeVariable3.match(current).group(0),
+                        "value": typeVariable3_match.group(0),
                     }
                 )
-                count += len(typeVariable3.match(current).group(0))
-            elif typeVariable6.match(current) and self.version >= 2:
+                count += len(typeVariable3_match.group(0))
+            elif typeVariable6_match and self.version >= 2:
                 self.tokens.append(
                     {
                         "type": TOKENTYPE.VARIABLE,
-                        "value": typeVariable6.match(current).group(0),
+                        "value": typeVariable6_match.group(0),
                     }
                 )
-                count += len(typeVariable6.match(current).group(0))
-            elif typeVariable2.match(current) and self.version < 2:
+                count += len(typeVariable6_match.group(0))
+            elif typeVariable2_match and self.version < 2:
                 self.token_type = TOKENTYPE.VARIABLE
                 self.token_start = count
-                self.token_end = count + len(typeVariable2.match(current).group(0))
+                self.token_end = count + len(typeVariable2_match.group(0))
                 self.tokens.append(
                     {
                         "type": TOKENTYPE.VARIABLE,
-                        "value": typeVariable2.match(current).group(0),
+                        "value": typeVariable2_match.group(0),
                     }
                 )
-                count += len(typeVariable2.match(current).group(0))
-            elif typeVariable1.match(current):
+                count += len(typeVariable2_match.group(0))
+            elif typeVariable1_match:
                 self.token_type = TOKENTYPE.VARIABLE
                 self.token_start = count
-                self.token_end = count + len(typeVariable1.match(current).group(0))
+                self.token_end = count + len(typeVariable1_match.group(0))
                 self.tokens.append(
                     {
                         "type": TOKENTYPE.VARIABLE,
-                        "value": typeVariable1.match(current).group(0),
+                        "value": typeVariable1_match.group(0),
                     }
                 )
-                count += len(typeVariable1.match(current).group(0))
-            elif typeBracket.match(current):
+                count += len(typeVariable1_match.group(0))
+            elif typeBracket_match:
                 self.token_type = TOKENTYPE.BRACKET
                 self.token_start = count
-                self.token_end = count + len(typeBracket.match(current).group(0))
+                self.token_end = count + len(typeBracket_match.group(0))
                 self.tokens.append(
                     {
                         "type": TOKENTYPE.BRACKET,
-                        "value": typeBracket.match(current).group(0),
+                        "value": typeBracket_match.group(0),
                     }
                 )
-                count += len(typeBracket.match(current).group(0))
-            elif typeArrayBracket.match(current) and self.version >= 2:
+                count += len(typeBracket_match.group(0))
+            elif typeArrayBracket_match and self.version >= 2:
                 self.token_type = TOKENTYPE.ARRAYBRACKET
                 self.token_start = count
-                self.token_end = count + len(typeArrayBracket.match(current).group(0))
+                self.token_end = count + len(typeArrayBracket_match.group(0))
                 self.tokens.append(
                     {
                         "type": TOKENTYPE.ARRAYBRACKET,
-                        "value": typeArrayBracket.match(current).group(0),
+                        "value": typeArrayBracket_match.group(0),
                     }
                 )
-                count += len(typeArrayBracket.match(current).group(0))
-            elif typeComma.match(current):
+                count += len(typeArrayBracket_match.group(0))
+            elif typeComma_match:
                 self.token_type = TOKENTYPE.COMMA
                 self.token_start = count
-                self.token_end = count + len(typeComma.match(current).group(0))
+                self.token_end = count + len(typeComma_match.group(0))
                 self.tokens.append(
                     {
                         "type": TOKENTYPE.COMMA,
-                        "value": typeComma.match(current).group(0),
+                        "value": typeComma_match.group(0),
                     }
                 )
-                count += len(typeComma.match(current).group(0))
-            elif typeString.match(current):
+                count += len(typeComma_match.group(0))
+            elif typeString_match:
                 self.token_type = TOKENTYPE.STRING
                 self.token_start = count
-                self.token_end = count + len(typeString.match(current).group(0))
-                string = typeString.match(current).group(0)
+                self.token_end = count + len(typeString_match.group(0))
+                string = typeString_match.group(0)
                 # remove start and end "
                 debug_print(string, debug=self.debug)
                 string = string[1:-1]
@@ -827,8 +902,8 @@ class FormulaCompute:
                 string = string.replace("\\t", "\t")
                 string = string.replace("\\\\", "\\")
                 self.tokens.append({"type": TOKENTYPE.STRING, "value": string})
-                count += len(typeString.match(current).group(0))
-            elif typeEnd.match(current):
+                count += len(typeString_match.group(0))
+            elif typeEnd_match:
                 break
             else:
                 self.setTokenError(

@@ -236,10 +236,10 @@ def recursive_yaml_load(filename):
     # if not v2 yaml error
     if "version" not in yml:
         Logger.error(f"File {filename} is not set version")
-        raise NotImplementedError
+        raise NotImplementedError(f"File {filename} is not set version")
     if yml["version"] < 2:
         Logger.error(f"File {filename} is not v2 yaml")
-        raise NotImplementedError
+        raise NotImplementedError(f"File {filename} is not v2 yaml")
     if "base_yaml" in yml:
         base_yaml = recursive_yaml_load(yml["base_yaml"])
         del yml["base_yaml"]
@@ -252,11 +252,11 @@ def yaml_parse_v2(filename, opt={}):
         yml = recursive_yaml_load(filename)
     except FileNotFoundError:
         Logger.error(f"File {filename} is not found")
-        raise FileNotFoundError
+        raise FileNotFoundError(f"File {filename} is not found")
     except Exception as e:
         Logger.error(f"Error happen yaml {filename}")
         Logger.error(e)
-        raise e
+        raise Exception(f"Error happen yaml {filename}")
     if "command" not in yml:
         yml["command"] = {}
     if "info" not in yml:
@@ -382,7 +382,7 @@ def read_file_v2(filename, error_info=""):
                             )
         except FileNotFoundError:
             Logger.error(f"{filename} is not found")
-            raise FileNotFoundError
+            raise FileNotFoundError(f"{filename} is not found")
     return strs
 
 
@@ -541,8 +541,15 @@ def weight_calc_v2(variable, default_weight=0.1, key=""):
 
 
 # {choice_start: 0, choice_end:0.1, variables: ["red", "blue"]}  0 =< choise < 0.1
-def choice_v2(array):
-    choice = random.random()
+def choice_v2(array, choice=None):
+    if choice is None:
+        choice = random.random()
+    else:
+        try:
+            choice = float(choice)
+        except ValueError:
+            Logger.error("choice_v2 choice is not float")
+            raise ValueError("choice_v2 choice is not float")
     # use binary search
     length = len(array)
     if length == 0:
@@ -561,6 +568,7 @@ def choice_v2(array):
             if attributes is None:
                 attributes = {}
             attributes[key] = array[0][key]
+    Logger.debug(f"choice_v2 {array[0]}")
     return array[0]["variables"], attributes
 
 
@@ -576,7 +584,7 @@ def calc_weighted_variables(yml):
             except Exception as e:
                 Logger.error(f"Error happen weight calc {key}")
                 Logger.error(e)
-                raise e
+                raise Exception(f"Error happen weight calc {key}")
         yml["weighted_variables"] = weighted_variables
         yml["weight_calced"] = True
         if "verbose" in Logger.getPrintLevel():
@@ -592,8 +600,12 @@ def calc_weighted_variables(yml):
 
 
 def prompt_random_v2(yml, max_number, input=[]):
-    # Logger.debug(f"prompt_random_v2 {max_number}")
-    variables = yml.get("weighted_variables", {})
+    Logger.debug(f"prompt_random_v2 count max {max_number}")
+    try:
+        variables = yml.get("weighted_variables", {})
+    except Exception as e:
+        Logger.error(f"Error happen get weighted_variables {e}")
+        raise Exception(f"Error happen get weighted_variables {e}")
     # Logger.debug(f"variables {variables}")
 
     if len(input) == 0:
@@ -602,9 +614,10 @@ def prompt_random_v2(yml, max_number, input=[]):
         output = input
 
     for idx, current in enumerate(output):
-        # Logger.debug(f"prompt_random_v2 {idx} {current}")
+        Logger.debug(f"prompt_random_v2 {idx} {current}")
         current_variables = {}
         attributes = None
+        Logger.debug(f"variables choices")
         for key in variables:
             current_variables[key], attribute = choice_v2(variables[key])
             if attribute is not None:
@@ -612,6 +625,7 @@ def prompt_random_v2(yml, max_number, input=[]):
                     attributes = {}
                 attributes[key] = attribute
         if current is None:
+            Logger.debug(f"copy current")
             current = {}
             # yml commands を コピー
             current = copy.deepcopy(yml.get("command", {}))
@@ -631,6 +645,7 @@ def prompt_random_v2(yml, max_number, input=[]):
             current, current_variables, opt=yml, error_info="", attributes=attributes
         )
         if isinstance(current, dict):
+            Logger.debug(f"get verbose {current}")
             current.get("verbose", {})["variables"] = current_variables
             if attributes:
                 current.get("verbose", {})["attributes"] = attributes
@@ -696,7 +711,7 @@ def create_text_v2(opt):
     else:
         Logger.error(f"not support extention {ext}")
         # dispose text mode
-        raise NotImplementedError
+        raise NotImplementedError(f"not support extention {ext}")
 
     Logger.debug("set reserved")
     if "variables" not in yml:
@@ -728,7 +743,7 @@ def create_text_v2(opt):
             yml = update_nested_dict(yml, profile)
         else:
             Logger.error(f"profile {profile} is not found")
-            raise NotImplementedError
+            raise NotImplementedError(f"profile {profile} is not found")
 
     options["output"] = (
         output if output is not None else options.get("output", "output.txt")
@@ -740,6 +755,7 @@ def create_text_v2(opt):
     # Logger.debug(f"options {options}")
     yml["weight_calced"] = False
 
+    Logger.debug("variables")
     variables = yml.get("variables", {})
     for key, item in variables.items():
         # Logger.debug(f"key {key}")
@@ -789,7 +805,9 @@ def create_text_v2(opt):
             Logger.error(
                 f"Error {method} is illigal syntax, write like 'random: 0' or 'multiple: variable'"
             )
-            raise e
+            raise Exception(
+                f"Error {method} is illigal syntax, write like 'random: 0' or 'multiple: variable'"
+            )
         Logger.debug(f"method option {key}")
         if key == "random":
             Logger.debug(f"max_number is not set {option_max_number} {options}")
@@ -805,7 +823,11 @@ def create_text_v2(opt):
             else:
                 max_number = option_max_number
             Logger.debug(f"max_number {max_number}")
-            output = prompt_random_v2(yml, max_number, output)
+            try:
+                output = prompt_random_v2(yml, max_number, output)
+            except Exception as e:
+                Logger.error(f"Error happen prompt_random_v2 {e}")
+                raise Exception(f"Error happen random {e}")
         elif key == "multiple":
             multiple = method["multiple"]
             Logger.debug(f"multiple {multiple}")
@@ -814,7 +836,11 @@ def create_text_v2(opt):
             for variable in multiple:
                 array = yml.get("array", {}).get(variable, [])
                 # Logger.debug(f"create multiple {variable} {array}")
-                output = prompt_multiple_v2(yml, variable, array, output)
+                try:
+                    output = prompt_multiple_v2(yml, variable, array, output)
+                except Exception as e:
+                    Logger.error(f"Error happen prompt_multiple_v2 {e}")
+                    raise Exception(f"Error happen multiple {e}")
         elif key == "cleanup":
             Logger.debug(f"cleanup {method}")
             cleanup = method["cleanup"]
