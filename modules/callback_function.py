@@ -7,7 +7,18 @@ from modules.formula.util import debug_print
 class CallbackFunctions:
     def __init__(self, compute: compute.FormulaCompute | None = None) -> None:
         self.compute = compute
-        pass
+        self.chained_variables = {}
+        self.chained_attriblutes = {}
+        self.variables = {}
+        self.attributes = {}
+
+    def setVariables(self, variables={}, attriblutes={}):
+        self.variables = variables
+        self.attributes = attriblutes
+
+    def setChainedVariables(self, variables={}, attriblutes={}):
+        self.chained_variables = variables
+        self.chained_attriblutes = attriblutes
 
     def _callback(self, function, args):
         try:
@@ -32,6 +43,8 @@ class CallbackFunctions:
                     return self.getChoiceIndex(args[0], args[1], args[2])
                 case "choice_attribute":
                     return self.getChoiceAttribute(args[0], args[1], args[2])
+                case "value":
+                    return self.getValue(args[0])
                 case "test":
                     return "testdayo"
                 case _:
@@ -49,9 +62,7 @@ class CallbackFunctions:
     ):
         # get variavle var or var[1] or var["key"]
         # (.+?)\[\d+\]
-        if self.compute is None:
-            raise Exception("compute is None")
-        compute = self.compute
+
         text = ""
         try:
             array = re.compile(r"(.+?)\[(\d+)\]")
@@ -79,8 +90,8 @@ class CallbackFunctions:
                 num = 0
             if num < 0:
                 num = 0
-            if var in compute.chained_variables:
-                values = compute.chained_variables[var]
+            if var in self.chained_variables:
+                values = self.chained_variables[var]
             import random
 
             from modules.prompt_v2 import choice_v2
@@ -109,19 +120,17 @@ class CallbackFunctions:
 
     # call from modules.prompt_v2 import prompt_formula_v2
     def getValue(self, variable):
-        if self.compute is None:
-            raise Exception("compute is None")
-        compute = self.compute
+
         try:
             from modules.prompt_v2 import text_formula_v2
 
             variable = text_formula_v2(
                 variable,
                 args={
-                    "variables": compute.variables,
-                    "attributes": compute.attributes,
-                    "chained_variables": compute.chained_variables,
-                    "chained_attriblutes": compute.chained_attriblutes,
+                    "variables": self.variables,
+                    "attributes": self.attributes,
+                    "chained_variables": self.chained_variables,
+                    "chained_attriblutes": self.chained_attriblutes,
                 },
             )
         except Exception as e:
@@ -130,9 +139,7 @@ class CallbackFunctions:
         return variable
 
     def getAttribute(self, variable, key, choice=None):
-        if self.compute is None:
-            raise Exception("compute is None")
-        compute = self.compute
+
         if isinstance(choice, float):
             if choice < 0.0:
                 choice = 0.0
@@ -140,39 +147,35 @@ class CallbackFunctions:
                 choice = 1.0
             from modules.prompt_v2 import choice_v2
 
-            _, attribute = choice_v2(compute.chained_variables[variable], choice)
+            _, attribute = choice_v2(self.chained_variables[variable], choice)
             if attribute is None:
                 attribute = {}
             if key in attribute:
                 return attribute[key]
             return None
 
-        if variable in compute.attributes:
-            if key in compute.attributes[variable]:
-                return compute.attributes[variable][key]
+        if variable in self.attributes:
+            if key in self.attributes[variable]:
+                return self.attributes[variable][key]
         return None
 
     def getChoiceIndex(self, variable, choice, index=1):
-        if self.compute is None:
-            raise Exception("compute is None")
-        compute = self.compute
+
         from modules.prompt_v2 import choice_v2
 
         try:
-            choiced, _attribute = choice_v2(compute.chained_variables[variable], choice)
+            choiced, _attribute = choice_v2(self.chained_variables[variable], choice)
         except Exception as e:
             debug_print(e)
             raise Exception(f"getChoiceIndex error {variable} {choice} {e}")
         return choiced[index - 1]
 
     def getChoiceAttribute(self, variable, choice, attribute):
-        if self.compute is None:
-            raise Exception("compute is None")
-        compute = self.compute
+
         from modules.prompt_v2 import choice_v2
 
         try:
-            choiced, attributes = choice_v2(compute.chained_variables[variable], choice)
+            choiced, attributes = choice_v2(self.chained_variables[variable], choice)
             if attributes is None:
                 attributes = {}
         except Exception as e:

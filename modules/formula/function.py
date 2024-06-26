@@ -344,17 +344,17 @@ def callFunction(compute, function, stack, args=None):
                 return True, {"type": TOKENTYPE.NUMBER, "value": 1}
             else:
                 return True, {"type": TOKENTYPE.NUMBER, "value": 0}
-        case "value":
-            # value( a ) return  expanned value
-            string = getValues(1, stack, args=args)[0]["value"]
-            value = compute.getValue(string)
-            if isinstance(string, str):
-                return True, {
-                    "type": TOKENTYPE.STRING,
-                    "value": compute.getValue(string),
-                }
-            else:
-                return True, {"type": TOKENTYPE.STRING, "value": str(string)}
+        # case "value":
+        #    # value( a ) return  expanned value
+        #    string = getValues(1, stack, args=args)[0]["value"]
+        #    value = compute.getValue(string)
+        #    if isinstance(string, str):
+        #        return True, {
+        #            "type": TOKENTYPE.STRING,
+        #            "value": compute.getValue(string),
+        #        }
+        #    else:
+        #        return True, {"type": TOKENTYPE.STRING, "value": str(string)}
         #        case "choice_index":
         #            variables = getValues(3, stack, args=args)
         #            index = variables[0].get("value", 1)

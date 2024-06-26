@@ -71,10 +71,10 @@ class FormulaCompute:
         self.formula = formula
         self.variables = variables
         self.attributes = attributes
-        self.reslut = None
-        self.debug = debug
         self.chained_variables = {}
         self.chained_attriblutes = {}
+        self.reslut = None
+        self.debug = debug
         self.mode = "init"
         self.version = version
         self.callback = callback
@@ -93,11 +93,6 @@ class FormulaCompute:
         self.variables = variables
         self.result = None
 
-    def setChainedVariables(self, variables={}, attriblutes={}):
-        self.chained_variables = variables
-        self.chained_attriblutes = attriblutes
-        self.result = None
-
     def setCallback(self, callback):
         self.callback = callback
 
@@ -113,134 +108,10 @@ class FormulaCompute:
         self.compute()
         return self.result
 
-    # V2 only function Callbackに分割する
-    def getChained(self, variable, weight, max_number, next_multiply=1.0, joiner=", "):
-        # get variavle var or var[1] or var["key"]
-        # (.+?)\[\d+\]
-        text = ""
-        try:
-            array = re.compile(r"(.+?)\[(\d+)\]")
-            dict = re.compile(r"(.+?)\[\"(.+?)\"\]|(.+?)\[\'(.+?)\'\]")
-            subkey = None
-            flag = "array"
-            if array.match(variable):
-                match = array.match(variable)
-                if match:
-                    var, num = match.groups()
-                    num = int(num) - 1
-                    flag = "array"
-                else:
-                    raise Exception(f"getChained error {variable}")
-            elif dict.match(variable):
-                match = dict.match(variable)
-                if match:
-                    var, subkey = match.groups()
-                    subkey = subkey
-                    flag = "dict"
-                else:
-                    raise Exception(f"getChained error {variable}")
-            else:
-                var = variable
-                num = 0
-            if num < 0:
-                num = 0
-            if var in self.chained_variables:
-                values = self.chained_variables[var]
-            import random
-
-            from modules.prompt_v2 import choice_v2
-
-            thresh = random.random()
-            for _ in range(max_number):
-                if thresh < weight:
-                    choiced, attribute = choice_v2(values)
-                    if attribute is None:
-                        attribute = {}
-                    if flag == "array":
-                        choice = choiced[num]
-                    elif flag == "dict":
-                        if subkey in attribute:
-                            choice = attribute[subkey]
-                        choice = attribute[subkey]
-                    text = text.replace(str(choice) + joiner, "")
-                    text += str(choice) + joiner
-                else:
-                    break
-                weight *= next_multiply
-        except Exception as e:
-            debug_print(e)
-            raise Exception(f"getChained error {variable} {e}")
-        return text.strip()
-
     def callbackFunction(self, function, args):
         if self.callback is None:
             raise Exception("callback is None")
         return self.callback._callback(function, args)
-
-    # call from modules.prompt_v2 import prompt_formula_v2
-    def getValue(self, variable):
-        try:
-            from modules.prompt_v2 import text_formula_v2
-
-            variable = text_formula_v2(
-                variable,
-                args={
-                    "variables": self.variables,
-                    "attributes": self.attributes,
-                    "chained_variables": self.chained_variables,
-                    "chained_attriblutes": self.chained_attriblutes,
-                },
-            )
-        except Exception as e:
-            debug_print(e)
-            raise Exception(f"getValue error {variable} {e}")
-        return variable
-
-    def getAttribute(self, variable, key, choice=None):
-        if isinstance(choice, float):
-            if choice < 0.0:
-                choice = 0.0
-            if choice > 1.0:
-                choice = 1.0
-            from modules.prompt_v2 import choice_v2
-
-            _, attribute = choice_v2(self.chained_variables[variable], choice)
-            if attribute is None:
-                attribute = {}
-            if key in attribute:
-                return attribute[key]
-            return None
-
-        if variable in self.attributes:
-            if key in self.attributes[variable]:
-                return self.attributes[variable][key]
-        return None
-
-    def getChoiceIndex(self, variable, choice, index=1):
-        from modules.prompt_v2 import choice_v2
-
-        try:
-            choiced, _attribute = choice_v2(self.chained_variables[variable], choice)
-        except Exception as e:
-            debug_print(e)
-            raise Exception(f"getChoiceIndex error {variable} {choice} {e}")
-        return choiced[index - 1]
-
-    def getChoiceAttribute(self, variable, choice, attribute):
-        from modules.prompt_v2 import choice_v2
-
-        try:
-            choiced, attributes = choice_v2(self.chained_variables[variable], choice)
-            if attributes is None:
-                attributes = {}
-        except Exception as e:
-            debug_print(e)
-            raise Exception(f"getChoiceAttribute error {variable} {choice} {e}")
-        if attribute in attributes:
-            return attributes.get(attribute, None)
-        return None
-
-    # ここまで Callback に分割する
 
     def getError(self):
         return self.token_error_message

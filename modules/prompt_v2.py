@@ -58,12 +58,14 @@ def text_formula_v2(text, args):
 
     compute = FormulaCompute()
     callback = Callback(compute)
+    callback.setChainedVariables(chained_var, chained_attr)
     compute.setCallback(callback)
     compute.setVersion(2)
-    compute.setChainedVariables(chained_var, chained_attr)
     formulas = re.findall(r"\$\{\=(.+?)\}", text)
     for formula in formulas:
+        callback.setVariables(variables, attributes)
         replace_text = compute.getCompute(formula, variables, attributes)
+
         if replace_text is not None:
             text = text.replace("${=" + formula + "}", str(replace_text))
         else:
