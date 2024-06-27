@@ -203,15 +203,18 @@ class LogPrint:
         start = self.startDay.strftime("%Y%m%d")
         if now <= start:
             return
-        if not os.path.exists(self.log_dir):
+        if isinstance(self.log_dir, str) and not os.path.exists(self.log_dir):
             return
         # log_dir + '.' + str(i) は削除
         try:
-            self.f.close()
+            if self.f is not None:
+                self.f.close()
         except Exception:
             print("log file close error")
         i = self.log_days
-        if i > 0:
+        if i is not None and i > 0:
+            if self.log_dir is None:
+                return
             final_logfile = self.log_dir + "." + str(i)
             if os.path.exists(final_logfile):
                 os.remove(final_logfile)
@@ -231,7 +234,7 @@ class LogPrint:
                     print(e)
             open(logfile, "w").close()
             # update startDay
-            self.startDay = now
+            self.startDay = datetime.datetime.now()
 
     def stdout(self, *msg):
         print(*msg)
