@@ -4,6 +4,7 @@ import io
 import json
 import os
 import re
+import threading
 from datetime import datetime
 from hashlib import sha256
 from operator import ge
@@ -21,8 +22,20 @@ from modules.parse import create_parameters
 Logger = getDefaultLogger()
 
 
+# asyncが上手くいかないからThread使っている
 def save_images(r, opt={"dir": "./outputs"}):
-    return asyncio.run(async_save_images(r, opt=opt))
+    # if opt.get("multithread", False):
+    return save_images_thread(r, opt)
+
+
+def save_images_thread(r, opt={"dir": "./outputs"}):
+    t = threading.Thread(target=save_images_wapper, args=(r, opt))
+    t.start()
+    return t
+
+
+def save_images_wapper(r, opt={"dir": "./outputs"}):
+    asyncio.run(async_save_images(r, opt=opt))
 
 
 async def async_save_images(r, opt={"dir": "./outputs"}):
