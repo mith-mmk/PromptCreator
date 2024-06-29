@@ -80,8 +80,14 @@ def save_jsonl(data, filename):
             f.write(json.dumps(output_json, ensure_ascii=False) + comment + "\n")
 
 
-def search_files(directory, category):
-    files = os.listdir(directory)
+def search_files(directory, category, output_dir=OUTPUT_DIR):
+    files = []
+    if os.path.isdir(directory):
+        files = os.listdir(directory)
+    elif os.path.isfile(directory):
+        file = os.path.basename(directory)
+        directory = os.path.dirname(directory)
+        files = [file]
     texts = []
     print(f"category: {category}")
     for file in files:
@@ -104,19 +110,25 @@ def search_files(directory, category):
                     del text["variables"]
                     texts.append(text)
     #  jsonl ファイルに変換
-    save_jsonl(texts, f"{OUTPUT_DIR}/{category}.jsonl")
+    save_jsonl(texts, f"{output_dir}/{category}.jsonl")
 
 
-def convert(DIR):
+def convert(path_or_file, output_dir):
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    # ディレクトリ一覧を取得
-    files = os.listdir(DIR)
-    for file in files:
-        # directory?
-        if os.path.isdir(f"{DIR}/{file}"):
-            search_files(f"{DIR}/{file}", file)
+    if os.path.isdir(path_or_file):
+        DIR = path_or_file
+        # ディレクトリ一覧を取得
+        files = os.listdir(DIR)
+        for file in files:
+            # directory?
+            if os.path.isdir(f"{DIR}/{file}"):
+                search_files(f"{DIR}/{file}", file, output_dir)
+    else:
+        basename = os.path.basename(path_or_file).split(".")[0]
+        search_files(path_or_file, basename, output_dir)
+        files = path_or_file
 
     # 表示する
     print(files)
@@ -268,7 +280,7 @@ def sort_jsonl(files, keys, rebulid=False):
 
 
 def usage():
-    print("Usage: python txt2jsonl.py convert [dir]")
+    print("Usage: python txt2jsonl.py convert txtfile|dir output_dir")
     print(
         "       python txt2jsonl.py [format|lora|sort|rebuild] [filename, filename, ...]"
     )
@@ -280,7 +292,9 @@ if len(argv) < 3:
     usage()
 
 if argv[1] == "convert":
-    convert(argv[2])
+    if len(argv) < 4:
+        usage()
+    convert(argv[2], argv[3])
 elif argv[1] == "lora":
     jsonl2jsonl(argv[2:], True)
 elif argv[1] == "format":
