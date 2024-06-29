@@ -12,6 +12,7 @@ import httpx
 import yaml
 
 import create_prompts
+
 # import logging
 import img2img
 import modules.logger as logger
@@ -1146,10 +1147,13 @@ def check_launch(config, verbose=True):
         return False
 
 
-def wait_launch(config):
+def wait_launch(config, args):
+    if len(args) == 0:
+        max_wait_time = args[0]
+    else:
+        max_wait_time = config.get("max_wait_time", 300)
     res = False
     is_fist = True
-    max_wait_time = config.get("max_wait_time", 300)
     start_time = time.time()
     Logger.info("wait api")
     while not res:
@@ -1362,7 +1366,7 @@ def run_command(command, config_file, config, next=True):
             case "ping":
                 wait_ping(config)
             case "launch":
-                wait_launch(config)
+                wait_launch(config, args)
             case "txt2img":
                 run_txt2img(config, args)
             case "img2img":
