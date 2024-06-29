@@ -22,19 +22,25 @@ from modules.parse import create_parameters
 Logger = getDefaultLogger()
 
 
-# asyncが上手くいかないからThread使っている
 def save_images(r, opt={"dir": "./outputs"}):
+    return asyncio.run(async_save_images(r, opt=opt))
     # if opt.get("multithread", False):
-    return save_images_thread(r, opt)
+    # return save_images_thread(r, opt)
 
 
+# async queueが上手くいかないからThread
 def save_images_thread(r, opt={"dir": "./outputs"}):
+    # 参照渡しなので、コピーして渡さないと処理中に中身が変わる（スレッドセーフではない）
+    import copy
+
+    opt = copy.deepcopy(opt)
     t = threading.Thread(target=save_images_wapper, args=(r, opt))
     t.start()
     return t
 
 
 def save_images_wapper(r, opt={"dir": "./outputs"}):
+    # async にすると2割ぐらい速くなる（みたい）
     asyncio.run(async_save_images(r, opt=opt))
 
 
