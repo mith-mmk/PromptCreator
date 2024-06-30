@@ -1,5 +1,5 @@
 # commandline
-import os
+import sys
 
 from modules.formula import FormulaCompute
 from modules.logger import getDefaultLogger
@@ -70,6 +70,11 @@ def test():
             "attr": {"aa": {"c": "xyx", "d": "xyz"}},
             "result": "ddddd",
         },
+        {
+            "f": "if(contains(aa, 'abc'), 'true', 'false')",
+            "var": {"aa": ["abcde", "ddddd"]},
+            "result": "true",
+        },
     ]
 
     for formula in formulas:
@@ -94,7 +99,7 @@ def test():
 Logger = getDefaultLogger()
 Logger.setPrintModes(["debug", "info", "warning", "error", "critical", "verbose"])
 
-args = os.sys.argv
+args = sys.argv
 if len(args) > 1:
     formula = args[1]
     variables = {}
@@ -134,7 +139,7 @@ if len(args) > 1:
     print(f"Formula: {formula}")
     print(f"Variables: {variables}")
     print(f"attributes: {attributes}")
-    version = float(variables.get("version", 1))
+    version = int(variables.get("version", 1))
 
     compute = FormulaCompute(
         formula, variables=variables, attributes=attributes, debug=True, version=version
