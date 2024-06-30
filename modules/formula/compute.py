@@ -65,7 +65,7 @@ class FormulaCompute:
         variables={},
         attributes={},
         debug=False,
-        version=1,
+        version=1.0,
         callback=None,
     ):
         self.formula = formula

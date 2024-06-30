@@ -3,6 +3,8 @@ import re
 import modules.formula.compute as compute
 from modules.formula.util import debug_print
 
+# use formula.compute import FormulaCompute version 2.0 and later
+
 
 class CallbackFunctions:
     def __init__(self, compute: compute.FormulaCompute | None = None) -> None:

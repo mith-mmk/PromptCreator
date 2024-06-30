@@ -337,13 +337,32 @@ def callFunction(compute, function, stack, args=None):
             return True, {"type": TOKENTYPE.NUMBER, "value": int(time.strftime("%W"))}
         # V2 functions
         case "contains":  # contains(string, substring)
-            values = getValues(2, stack, args=args)
-            substring = values[0]["value"]
-            string = values[1]["value"]
-            if substring in string:
-                return True, {"type": TOKENTYPE.NUMBER, "value": 1}
-            else:
+            if compute.version < 2:
+                values = getValues(2, stack, args=args)
+                substring = values[0]["value"]
+                string = values[1]["value"]
+                if substring in string:
+                    return True, {"type": TOKENTYPE.NUMBER, "value": 1}
+                else:
+                    return True, {"type": TOKENTYPE.NUMBER, "value": 0}
+            else:  # V2
+                if args is None or len(args) < 2:
+                    compute.setTokenError(
+                        "Contains error",
+                        compute.token_start,
+                        compute.token_end,
+                        TOKENTYPE.ERROR,
+                    )
+                    return False
+                args.reverse()
+                string = args[0]["value"]
+                substrings = args[1:]
+
+                for substring in substrings:
+                    if substring in string:
+                        return True, {"type": TOKENTYPE.NUMBER, "value": 1}
                 return True, {"type": TOKENTYPE.NUMBER, "value": 0}
+
         case _:
             try:
                 if compute.version < 2:
