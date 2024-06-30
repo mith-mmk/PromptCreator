@@ -356,7 +356,7 @@ def callFunction(compute, function, stack, args=None):
                     return False
                 args.reverse()
                 string = args[0]["value"]
-                substrings = args[1:]
+                substrings = [arg["value"] for arg in args[1:]]
 
                 for substring in substrings:
                     if substring in string:

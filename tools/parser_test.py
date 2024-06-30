@@ -8,26 +8,31 @@ from modules.logger import getDefaultLogger
 def test():
     formulas = [
         {
-            "f": 'if("aa" == aa, "true", "false")',
+            "f": 'if("aa" == aa[1], "true", "false")',
             "var": {"aa": ["sd", "aa"]},
             "result": "false",
         },
         {
-            "f": 'if("aa" == aa,2, "true", "false")',
+            "f": 'if("aa" == aa[2], "true", "false")',
             "var": {"aa": ["sd", "aa"]},
             "result": "true",
         },
         {
-            "f": 'if("aa,1" == aa,2, "true", "false")',
+            "f": 'if("aa" != aa[2], "true", "false")',
             "var": {"aa": ["sd", "aa"]},
             "result": "false",
         },
         {
-            "f": 'if("aa,1" != aa,2, "true", "false")',
+            "f": 'if("aa" != aa[2], "true", "false")',
+            "var": {"aa": ["sd", "aa"]},
+            "result": "false",
+        },
+        {
+            "f": 'if("aa" != aa[1], "true", "false")',
             "var": {"aa": ["sd", "aa"]},
             "result": "true",
         },
-        {"f": "2 * 3 + 2", "var": {}, "result": 8},
+        {"f": "2 * 3 + 2", "var": {"aa": ["sd"]}, "result": 8},
         {"f": "2 + 3 * 2", "var": {}, "result": 8},
         {"f": "(2 + 3) * 2", "var": {}, "result": 10},
         {"f": "2 + 3 * 2 + 1", "var": {}, "result": 9},
@@ -71,9 +76,19 @@ def test():
             "result": "ddddd",
         },
         {
-            "f": "if(contains(aa, 'abc'), 'true', 'false')",
+            "f": "if(contains(aa[1], 'abc'), 'true', 'false')",
             "var": {"aa": ["abcde", "ddddd"]},
             "result": "true",
+        },
+        {
+            "f": "contains(aa, 'aac', 'aab', 'cde')",
+            "var": {"aa": ["abcde", "ddddd"]},
+            "result": 1,
+        },
+        {
+            "f": "contains(aa, 'aac', 'aab', 'cdf')",
+            "var": {"aa": ["abcde", "ddddd"]},
+            "result": 0,
         },
     ]
 
@@ -84,8 +99,13 @@ def test():
         else:
             attributes = {}
         compute = FormulaCompute(
-            formula["f"], variables=formula["var"], attributes=attributes
+            formula["f"],
+            variables=formula["var"],
+            attributes=attributes,
+            # debug=True,
+            version=2,
         )
+
         if formula["result"] is not None:
             result = compute.getCompute()
             print(f"Result: {result}")
