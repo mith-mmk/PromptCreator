@@ -53,6 +53,7 @@ def text_formula_v2(text, args):
     attributes = args.get("attributes", {})
     chained_var = args.get("chained_var", {})
     chained_attr = args.get("chained_attr", {})
+    excludes = args.get("excludes", [])
     # Logger.debug(f"text_formula_v2 {text}")
     # Logger.debug(f"attributes {attributes}")
 
@@ -78,6 +79,7 @@ def text_formula_v2(text, args):
     for formula in simple_formulas:
         _formula = formula.strip()
         # v1 formula ${variable,n} n = 1, 2, 3, ...
+        # ${variable,n}  | ${variable[1]}
         if re.match(r"([a-zA-Z\-\_]?)\,(\d+)", _formula):
             # array formula
             try:
@@ -85,6 +87,8 @@ def text_formula_v2(text, args):
                 if array_formula is not None:
                     variable = array_formula.group(1)
                     array_index = int(array_formula.group(2)) - 1
+                if variable in excludes:
+                    continue
                 if variable in variables:
                     try:
                         replace_text = variables.get(variable)[array_index]
@@ -103,6 +107,8 @@ def text_formula_v2(text, args):
             if array_formula is not None:
                 variable = array_formula.group(1)
                 array_index = int(array_formula.group(2)) - 1
+            if variable in excludes:
+                continue
             try:
                 if variable in variables:
                     try:
@@ -122,6 +128,8 @@ def text_formula_v2(text, args):
                 variable = dict_formula.group(1)
                 key = dict_formula.group(2)
             Logger.debug(f"dict formula {variable} {key}")
+            if variable in excludes:
+                continue
             if variable in variables:
                 try:
                     attribute = attributes.get(variable, {})
@@ -139,6 +147,8 @@ def text_formula_v2(text, args):
         else:
             # simple formula ${variable}
             if formula in variables:
+                if formula in excludes:
+                    continue
                 try:
                     replace_text = variables.get(formula)[0]
                     text = text.replace("${" + formula + "}", replace_text)
@@ -149,7 +159,7 @@ def text_formula_v2(text, args):
 
 # in test
 def prompt_formula_v2(
-    new_prompt, variables, opt={}, error_info="", nested=0, attributes={}
+    new_prompt, variables, opt={}, error_info="", nested=0, attributes={}, excludes=[]
 ):
     try:
         if nested == 0:
@@ -166,6 +176,7 @@ def prompt_formula_v2(
         "attributes": attributes,
         "chained_var": opt.get("weighted_variables", {}),
         "chained_attr": opt.get("attributes", {}),
+        "excludes": excludes,
     }
 
     if type(new_prompt) is str:
@@ -291,15 +302,7 @@ def read_file_v2(filename, error_info=""):
         Logger.debug(f"read_file_v2 {filename}")
         try:
             ext = os.path.splitext(filenames[0])[-1:][0]
-            if ext == ".ct2":
-                with open(filename, "r", encoding="utf_8") as f:
-                    for idx, item in enumerate(f.readlines()):
-                        item = item_split_ct2(
-                            item, error_info=f"{error_info} {filename} {idx}"
-                        )
-                        strs.append(item)
-            # is <filename>.jsonl[(.+)] or <filename>.jsonl
-            elif re.match(r"(.+\.jsonl)\[(.+)\]", filename) or ext == ".jsonl":
+            if re.match(r"(.+\.jsonl)\[(.+)\]", filename) or ext == ".jsonl":
                 Logger.debug("load jsonl")
                 if ext == ".jsonl":
                     query = "*"
@@ -424,44 +427,6 @@ def item_split_txt(item, error_info="", default_weight=0.1):
         return {"weight": weight, "variables": split}
     variables = split[1:]
     return {"weight": weight, "variables": variables}
-
-
-# create_prompt v2
-def item_split_ct2(item, error_info="", default_weight=0.1):
-    # ["red,,","blue",""yellow"], 0.1, options: 1 => {"weight": 0.1, "variables": ["red,,"blue",""yellow"], "options": 1}
-    # "" で括られている , は無視
-    items = re.split(r'(?<!")\s*,\s*(?!")', item)
-    weight = 0.1
-    if len(items) > 0:
-        row = items[0]
-        if row is str:
-            row = row.trim()
-    # [] で括られている場合は json に変換
-    if row[0] == "[" and row[-1] == "]":
-        # array なので json に変換
-        try:
-            variables = json.loads(row)
-        except json.JSONDecodeError:
-            Logger.error(f"json decode error {error_info} {row}")
-            variables = [row]
-    else:  # 通常の文字列
-        variables = [row]
-
-    if len(items) >= 2:
-        try:
-            weight = float(items[1])
-        except ValueError:
-            Logger.debug(f"weight convert error use defaut {error_info} {items[1]}")
-            weight = default_weight
-    variables = {}
-    if len(items) >= 3:  # json format without {}
-        try:
-            variables = json.loads("{" + items[2] + "}")
-        except json.JSONDecodeError:
-            Logger.error(f"json decode error {error_info} {items[2]}")
-    variables["weight"] = weight
-    variables["variables"] = items[0]
-    return variables
 
 
 def prompt_multiple_v2(yml, variable, array, input=[], attributes=None):
@@ -610,7 +575,7 @@ def calc_weighted_variables(yml):
     return yml
 
 
-def prompt_random_v2(yml, max_number, input=[], pre_choice=[]):
+def prompt_random_v2(yml, max_number, input=[], pre_choice=[], excludes=[]):
     Logger.debug(f"prompt_random_v2 count max {max_number}")
     try:
         variables = yml.get("weighted_variables", {})
@@ -662,7 +627,12 @@ def prompt_random_v2(yml, max_number, input=[], pre_choice=[]):
                 verbose[key] = yml["info"][key]
             current["verbose"] = verbose
         current = prompt_formula_v2(
-            current, current_variables, opt=yml, error_info="", attributes=attributes
+            current,
+            current_variables,
+            opt=yml,
+            error_info="",
+            attributes=attributes,
+            excludes=excludes,
         )
         if isinstance(current, dict):
             Logger.debug(f"get verbose {current}")
@@ -850,6 +820,7 @@ def create_text_v2(opt):
 
     calc_weighted_variables(yml)
     pre_choices = []
+    excludes = []
     if "methods" not in yml:
         yml["methods"] = []
         yml["methods"].append({"random": 0})
@@ -881,7 +852,11 @@ def create_text_v2(opt):
                 max_number = option_max_number
             Logger.debug(f"max_number {max_number}")
             try:
-                output = prompt_random_v2(yml, max_number, output, pre_choices)
+                output = prompt_random_v2(
+                    yml, max_number, output, pre_choices, excludes
+                )
+                pre_choices = []
+                excludes = []
             except Exception as e:
                 Logger.error(f"Error happen prompt_random_v2 {e}")
                 raise Exception(f"Error happen random {e}")
@@ -904,6 +879,12 @@ def create_text_v2(opt):
             if type(choices) is str:
                 choices = choices.split(" ")
             pre_choices.extend(choices)
+        elif key == "exclude":
+            excludes = method["exclude"]
+            if type(excludes) is str:
+                excludes = excludes.split(" ")
+            excludes.extend(excludes)
+            pass
 
         elif key == "cleanup":
             Logger.debug(f"cleanup {method}")
