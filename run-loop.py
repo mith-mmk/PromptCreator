@@ -623,6 +623,7 @@ def run_img2img(config, args=None):
             opt["filename_pattern"] = file_pattern
             opt["mask_dir"] = input_mask
             opt["alt_image_dir"] = input_append
+
             if config.get("userpass"):
                 opt["userpass"] = config.get("userpass")
             output = os.path.join(output_dir, os.path.basename(folder) + folder_suffix)

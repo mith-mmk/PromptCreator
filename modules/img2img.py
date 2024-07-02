@@ -7,6 +7,7 @@ import modules.share as share
 from modules.interrogate import interrogate
 from modules.parse import create_img2json
 from modules.save import save_images
+from modules.util import get_part
 
 Logger = logger.getDefaultLogger()
 # Call img2img API from webui, it has many bugs
@@ -56,6 +57,7 @@ def img2img(
 
     for n, imagefile in enumerate(imagefiles):
         Logger.debug(f"imagefile is {imagefile}")
+
         share.set("line_count", 0)
         print(flash, end="")
         print(f"\033[KBatch {n + 1} of {count}")
@@ -80,6 +82,7 @@ def img2img(
             #   opt['info'] = extend['info']
             # if 'file_pettern' in extend and opt.get('use_extend_file_pettern'):
             #   opt['file_pettern'] = extend['file_pettern']
+
         if overrides is not None:
             if type(overrides) is list:
                 override = overrides[n]
@@ -137,6 +140,7 @@ def img2img(
             continue
 
         r = response.json()
+        opt["filepart"] = get_part(imagefile)
         prt_cnt = save_images(r, opt=opt)
         if share.get("line_count"):
             prt_cnt += share.get("line_count")

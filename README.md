@@ -310,7 +310,25 @@ array variables can set weight at first of array. In this case, char has array o
 ```
 This case is replace char to \$\{animal\} and \$\{human\} (この場合、\$\{char\}が\$\{animal\}と\$\{human\}に置き換えられます)
 
-### associative array(連想配列)
+### attribute, associative array(アトリビュート,連想配列)
+  reserved words are  "W", "C", "V", "weight", "choice", "variable", "query", these are not accesible. (以上は予約語で、アクセス出来ません)
+
+```yaml
+    char: 
+        - ${being["V"]}   # NG
+        - ${being["W"]}   # NG
+        - ${being["C"]}   # NG
+        - ${being["weight"]}   # NG
+        - ${being["choice"]}   # NG
+        - ${being["variable"]}   # NG
+        - ${being["query"]}   # half OK
+        - ${being["animal"]}   # OK
+        - ${being["size"]}   # OK
+        - ${=query{"being", "animal"}}   # use "query"
+
+    being: jsonl/being.jsonl[animal,human]
+```
+
 jsonl file(beings.jsonl)
 ```jsonl
 {"W":0.1, "C":["animal"], "V":"day", "animal":"cat", size:"small"}
@@ -461,12 +479,13 @@ Example(例)
 ```
 
 #### current functions(現在の関数)
+ not support boolean type (ブーリアン型はサポートされていません) retrun 0(false) or 1(true)(0(偽)または1(真)を返します)
 
 functions(関数) str1,str2,.. are string(文字列) and x,y... are number(数値)
-- 
 - chained("objects", 0.8, 3) : create chained string(連鎖変数) "object" = ${object} 0.8 is threshhold, 3 is count(0.8は閾値、3は回数)  
 - choice("objects") : choice one sobjects(オブジェクトの中から1つ選択)
-- pow(x,y) : x^y
+- contains(str1,str2, str3....) : str1 contains [str2, str3, ...] (文字列str1がstr2...を含むか)
+- pow(x,y) : x^y(累乗)
 - sqrt(x) : square root(平方根)
 - abs(x) : absolute value(絶対値)
 - ceil(x) : round up(切り上げ)

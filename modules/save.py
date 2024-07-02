@@ -133,6 +133,7 @@ async def async_save_images(r, opt={"dir": "./outputs"}):
                 filename_pattern["var:" + key + "(" + str(n + 1) + ")"] = v
         else:
             filename_pattern["var:" + key] = value
+    filename_pattern["part"] = opt.get("filepart", "")
 
     if "attributes" in opt.get("verbose", {}):
         for key, value in opt["verbose"]["attributes"].items():

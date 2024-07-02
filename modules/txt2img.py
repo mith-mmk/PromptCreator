@@ -49,6 +49,9 @@ def txt2img(
             verbose = item.pop("verbose")
             opt["variables"] = verbose.get("variables")
             opt["values"] = verbose.get("values")
+        part = item.get("filepart", "")
+        if part:
+            del item["filepart"]
         payload = json.dumps(item)
         response = api.request_post_wrapper(
             url,
@@ -66,6 +69,7 @@ def txt2img(
             continue
 
         r = response.json()
+        opt["filepart"] = part
         prt_cnt = save_images(r, opt=opt)
         if share.get("line_count"):
             prt_cnt += share.get("line_count")

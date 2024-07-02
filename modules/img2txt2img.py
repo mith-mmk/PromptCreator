@@ -1,7 +1,10 @@
+import os
+
 import modules.api as api
 from modules.logger import getDefaultLogger
 from modules.parse import create_img2txt
 from modules.txt2img import txt2img
+from modules.util import get_part
 
 Logger = getDefaultLogger()
 
@@ -28,6 +31,7 @@ def img2txt2img(
     params = []
     for imgfile in imagefiles:
         Logger.info(f"Processing {imgfile}")
+
         try:
             param = create_img2txt(imgfile)
 
@@ -101,12 +105,16 @@ def img2txt2img(
                 Logger.warning("No seed in param")
                 param["seed"] = -1
 
+            param["filepart"] = get_part(imgfile)
             params.append(param)
         except Exception as e:
             Logger.error(f"Failed to create img2txt params {e}")
             continue
     Logger.info("txt2img start")
     if not dry_run:
-        txt2img(params, base_url=base_url, output_dir=output_dir, opt=opt)
+        try:
+            txt2img(params, base_url=base_url, output_dir=output_dir, opt=opt)
+        except Exception as e:
+            Logger.error(f"Failed to call txt2img {e}")
     else:
         Logger.info(f"Dry run {params}")

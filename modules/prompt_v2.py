@@ -350,6 +350,7 @@ def read_file_v2(filename, error_info=""):
                                     choice = [choice]
                                 item["choice"] = item.get("C", [])
                                 del item["C"]
+                                item["query"] = item["choice"].join(",")
                             else:
                                 item["choice"] = ["*"]
                             # Logger.debug(f"replaced item {item}")
