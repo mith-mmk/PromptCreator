@@ -135,7 +135,7 @@ def main():
                 print(f"Model {modelName} not found")
                 vae = args.default_vae
             else:
-                vae = models.get(modelName)[0]
+                vae = models.get(modelName, [])[0]
         param["override_settings"]["sd_vae"] = vae
 
     if args.output:
