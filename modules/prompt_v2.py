@@ -350,7 +350,21 @@ def read_file_v2(filename, error_info=""):
                                     choice = [choice]
                                 item["choice"] = item.get("C", [])
                                 del item["C"]
-                                item["query"] = item["choice"].join(",")
+                                if isinstance(item.get("choice"), list):
+                                    _query = ""
+                                    for i, c in enumerate(item["choice"]):
+                                        if isinstance(c, dict):
+                                            keys = c.keys()
+                                            for key in keys:
+                                                if key in queries:
+                                                    if _query != "":
+                                                        _query = _query + "," + key
+                                                        break
+                                        if c != "*":
+                                            if _query != "":
+                                                _query = _query + "," + c
+                                    item["query"] = _query.strip(",")
+
                             else:
                                 item["choice"] = ["*"]
                             # Logger.debug(f"replaced item {item}")
