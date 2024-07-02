@@ -167,7 +167,7 @@ def csv2jsonl(filename, ouput_dir):
                     attributes = json.loads(row[mapper[key]])
                     for key in attributes.keys():
                         data[key] = attributes[key]
-                elif key in ["choice"]:
+                elif key in ["choice"] or key in ["C"]:
                     data["C"] = row[mapper[key]].split(",")
                 elif key in ["weight"]:
                     try:
