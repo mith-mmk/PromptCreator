@@ -32,6 +32,13 @@ class ComfyUIWorkflow:
     def setVAE(self, vae):
         self.vae = vae
 
+    def creatCLIPSetLastLayer(self, stop_at_clip_layer):
+        flow = {
+            "class_type": "CLIPSetLastLayer",
+            "inputs": {"stop_at_clip_layer": stop_at_clip_layer},
+        }
+        return flow
+
     def createLoadCheckpoint(self, checkpoint):
         flow = {
             "class_type": "CheckpointLoaderSimple",
@@ -212,6 +219,15 @@ class ComfyUIWorkflow:
         negative_clip_from = model_from
         vae_from = model_from
         wf_num += 1
+
+        if options.get("stop_at_clip_layer") is not None:
+            workflow[str(wf_num)] = self.creatCLIPSetLastLayer(
+                options.get("stop_at_clip_layer")
+            )
+            positive_clip_from = str(wf_num)
+            negative_clip_from = str(wf_num)
+            wf_num += 1
+
         if vae != "None":
             workflow[str(wf_num)] = self.createLoadVAE(vae)
             vae_from = str(wf_num)
