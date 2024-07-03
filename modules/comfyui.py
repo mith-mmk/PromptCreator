@@ -20,6 +20,12 @@ class ComfyUIWorkflow:
         self.checkpoint = None
         self.vae = None
 
+    # todo:
+    # hiresfix
+    # img2img
+    # save_image wrapper
+    # img2video and other
+
     def setModel(self, model):
         self.checkpoint = model
 
