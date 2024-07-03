@@ -12,7 +12,6 @@ import httpx
 import yaml
 
 import create_prompts
-
 # import logging
 import img2img
 import modules.logger as logger
@@ -1176,6 +1175,38 @@ def wait_launch(config, args):
     return True
 
 
+def date_to_isoformat(date):
+    dates = date.split("-")
+    if len(dates) >= 1:
+        # zero padding
+        year = str(int(dates[0])).zfill(4)
+    if len(dates) >= 2:
+        month = str(int(dates[1])).zfill(2)
+    else:
+        month = "01"
+    if len(dates) >= 3:
+        day = str(int(dates[2])).zfill(2)
+    else:
+        day = "01"
+    return f"{year}-{month}-{day}"
+
+
+def time_to_isoformat(time):
+    times = time.split(":")
+    if len(times) >= 1:
+        # zero padding
+        hour = str(int(times[0])).zfill(2)
+    if len(times) >= 2:
+        minute = str(int(times[1])).zfill(2)
+    else:
+        minute = "00"
+    if len(times) >= 3:
+        second = str(int(times[2])).zfill(2)
+    else:
+        second = "00"
+    return f"{hour}:{minute}:{second}"
+
+
 def compare(args):
     Logger.verbose(f"compare {args}")
     length = len(args)
@@ -1186,14 +1217,14 @@ def compare(args):
     match command:
         case "afterdate":  # compare date %Y-%m-%d is after now return True
             now = datetime.datetime.now().strftime("%Y-%m-%d")
-            compare_date = datetime.date.fromisoformat(args[0]).strftime("%Y-%m-%d")
+            compare_date = date_to_isoformat(args[0])
             if compare_date <= now:
                 return True
             else:
                 return False
         case "befordate":  # compare date %Y-%m-%d is befor now return True
             now = datetime.datetime.now().strftime("%Y-%m-%d")
-            compare_date = datetime.date.fromisoformat(args[0]).strftime("%Y-%m-%d")
+            compare_date = date_to_isoformat(args[0])
             if compare_date > now:
                 return True
             else:
@@ -1203,10 +1234,8 @@ def compare(args):
             if len(args) < 2:
                 Logger.error(f"betweendate args must has Two error but has {len(args)}")
                 return False
-            compare_date_from = datetime.date.fromisoformat(args[0]).strftime(
-                "%Y-%m-%d"
-            )
-            compare_date_to = datetime.date.fromisoformat(args[1]).strftime("%Y-%m-%d")
+            compare_date_from = date_to_isoformat(args[0])
+            compare_date_to = date_to_isoformat(args[1])
             if compare_date_from <= now and compare_date_to > now:
                 return True
             else:
@@ -1214,7 +1243,7 @@ def compare(args):
         case "aftertime":  # compare time %H:%M:%S is after now return True
             Logger.debug(f"aftertime {args}")
             now = datetime.datetime.now().strftime("%H:%M:%S")
-            compare_time = datetime.time.fromisoformat(args[0]).strftime("%H:%M:%S")
+            compare_time = time_to_isoformat(args[0])
             Logger.debug(f"compare_time {compare_time} now {now}")
             if compare_time <= now:
                 return True
@@ -1223,7 +1252,7 @@ def compare(args):
         case "beforetime":  # compare time %H:%M:%S is befor now return True
             Logger.debug(f"aftertime {args}")
             now = datetime.datetime.now().strftime("%H:%M:%S")
-            compare_time = datetime.time.fromisoformat(args[0]).strftime("%H:%M:%S")
+            compare_time = time_to_isoformat(args[0])
             Logger.debug(f"compare_time {compare_time} now {now}")
             if compare_time > now:
                 return True
@@ -1234,17 +1263,16 @@ def compare(args):
             if len(args) < 2:
                 Logger.error(f"betweentime args must has Two error but has {len(args)}")
                 return False
-            compare_time_from = datetime.time.fromisoformat(args[0]).strftime(
-                "%H:%M:%S"
-            )
-            compare_time_to = datetime.time.fromisoformat(args[1]).strftime("%H:%M:%S")
+
+            compare_time_from = time_to_isoformat(args[0])
+            compare_time_to = time_to_isoformat(args[1])
             if compare_time_from <= now and now < compare_time_to:
                 return True
             else:
                 return False
         case "date":  # compare date %Y-%m-%d is equal now return True
             now = datetime.datetime.now().strftime("%Y-%m-%d")
-            compare_date = datetime.date.fromisoformat(args[0]).strftime("%Y-%m-%d")
+            compare_date = date_to_isoformat(args[0])
             if compare_date == now:
                 return True
             else:

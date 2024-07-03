@@ -157,6 +157,34 @@ def text_formula_v2(text, args):
     return text
 
 
+def nested_prompt_formula_v2(items, args):
+    if items is None:
+        return None
+    if type(items) is str:
+        return text_formula_v2(items, args)
+    elif type(items) is dict:
+        for key in items:
+            if type(items[key]) is str:
+                items[key] = text_formula_v2(items[key], args)
+            elif type(items[key]) is dict:
+                items[key] = nested_prompt_formula_v2(items[key], args)
+            elif type(items[key]) is list:
+                for i, item in enumerate(items[key]):
+                    if type(item) is str:
+                        items[key][i] = text_formula_v2(item, args)
+                    elif type(item) is dict:
+                        items[key][i] = nested_prompt_formula_v2(item, args)
+    elif type(items) is list:
+        for i, item in enumerate(items):
+            if type(item) is str:
+                items[i] = text_formula_v2(item, args)
+            elif type(item) is dict:
+                items[i] = nested_prompt_formula_v2(item, args)
+    else:
+        raise Exception(f"Error happen nested_prompt_formula_v2 {type(items)}, {items}")
+    return items
+
+
 # in test
 def prompt_formula_v2(
     new_prompt, variables, opt={}, error_info="", nested=0, attributes={}, excludes=[]
@@ -189,29 +217,11 @@ def prompt_formula_v2(
             if type(new_prompt[key]) is str:
                 new_prompt[key] = text_formula_v2(new_prompt[key], args)
             elif type(new_prompt[key]) is dict:
-                for key2 in new_prompt[key]:
-                    if type(new_prompt[key][key2]) is str:
-                        new_prompt[key][key2] = text_formula_v2(
-                            new_prompt[key][key2], args
-                        )
+                new_prompt[key] = nested_prompt_formula_v2(new_prompt[key], args)
             elif type(new_prompt[key]) is list:
-                for i, item in enumerate(new_prompt[key]):
-                    if type(item) is str:
-                        new_prompt[key][i] = text_formula_v2(item, args)
-                    elif type(item) is dict:
-                        for key2 in item:
-                            if type(item[key2]) is str:
-                                new_prompt[key][i][key2] = text_formula_v2(
-                                    item[key2], args
-                                )
+                new_prompt[key] = nested_prompt_formula_v2(new_prompt[key], args)
     elif type(new_prompt) is list:
-        for i, item in enumerate(new_prompt):
-            if type(item) is str:
-                new_prompt[i] = text_formula_v2(item, args)
-            elif type(item) is dict:
-                for key in item:
-                    if type(item[key]) is str:
-                        new_prompt[i][key] = text_formula_v2(item[key], args)
+        new_prompt[key] = nested_prompt_formula_v2(new_prompt[key], args)
     # シリアライズして ${.*?}があるか探す
     json_str = json.dumps(new_prompt)
     formulas = re.findall(r"\$\{(.+?)\}", json_str)
@@ -625,8 +635,7 @@ def prompt_random_v2(yml, max_number, input=[], pre_choice=[], excludes=[]):
                 if attribute is not None:
                     attributes[key] = attribute
         if current is None:
-            Logger.debug(f"copy current")
-            current = {}
+            Logger.debug(f"prompt_random_v2 copy current")
             # yml commands を コピー
             current = copy.deepcopy(yml.get("command", {}))
             verbose = {}
@@ -641,14 +650,18 @@ def prompt_random_v2(yml, max_number, input=[], pre_choice=[], excludes=[]):
             for key in yml.get("info", {}):
                 verbose[key] = yml["info"][key]
             current["verbose"] = verbose
-        current = prompt_formula_v2(
-            current,
-            current_variables,
-            opt=yml,
-            error_info="",
-            attributes=attributes,
-            excludes=excludes,
-        )
+        try:
+            current = prompt_formula_v2(
+                current,
+                current_variables,
+                opt=yml,
+                error_info="",
+                attributes=attributes,
+                excludes=excludes,
+            )
+        except Exception as e:
+            Logger.error(f"Error happen prompt_formula_v2 {e}")
+            raise Exception(f"Error happen prompt_formula_v2 {e}")
         if isinstance(current, dict):
             Logger.debug(f"get verbose {current}")
             current.get("verbose", {})["variables"] = current_variables
@@ -786,6 +799,12 @@ def create_text_v2(opt):
         else:
             Logger.error(f"profile {profile} is not found")
             raise NotImplementedError(f"profile {profile} is not found")
+
+    if isinstance(yml["command"], str):
+        Logger.info(f"command loads from {yml['command']}")
+        json_file = yml["command"]
+        with open(json_file, "r", encoding="utf_8") as f:
+            yml["command"] = json.load(f)
 
     options["output"] = (
         output if output is not None else options.get("output", "output.txt")
