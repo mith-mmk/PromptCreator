@@ -45,6 +45,10 @@ def save_images_wapper(r, opt={"dir": "./outputs"}):
 
 
 async def async_save_images(r, opt={"dir": "./outputs"}):
+    import copy
+
+    opt = copy.deepcopy(opt)
+
     dir = opt["dir"]
 
     nameseed = opt.get("filename_pattern", "[num]-[seed]")
@@ -269,6 +273,9 @@ def create_filename(nameseed, num, filename_pattern, need_names, parameters, opt
             replacer = filename_pattern[seeds].join(" ")
         elif seeds == "DATE" and "job_timestamp" in filename_pattern:
             replacer = filename_pattern["job_timestamp"][:8]  # OLD Date
+        elif seeds == "DATE":
+            date = datetime.now()
+            replacer = date.strftime("%Y%m%d")
         elif seeds == "date":
             date = datetime.now()
             replacer = date.strftime("%Y-%m-%d")  # Web UI Date

@@ -550,11 +550,11 @@ class ComufyClient:
         return urls
 
     # use modules.save.save_image method
-    def imageWrapper(self, images, prompt, options, info={}):
-        if "verbose" in options:
-            verbose = options.pop("verbose")
-            options["variables"] = verbose.get("variables")
-            options["values"] = verbose.get("values")
+    async def imageWrapper(self, images, prompt_text, options, info={}):
+        import copy
+
+        options = copy.deepcopy(options)
+        options["verbose"] = prompt_text.get("verbose", {})
         keys = {
             "Steps": "steps",
             "Sampler": "sampler_name",
@@ -591,13 +591,17 @@ class ComufyClient:
             "parameters": {},
             "images": images,
         }
-        return r
+        return r, options
 
-    async def saveImage(self, image_data, prompt, options={}, info={}):
+    async def saveImage(self, image_data, prompt, options={}, info={}, prompt_text={}):
+
+        # print(prompt_text.get("verbose", {}).get("values", {}).get("title", "None"))
         try:
             import modules.save as save
 
-            r = self.imageWrapper([image_data], prompt, options, info)
+            r, options = await self.imageWrapper(
+                [image_data], prompt_text, options, info
+            )
 
             await save.async_save_images(r, options)
         except Exception as e:
@@ -611,26 +615,29 @@ class ComufyClient:
             image.save(f"{dirctory}/img{imagename}.png")
             printInfo(f"Image saved as {dirctory}/img{imagename}.png")
 
-    async def arun(self, prompts, options={}, infos=[]):
+    async def arun(self, prompts, options={}):
         client = ComufyClient()
 
         if "websocket" in options.get("save_image", []):
             ws = websocket.WebSocket()
-            for i, prompt in enumerate(prompts):
-                info = infos[i]
+            for i, _prompt in enumerate(prompts):
+                prompt = _prompt.get("workflow")
+                info = _prompt.get("info", {})
+                prompt_text = _prompt["prompt_text"]
+
                 printInfo(f"process queuing {i+1}/{len(prompts)}")
                 client_id = str(uuid.uuid4())
                 ws.connect(f"ws://{self.server_address}/ws?clientId={client_id}")
-                images = await client.getImages(ws, prompt, client_id)
+                images = await client.getImages(ws, prompt, client_id, _prompt)
                 if images is None:
-                    printInfo("Failed to get images")
+                    printError("Failed to get images")
                     continue
-
-                # Commented out code to display the output images:
 
                 for node_id in images:
                     for image_data in images[node_id]:
-                        await self.saveImage(image_data, prompt, options, info)
+                        await self.saveImage(
+                            image_data, prompt, options, info, prompt_text
+                        )
                 ws.close()
         elif "ui" in options.get("save_image", ["ui"]):
             for prompt in prompts:
@@ -645,10 +652,10 @@ class ComufyClient:
                 except Exception as e:
                     printError("Connection error", e)
 
-    def run(self, prompt, options={}, infos=[]):
+    def run(self, prompt, options={}):
         import asyncio
 
-        asyncio.run(self.arun(prompt, options, infos))
+        asyncio.run(self.arun(prompt, options))
 
     def convertSamplerNameWebUi2Comfy(self, name):
         name = name.lower()
@@ -699,14 +706,11 @@ class ComufyClient:
             if vae is not None:
                 wf.setVAE(vae)
             workflows = []
-            lora_dir = options.get("lora_dir", "lora")
-            infos = []
             for prompt_text in prompts:
                 opt = options.copy()
                 if prompt_text.get("prompt") is None:
                     workflows.append(prompt_text)
                     continue
-                prompt_text["lora_dir"] = lora_dir
                 prompt = prompt_text.get("prompt", "")
                 n_iter = prompt_text.get("n_iter", 1)
                 negative_prompt = prompt_text.get("negative_prompt", "")
@@ -723,12 +727,13 @@ class ComufyClient:
                     opt[key] = prompt_text[key]
                 for _ in range(n_iter):
                     workflow, info = wf.createWorkflow(prompt, negative_prompt, opt)
-                workflows.append(workflow)
-                infos.append(info)
+                workflows.append(
+                    {"workflow": workflow, "info": info, "prompt_text": prompt_text}
+                )
             opt["dir"] = output_dir
             client = ComufyClient()
             client.setHostname(hostname)
-            client.run(workflows, opt, infos)
+            client.run(workflows, opt)
             return True
         except Exception as e:
             printError("Failed to run comfyui", e)
