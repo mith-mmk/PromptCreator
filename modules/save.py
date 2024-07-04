@@ -162,7 +162,13 @@ async def async_save_images(r, opt={"dir": "./outputs"}):
             meta = info["infotexts"][n]
             # this code is old automatic1111 version
             # image = Image.open(io.BytesIO(base64.b64decode(i.split(",",1)[1])))
-            image = Image.open(io.BytesIO(base64.b64decode(i)))
+            if isinstance(i, str) and i.startswith("data:image"):
+                image = Image.open(io.BytesIO(base64.b64decode(i)))
+            elif isinstance(i, bytes):
+                image = Image.open(io.BytesIO(i))
+            else:
+                Logger.error("image data error", i)
+                continue
             parameters = create_parameters(info["infotexts"][n])
 
             filename = create_filename(

@@ -185,12 +185,20 @@ class ComfyUIWorkflow:
         return self.createWorkflow(prompt, negative_prompt, options)
 
     def createWorkflow(self, prompt, negative_prompt, options={}):
+        info = {
+            "prompt": prompt,
+            "negative_prompt": negative_prompt,
+        }
         other_vae = False
         lora_matcher = re.compile(r"\<lora\:(.+?)\:([0-9\.]+)\>")
         postive_loras = lora_matcher.findall(prompt)
         prompt = lora_matcher.sub("", prompt)
         negative_loras = lora_matcher.findall(negative_prompt)
         negative_prompt = lora_matcher.sub("", negative_prompt)
+
+        if len(postive_loras) == 0 and len(negative_loras) == 0:
+            info["loras"] = []
+        info["loras"] = postive_loras.copy().extend(negative_loras)
 
         checkpoint = options.get("checkpoint", self.checkpoint or "None")
         if checkpoint == "None":
@@ -200,26 +208,36 @@ class ComfyUIWorkflow:
         seed = options.get("seed", -1)
         if seed == -1:
             seed = random.randint(0, 2**31 - 1)
+        info["seed"] = seed
+
         workflow = {}
         wf_num = 3
         base_width = 1024 if options.get("type") == "sdxl" else 512
+        width = options.get("width", base_width)
         base_height = 1024 if options.get("type") == "sdxl" else 512
+        height = options.get("height", base_height)
+        batch_size = options.get("batch_size", 1)
 
         workflow[str(wf_num)] = self.createEmptyLatentImage(
             {
-                "batch_size": options.get("batch_size", 1),
-                "height": options.get("height", base_height),
-                "width": options.get("width", base_width),
+                "batch_size": batch_size,
+                "height": height,
+                "width": width,
             }
         )
         latent_from = str(wf_num)
         wf_num += 1
+        info["width"] = width
+        info["height"] = height
+        info["batch_size"] = batch_size
+
         workflow[str(wf_num)] = self.createLoadCheckpoint(checkpoint)
         model_from = str(wf_num)
         positive_clip_from = model_from
         negative_clip_from = model_from
         vae_from = model_from
         wf_num += 1
+        info["sd_model_name"] = checkpoint
 
         if options.get("stop_at_clip_layer") is not None:
             workflow[str(wf_num)] = self.creatCLIPSetLastLayer(
@@ -228,12 +246,16 @@ class ComfyUIWorkflow:
             positive_clip_from = str(wf_num)
             negative_clip_from = str(wf_num)
             wf_num += 1
+            info["clip_skip"] = abs(options.get("stop_at_clip_layer", 1))
 
         if vae != "None":
             workflow[str(wf_num)] = self.createLoadVAE(vae)
             vae_from = str(wf_num)
             wf_num += 1
             other_vae = True
+        info["sd_vae_name"] = vae
+        if vae == "None":
+            info["sd_vae_name"] = None
 
         for lora, weight in postive_loras:
             wf = self.createLoraLoader(
@@ -287,6 +309,14 @@ class ComfyUIWorkflow:
         )
         sampler_from = str(wf_num)
         wf_num += 1
+        info["cfg_scale"] = options.get("cfg", 7)
+        info["denoising_strength"] = options.get("denoise")
+        info["sampler_name"] = options.get(
+            "sampler_name", "dpmpp_2m_sde"
+        )  # sampler mapper
+        info["scheduler"] = options.get("scheduler", "karras")
+        info["steps"] = options.get("steps", 20)
+
         workflow[str(wf_num)] = self.createEncodeVAE(sampler_from, vae_from, other_vae)
         encode_from = str(wf_num)
         wf_num += 1
@@ -297,7 +327,7 @@ class ComfyUIWorkflow:
             workflow["save_image_websocket_node"] = self.createSaveWebSocketImage(
                 encode_from, options
             )
-        return workflow
+        return workflow, info
 
 
 class ComufyClient:
@@ -354,6 +384,21 @@ class ComufyClient:
 
         return output_images
 
+    def imageWrapper(self, images, prompt, options):
+        r = {
+            "info": {
+                "infotexts": [],
+            },
+            "parameters": {},
+            "images": [],
+        }
+        for node_id in enumerate(images):
+            for image_data in images[node_id]:
+                r["images"].append(image_data)
+                r["info"]["infotexts"].append(prompt)
+
+        return r
+
     async def arun(self, prompts, options={}):
         client = ComufyClient()
         ws = websocket.WebSocket()
@@ -373,7 +418,7 @@ class ComufyClient:
                     from PIL import Image
 
                     image = Image.open(io.BytesIO(image_data))
-                    dirctory = options.get("save_dir", "outputs")
+                    dirctory = options.get("dir", "outputs")
                     os.makedirs(dirctory, exist_ok=True)
                     now = datetime.datetime.now()
                     imagename = now.strftime("%H%M%S")
@@ -395,6 +440,7 @@ if __name__ == "__main__":
         # wf.setVAE("kl-f8-anime2-vae.safetensors")
         wf.setModel("pony\\waiANINSFWPONYXL_v50.safetensors")
         workflows = []
+        infos = []
         options = {}
         options["save_image"] = ["ui", "websocket"]
 
@@ -411,10 +457,8 @@ if __name__ == "__main__":
             negative_prompt = prompt_text.get("negative_prompt", "")
             for key in prompt_text:
                 opt[key] = prompt_text[key]
-            workflow = wf.createWorkflow(prompt, negative_prompt, opt)
+            workflow, info = wf.createWorkflow(prompt, negative_prompt, opt)
             workflows.append(workflow)
-        import time
-
-        start_time = time.time()
+            infos.append(info)
         client = ComufyClient()
         client.run(workflows, opt)
