@@ -120,6 +120,37 @@ class ComfyUIWorkflow:
         }
         return flow
 
+    def createConditioningConcat(self, from_prompt, to_prompt):
+        flow = {
+            "class_type": "ConditioningConcat",
+            "inputs": {
+                "conditioning_to": [to_prompt, 0],
+                "conditioning_from": [from_prompt, 0],
+            },
+        }
+        return flow
+
+    def createBatchTextEncode(self, wf, prompt, wf_num, clip, type):
+        prompts = prompt.split("BREAK")
+        from_prompt = None
+        if type == "sdxl":
+            wf[str(wf_num)] = self.createCLIPTextEncodeSDXL(prompts[0], clip)
+        else:
+            wf[str(wf_num)] = self.createCLIPTextEncode(prompts[0], clip)
+        from_prompt = str(wf_num)
+        prompts = prompts[1:]
+        for prompt in prompts:
+            wf_num += 1
+            if type == "sdxl":
+                wf[str(wf_num)] = self.createCLIPTextEncodeSDXL(prompt, clip)
+            else:
+                wf[str(wf_num)] = self.createCLIPTextEncode(prompt, clip)
+            to_prompt = str(wf_num)
+            wf_num += 1
+            wf[str(wf_num)] = self.createConditioningConcat(from_prompt, to_prompt)
+            from_prompt = str(wf_num)
+        return wf, wf_num
+
     def createCLIPTextEncode(self, prompt, clip):
         flow = {
             "class_type": "CLIPTextEncode",
@@ -277,6 +308,18 @@ class ComfyUIWorkflow:
                 wf_num += 1
                 negative_clip_from = str(wf_num)
 
+        workflow, wf_num = self.createBatchTextEncode(
+            workflow, prompt, wf_num, positive_clip_from, options.get("type")
+        )
+        positive_from = str(wf_num)
+        wf_num += 1
+        workflow, wf_num = self.createBatchTextEncode(
+            workflow, negative_prompt, wf_num, negative_clip_from, options.get("type")
+        )
+        negative_from = str(wf_num)
+        wf_num += 1
+
+        """
         if options.get("type") == "sdxl":
             workflow[str(wf_num)] = self.createCLIPTextEncodeSDXL(
                 prompt, positive_clip_from
@@ -287,11 +330,17 @@ class ComfyUIWorkflow:
             )
         positive_from = str(wf_num)
         wf_num += 1
-        workflow[str(wf_num)] = self.createCLIPTextEncode(
-            negative_prompt, negative_clip_from
-        )
+        if options.get("type") == "sdxl":
+            workflow[str(wf_num)] = self.createCLIPTextEncodeSDXL(
+                negative_prompt, negative_clip_from
+            )
+        else:
+            workflow[str(wf_num)] = self.createCLIPTextEncode(
+                negative_prompt, negative_clip_from
+            )
         negative_from = str(wf_num)
         wf_num += 1
+        """
 
         workflow[str(wf_num)] = self.createKSampler(
             latent_from,
@@ -342,6 +391,8 @@ class ComufyClient:
             "http://{}/prompt".format(self.server_address), json=p
         )
         if req.status_code != 200:
+            print(json.dumps(prompt, indent=4))
+            print(json.dumps(req.json(), indent=4))
             raise Exception(req.text)
         return req.json()
 
@@ -360,29 +411,32 @@ class ComufyClient:
         return res.json()
 
     async def getImages(self, ws, prompt, client_id, options={}):
-        res = await self.queuePrompt(prompt, client_id)
-        prompt_id = res["prompt_id"]
-        output_images = {}
-        current_node = ""
-        while True:
-            out = ws.recv()
-            # print(out[:100])
-            if isinstance(out, str):
-                message = json.loads(out)
-                if message["type"] == "executing":
-                    data = message["data"]
-                    if data["prompt_id"] == prompt_id:
-                        if data["node"] is None:
-                            break  # Execution is done
-                        else:
-                            current_node = data["node"]
-            else:
-                if current_node == "save_image_websocket_node":
-                    images_output = output_images.get(current_node, [])
-                    images_output.append(out[8:])
-                    output_images[current_node] = images_output
+        try:
+            res = await self.queuePrompt(prompt, client_id)
+            prompt_id = res["prompt_id"]
+            output_images = {}
+            current_node = ""
+            while True:
+                out = ws.recv()
+                # print(out[:100])
+                if isinstance(out, str):
+                    message = json.loads(out)
+                    if message["type"] == "executing":
+                        data = message["data"]
+                        if data["prompt_id"] == prompt_id:
+                            if data["node"] is None:
+                                break  # Execution is done
+                            else:
+                                current_node = data["node"]
+                else:
+                    if current_node == "save_image_websocket_node":
+                        images_output = output_images.get(current_node, [])
+                        images_output.append(out[8:])
+                        output_images[current_node] = images_output
 
-        return output_images
+            return output_images
+        except Exception as e:
+            return None
 
     def imageWrapper(self, images, prompt, options):
         r = {
@@ -406,6 +460,9 @@ class ComufyClient:
             client_id = str(uuid.uuid4())
             ws.connect("ws://{}/ws?clientId={}".format(self.server_address, client_id))
             images = await client.getImages(ws, prompt, client_id)
+            if images is None:
+                print("Failed to get images")
+                continue
 
             # Commented out code to display the output images:
 
