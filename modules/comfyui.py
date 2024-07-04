@@ -489,6 +489,9 @@ class ComufyClient:
 
 
 if __name__ == "__main__":
+    import time
+
+    start_time = time.time()
     filename = "test/comfy.json"
     with open(filename, "r") as f:
         prompts = json.load(f)
@@ -500,6 +503,7 @@ if __name__ == "__main__":
         infos = []
         options = {}
         options["save_image"] = ["ui", "websocket"]
+        options["dir"] = "f:/ai/outputs/txt2img-images"
 
         for prompt_text in prompts:
             opt = options.copy()
@@ -519,3 +523,7 @@ if __name__ == "__main__":
             infos.append(info)
         client = ComufyClient()
         client.run(workflows, opt)
+    duration = time.time() - start_time
+    minutes = duration // 60
+    seconds = duration % 60
+    print(f"Duration: {minutes}m {seconds}s")
