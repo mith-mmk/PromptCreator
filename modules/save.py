@@ -200,13 +200,14 @@ async def async_save_images(r, opt={"dir": "./outputs"}):
 
 
 def get_variables(opt):
+
     variables = {}
-    if "varbose" in opt:
+    if "verbose" in opt:
         Logger.debug(
-            "varbose", json.dumps(opt["varbose"], ensure_ascii=False, indent=2)
+            "verbose", json.dumps(opt["verbose"], ensure_ascii=False, indent=2)
         )
         for key, value in (
-            opt["varbose"].get("values", opt["verbose"].get("variables", {})).items()
+            opt["verbose"].get("values", opt["verbose"].get("variables", {})).items()
         ):
             variables[key] = value
     elif "values" in opt:

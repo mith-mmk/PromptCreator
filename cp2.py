@@ -313,7 +313,6 @@ def main(args):
         opt["sd_model"] = sd_model
         opt["sd_vae"] = sd_vae
         opt["save_image"] = save_image
-        opt["lora_dir"] = args.api_comfy_lora
         result = comfyui.ComufyClient.txt2img(
             output_text,
             hostname=args.api_base,
@@ -521,13 +520,6 @@ def run_from_args(command_args=None):
         type=str,
         default="save",
         help="on save place for comfyui api ui, save, both",
-    )
-
-    parser.add_argument(
-        "--api-comfy-lora",
-        type=str,
-        default="models/lora",
-        help="comfyui lora model search directory for local",
     )
 
     parser.add_argument(

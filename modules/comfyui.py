@@ -221,10 +221,14 @@ class ComfyUIWorkflow:
         }
         return flow
 
+    # local でしか使えないので、使わない
     def searchLora(self, loraname, options, subfolder=""):
         import os
 
-        lora_dir = os.path.join(options.get("lora_dir", "lora"), subfolder)
+        lora_dir = options.get("lora_dir")
+        if lora_dir is None:
+            return loraname + ".safetensors"
+        lora_dir = os.path.join(lora_dir, subfolder)
         if os.path.exists(os.path.join(lora_dir, loraname + ".safetensors")):
             return os.path.join(subfolder, loraname + ".safetensors")
         lora_dirs = os.scandir(lora_dir)
@@ -234,13 +238,11 @@ class ComfyUIWorkflow:
                 result = self.searchLora(loraname, options, next_subfolder)
                 if result is not None:
                     return result
-        return None
+        return loraname + ".safetensors"
 
     def createLoraLoader(self, fromModel, clip, loraname, weight, options={}):
-        loraname = self.searchLora(loraname, options)
-        if loraname is None:
-            printWarning(f"Failed to find lora {loraname}")
-            return None
+        if not loraname.endswith(".safetensors"):
+            loraname = loraname + ".safetensors"
         flow = {
             "class_type": "LoraLoader",
             "inputs": {
@@ -372,7 +374,7 @@ class ComfyUIWorkflow:
             negative_from,
             {
                 "cfg": options.get("cfg_scale", 7),
-                "denoise": options.get("denoise", 1),
+                "denoise": options.get("nomal_denoising_strength", 1),
                 "sampler_name": options.get("sampler_name", "dpmpp_2m_sde"),
                 "scheduler": options.get("scheduler", "karras"),
                 "seed": seed,
@@ -382,7 +384,7 @@ class ComfyUIWorkflow:
         sampler_from = str(wf_num)
         wf_num += 1
         info["cfg_scale"] = options.get("cfg_scale", 7)
-        info["denoising_strength"] = options.get("denoise")
+        # info["denoising_strength"] = options.get("nomal_denoising_strength")
         info["sampler_name"] = options.get(
             "sampler_name", "dpmpp_2m_sde"
         )  # sampler mapper
@@ -549,6 +551,10 @@ class ComufyClient:
 
     # use modules.save.save_image method
     def imageWrapper(self, images, prompt, options, info={}):
+        if "verbose" in options:
+            verbose = options.pop("verbose")
+            options["variables"] = verbose.get("variables")
+            options["values"] = verbose.get("values")
         keys = {
             "Steps": "steps",
             "Sampler": "sampler_name",
@@ -575,11 +581,9 @@ class ComufyClient:
                         if group in info:
                             key = key.replace(f"{{{group}}}", str(info[group]))
                 if value is not None:
-                    print(f"{key}: {value}")
                     lines.append(f"{key}: {value}")
         line = ", ".join(lines)
-        infotexts += line + "\n"
-        print(infotexts)
+        infotexts += line
         r = {
             "info": {
                 "infotexts": [infotexts],
@@ -594,6 +598,7 @@ class ComufyClient:
             import modules.save as save
 
             r = self.imageWrapper([image_data], prompt, options, info)
+
             await save.async_save_images(r, options)
         except Exception as e:
             printError("Failed to save image", e)
@@ -703,6 +708,7 @@ class ComufyClient:
                     continue
                 prompt_text["lora_dir"] = lora_dir
                 prompt = prompt_text.get("prompt", "")
+                n_iter = prompt_text.get("n_iter", 1)
                 negative_prompt = prompt_text.get("negative_prompt", "")
                 sampler_name = prompt_text.get("sampler_name", "euler")
                 sampler = ComufyClient().convertSamplerNameWebUi2Comfy(sampler_name)
@@ -715,7 +721,8 @@ class ComufyClient:
                 prompt_text["scheduler"] = scheduler
                 for key in prompt_text:
                     opt[key] = prompt_text[key]
-                workflow, info = wf.createWorkflow(prompt, negative_prompt, opt)
+                for _ in range(n_iter):
+                    workflow, info = wf.createWorkflow(prompt, negative_prompt, opt)
                 workflows.append(workflow)
                 infos.append(info)
             opt["dir"] = output_dir
