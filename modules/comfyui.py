@@ -11,8 +11,6 @@ import uuid
 import httpx
 import websocket  # NOTE: websocket-client (https://github.com/websocket-client/websocket-client)
 
-client_id = str(uuid.uuid4())
-
 
 class ComfyUIWorkflow:
     def __init__(self, options={}):
@@ -21,9 +19,12 @@ class ComfyUIWorkflow:
         self.vae = None
 
     # todo:
+    # ✓ clip layer
+    # token BREAK over 75 tokens
     # hiresfix
     # img2img
-    # save_image wrapper
+    # infotext warpper for prompt
+    # save_images wrapper
     # img2video and other
 
     def setModel(self, model):
@@ -289,11 +290,13 @@ class ComfyUIWorkflow:
         workflow[str(wf_num)] = self.createEncodeVAE(sampler_from, vae_from, other_vae)
         encode_from = str(wf_num)
         wf_num += 1
-        workflow[str(wf_num)] = self.createSaveImage(encode_from, options)
-        wf_num += 1
-        workflow["save_image_websocket_node"] = self.createSaveWebSocketImage(
-            encode_from, options
-        )
+        if "ui" in options.get("save_image", []):
+            workflow[str(wf_num)] = self.createSaveImage(encode_from, options)
+            wf_num += 1
+        if "websocket" in options.get("save_image", ["websocket"]):
+            workflow["save_image_websocket_node"] = self.createSaveWebSocketImage(
+                encode_from, options
+            )
         return workflow
 
 
@@ -302,7 +305,7 @@ class ComufyClient:
         self.client = httpx.AsyncClient()
         self.server_address = "127.0.0.1:8188"
 
-    async def queue_prompt(self, prompt):
+    async def queuePrompt(self, prompt, client_id):
         p = {"prompt": prompt, "client_id": client_id}
         # print(json.dumps(p, indent=4))
         req = await self.client.post(
@@ -312,7 +315,7 @@ class ComufyClient:
             raise Exception(req.text)
         return req.json()
 
-    async def get_image(self, filename, subfolder, folder_type):
+    async def getImage(self, filename, subfolder, folder_type):
         data = {"filename": filename, "subfolder": subfolder, "type": folder_type}
 
         res = await self.client.post(
@@ -320,14 +323,14 @@ class ComufyClient:
         )
         return res.content
 
-    async def get_history(self, prompt_id):
+    async def getHistory(self, prompt_id):
         res = await self.client.get(
             "http://{}/history/{}".format(self.server_address, prompt_id)
         )
         return res.json()
 
-    async def get_images(self, ws, prompt):
-        res = await self.queue_prompt(prompt)
+    async def getImages(self, ws, prompt, client_id, options={}):
+        res = await self.queuePrompt(prompt, client_id)
         prompt_id = res["prompt_id"]
         output_images = {}
         current_node = ""
@@ -354,27 +357,28 @@ class ComufyClient:
     async def arun(self, prompts, options={}):
         client = ComufyClient()
         ws = websocket.WebSocket()
-        ws.connect("ws://{}/ws?clientId={}".format(self.server_address, client_id))
         for prompt in prompts:
-            images = await client.get_images(ws, prompt)
+            client_id = str(uuid.uuid4())
+            ws.connect("ws://{}/ws?clientId={}".format(self.server_address, client_id))
+            images = await client.getImages(ws, prompt, client_id)
 
-        # Commented out code to display the output images:
+            # Commented out code to display the output images:
 
-        for node_id in images:
-            for image_data in images[node_id]:
-                import datetime
-                import io
-                import os
+            for node_id in images:
+                for image_data in images[node_id]:
+                    import datetime
+                    import io
+                    import os
 
-                from PIL import Image
+                    from PIL import Image
 
-                image = Image.open(io.BytesIO(image_data))
-                dirctory = options.get("save_dir", "outputs")
-                os.makedirs(dirctory, exist_ok=True)
-                now = datetime.datetime.now()
-                imagename = now.strftime("%H%M%S")
-                image.save(f"{dirctory}/img{imagename}.png")
-        ws.close()
+                    image = Image.open(io.BytesIO(image_data))
+                    dirctory = options.get("save_dir", "outputs")
+                    os.makedirs(dirctory, exist_ok=True)
+                    now = datetime.datetime.now()
+                    imagename = now.strftime("%H%M%S")
+                    image.save(f"{dirctory}/img{imagename}.png")
+            ws.close()
 
     def run(self, prompt, options={}):
         import asyncio
@@ -391,7 +395,11 @@ if __name__ == "__main__":
         # wf.setVAE("kl-f8-anime2-vae.safetensors")
         wf.setModel("pony\\waiANINSFWPONYXL_v50.safetensors")
         workflows = []
+        options = {}
+        options["save_image"] = ["ui", "websocket"]
+
         for prompt_text in prompts:
+            opt = options.copy()
             if prompt_text.get("prompt") is None:
                 workflows.append(prompt_text)  # native prompt
                 continue
@@ -401,10 +409,12 @@ if __name__ == "__main__":
             prompt_text["sampler_name"] = "euler_ancestral"
             prompt_text["scheduler"] = "normal"
             negative_prompt = prompt_text.get("negative_prompt", "")
-            workflow = wf.createWorkflow(prompt, negative_prompt, prompt_text)
+            for key in prompt_text:
+                opt[key] = prompt_text[key]
+            workflow = wf.createWorkflow(prompt, negative_prompt, opt)
             workflows.append(workflow)
-            import time
+        import time
 
-            start_time = time.time()
-            client = ComufyClient()
-            client.run(workflows, {})
+        start_time = time.time()
+        client = ComufyClient()
+        client.run(workflows, opt)
