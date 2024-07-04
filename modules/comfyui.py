@@ -1,7 +1,9 @@
-# This is an example that uses the websockets api and the SaveImageWebsocket node to get images directly without
-# them being saved to disk
-
+#
+import asyncio
+import datetime
+import io
 import json
+import os
 import random
 import re
 import urllib.parse
@@ -9,7 +11,43 @@ import urllib.request
 import uuid
 
 import httpx
+
+# import httpx_ws
 import websocket  # NOTE: websocket-client (https://github.com/websocket-client/websocket-client)
+from PIL import Image
+
+try:
+    from modules.logger import getDefaultLogger
+
+    logger = getDefaultLogger()
+except:
+    logger = None
+
+
+def printInfo(*args, **kwargs):
+    if logger is not None:
+        logger.info(*args, **kwargs)
+    else:
+        print(*args, **kwargs)
+
+
+def printError(*args, **kwargs):
+    if logger is not None:
+        logger.error(*args, **kwargs)
+    else:
+        print(*args, **kwargs)
+
+
+def printWarning(*args, **kwargs):
+    if logger is not None:
+        logger.warning(*args, **kwargs)
+    else:
+        print(*args, **kwargs)
+
+
+def printDebug(*args, **kwargs):
+    if logger is not None:
+        logger.debug(*args, **kwargs)
 
 
 class ComfyUIWorkflow:
@@ -33,10 +71,18 @@ class ComfyUIWorkflow:
     def setVAE(self, vae):
         self.vae = vae
 
-    def creatCLIPSetLastLayer(self, stop_at_clip_layer):
+    def creatCLIPSetLastLayer(self, stop_at_clip_layer, clip):
+        if stop_at_clip_layer > 0:
+            stop_at_clip_layer = -stop_at_clip_layer
+        elif stop_at_clip_layer == 0:
+            stop_at_clip_layer = -1
+
         flow = {
             "class_type": "CLIPSetLastLayer",
-            "inputs": {"stop_at_clip_layer": stop_at_clip_layer},
+            "inputs": {
+                "stop_at_clip_layer": stop_at_clip_layer,
+                "clip": clip,
+            },
         }
         return flow
 
@@ -154,7 +200,7 @@ class ComfyUIWorkflow:
     def createCLIPTextEncode(self, prompt, clip):
         flow = {
             "class_type": "CLIPTextEncode",
-            "inputs": {"clip": [clip, 1], "text": prompt},
+            "inputs": {"clip": clip, "text": prompt},
         }
         return flow
 
@@ -163,15 +209,15 @@ class ComfyUIWorkflow:
             "class_type": "CLIPTextEncodeSDXL",
             "inputs": {
                 "clip": clip,
+                "text_g": text,
+                "text_l": text,
+                "width": 4096,
+                "height": 4096,
+                "crop_w": 0,
+                "crop_h": 0,
+                "target_width": 4096,
+                "target_height": 4096,
             },
-            "width": 4096,
-            "height": 4096,
-            "crop_w": 0,
-            "crop_h": 0,
-            "target_width": 4096,
-            "target_height": 4096,
-            "text_g": text,
-            "text_r": text,
         }
         return flow
 
@@ -193,7 +239,7 @@ class ComfyUIWorkflow:
     def createLoraLoader(self, fromModel, clip, loraname, weight, options={}):
         loraname = self.searchLora(loraname, options)
         if loraname is None:
-            # print(f"Failed to find lora {loraname}")
+            printWarning(f"Failed to find lora {loraname}")
             return None
         flow = {
             "class_type": "LoraLoader",
@@ -202,7 +248,7 @@ class ComfyUIWorkflow:
                 "strength_model": weight,
                 "strength_clip": weight,
                 "model": [fromModel, 0],
-                "clip": [clip, 1],
+                "clip": clip,
             },
         }
         return flow
@@ -264,18 +310,18 @@ class ComfyUIWorkflow:
 
         workflow[str(wf_num)] = self.createLoadCheckpoint(checkpoint)
         model_from = str(wf_num)
-        positive_clip_from = model_from
-        negative_clip_from = model_from
+        positive_clip_from = [model_from, 1]  # 1 is clip index
+        negative_clip_from = [model_from, 1]
         vae_from = model_from
         wf_num += 1
         info["sd_model_name"] = checkpoint
 
         if options.get("stop_at_clip_layer") is not None:
             workflow[str(wf_num)] = self.creatCLIPSetLastLayer(
-                options.get("stop_at_clip_layer")
+                options.get("stop_at_clip_layer"), positive_clip_from
             )
-            positive_clip_from = str(wf_num)
-            negative_clip_from = str(wf_num)
+            positive_clip_from = [str(wf_num), 0]
+            negative_clip_from = [str(wf_num), 0]
             wf_num += 1
             info["clip_skip"] = abs(options.get("stop_at_clip_layer", 1))
 
@@ -296,7 +342,7 @@ class ComfyUIWorkflow:
                 workflow[str(wf_num)] = wf
                 model_from = str(wf_num)
                 wf_num += 1
-                positive_clip_from = model_from
+                positive_clip_from = [model_from, 1]
 
         for lora, weight in negative_loras:
             wf = self.createLoraLoader(
@@ -306,7 +352,7 @@ class ComfyUIWorkflow:
                 workflow[str(wf_num)] = wf
                 model_from = str(wf_num)
                 wf_num += 1
-                negative_clip_from = str(wf_num)
+                negative_clip_from = [model_from, 1]
 
         workflow, wf_num = self.createBatchTextEncode(
             workflow, prompt, wf_num, positive_clip_from, options.get("type")
@@ -319,36 +365,13 @@ class ComfyUIWorkflow:
         negative_from = str(wf_num)
         wf_num += 1
 
-        """
-        if options.get("type") == "sdxl":
-            workflow[str(wf_num)] = self.createCLIPTextEncodeSDXL(
-                prompt, positive_clip_from
-            )
-        else:
-            workflow[str(wf_num)] = self.createCLIPTextEncode(
-                prompt, positive_clip_from
-            )
-        positive_from = str(wf_num)
-        wf_num += 1
-        if options.get("type") == "sdxl":
-            workflow[str(wf_num)] = self.createCLIPTextEncodeSDXL(
-                negative_prompt, negative_clip_from
-            )
-        else:
-            workflow[str(wf_num)] = self.createCLIPTextEncode(
-                negative_prompt, negative_clip_from
-            )
-        negative_from = str(wf_num)
-        wf_num += 1
-        """
-
         workflow[str(wf_num)] = self.createKSampler(
             latent_from,
             model_from,
             positive_from,
             negative_from,
             {
-                "cfg": options.get("cfg", 7),
+                "cfg": options.get("cfg_scale", 7),
                 "denoise": options.get("denoise", 1),
                 "sampler_name": options.get("sampler_name", "dpmpp_2m_sde"),
                 "scheduler": options.get("scheduler", "karras"),
@@ -358,7 +381,7 @@ class ComfyUIWorkflow:
         )
         sampler_from = str(wf_num)
         wf_num += 1
-        info["cfg_scale"] = options.get("cfg", 7)
+        info["cfg_scale"] = options.get("cfg_scale", 7)
         info["denoising_strength"] = options.get("denoise")
         info["sampler_name"] = options.get(
             "sampler_name", "dpmpp_2m_sde"
@@ -382,111 +405,334 @@ class ComfyUIWorkflow:
 class ComufyClient:
     def __init__(self) -> None:
         self.client = httpx.AsyncClient()
-        self.server_address = "127.0.0.1:8188"
+        self.hostname = "http://127.0.0.1:8188"
+        self.server_address = self.hostname.replace("http://", "").replace(
+            "https://", ""
+        )
+
+    def setHostname(self, hostname):
+        self.hostname = hostname
+        self.server_address = hostname.replace("http://", "").replace("https://", "")
 
     async def queuePrompt(self, prompt, client_id):
         p = {"prompt": prompt, "client_id": client_id}
-        # print(json.dumps(p, indent=4))
-        req = await self.client.post(
-            "http://{}/prompt".format(self.server_address), json=p
-        )
+        req = await self.client.post(f"{self.hostname}/prompt", json=p)
         if req.status_code != 200:
-            print(json.dumps(prompt, indent=4))
-            print(json.dumps(req.json(), indent=4))
+            printError("Failed to queue prompt")
+            printDebug(json.dumps(prompt, indent=4))
+            printDebug(json.dumps(req.json(), indent=4))
             raise Exception(req.text)
         return req.json()
 
     async def getImage(self, filename, subfolder, folder_type):
         data = {"filename": filename, "subfolder": subfolder, "type": folder_type}
 
-        res = await self.client.post(
-            "http://{}/get_image".format(self.server_address), json=data
-        )
+        res = await self.client.post(f"{self.hostname}/get_image", json=data)
+        if res.status_code != 200:
+            printError(
+                f"Failed to get image {filename} in {subfolder} of {folder_type}"
+            )
+            printDebug(json.dumps(res.json(), indent=4))
+            raise Exception(res.text)
         return res.content
 
     async def getHistory(self, prompt_id):
-        res = await self.client.get(
-            "http://{}/history/{}".format(self.server_address, prompt_id)
-        )
+        res = await self.client.get(f"{self.hostname}/history/{prompt_id}")
+        if res.status_code != 200:
+            printError(f"Failed to get history for {prompt_id}")
+            printDebug(json.dumps(res.json(), indent=4))
+            raise Exception(res.text)
         return res.json()
+
+    async def getImageFromUI(self, prompt, client_id, options={}):
+        res = await self.queuePrompt(prompt, client_id)
+        prompt_id = res["prompt_id"]
+        images = []
+        urls = await self.checkQueue([prompt_id], options)
+        for url in urls:
+            if "save" in options.get("save_image"):
+                res = await self.client.get(url)
+                if res.status_code == 200:
+                    image_data = res.content
+                    data = {
+                        "url": url,
+                        "image": image_data,
+                    }
+                    images.append(data)
+            else:
+                data = {
+                    "url": url,
+                    "image": None,
+                }
+                images.append(data)
+        return images
 
     async def getImages(self, ws, prompt, client_id, options={}):
         try:
+            start_time = datetime.datetime.now()
             res = await self.queuePrompt(prompt, client_id)
             prompt_id = res["prompt_id"]
             output_images = {}
             current_node = ""
             while True:
                 out = ws.recv()
-                # print(out[:100])
                 if isinstance(out, str):
-                    message = json.loads(out)
-                    if message["type"] == "executing":
-                        data = message["data"]
-                        if data["prompt_id"] == prompt_id:
-                            if data["node"] is None:
-                                break  # Execution is done
-                            else:
-                                current_node = data["node"]
+                    try:
+
+                        message = json.loads(out)
+                        if message["type"] == "executing":
+                            data = message["data"]
+                            if data["prompt_id"] == prompt_id:
+                                if data["node"] is None:
+                                    # clear row
+                                    print("\033[K", end="\r")
+                                    duration = datetime.datetime.now() - start_time
+                                    duration = duration.total_seconds()
+                                    print(f"Execution is done {duration:.2f} sec")
+                                    break  # Execution is done
+                                else:
+                                    current_node = data["node"]
+                        elif message.get("type") == "progress":
+                            data = message.get("data", {})
+                            if data.get("prompt_id") == prompt_id:
+                                max = data.get("max", 1)
+                                value = data.get("value", 0)
+                                percentage = (float(value) / float(max)) * 100.0
+                                duration = datetime.datetime.now() - start_time
+                                duration = duration.total_seconds()
+                                print(
+                                    f"progress {percentage:.1f} {value}/{max} {duration:2f} sec",
+                                    end="\r",
+                                )
+                    except Exception as e:
+                        printError("Failed to parse message", e)
+                        printError(out[:100])
                 else:
                     if current_node == "save_image_websocket_node":
                         images_output = output_images.get(current_node, [])
                         images_output.append(out[8:])
                         output_images[current_node] = images_output
-
             return output_images
+
         except Exception as e:
             return None
 
-    def imageWrapper(self, images, prompt, options):
+    async def checkQueue(self, prompt_ids, options={}):
+        urls = []
+        for prompt_id in prompt_ids:
+            while True:
+                history = await self.getHistory(prompt_id)
+                try:
+                    history = history[prompt_id]
+                except KeyError:
+                    await asyncio.sleep(0.1)
+                    continue
+                if history["status"]["completed"]:
+                    break
+            outputs = history["outputs"]
+            for id in outputs:
+                output = outputs[id]
+                if "images" in output:
+                    for image in output["images"]:
+                        filename = image["filename"]
+                        subfolder = image["subfolder"]
+                        folder_type = image["type"]
+                        payload = {
+                            "filename": filename,
+                            "subfolder": subfolder,
+                            "type": folder_type,
+                        }
+                        urlencode = urllib.parse.urlencode(payload)
+                        url = f"{self.hostname}/view?{urlencode}"
+                        urls.append(url)
+        return urls
+
+    # use modules.save.save_image method
+    def imageWrapper(self, images, prompt, options, info={}):
+        keys = {
+            "Steps": "steps",
+            "Sampler": "sampler_name",
+            "CFG scale": "cfg_scale",
+            "Seed": "seed",
+            "Size": "{width}x{height}",
+            "Model": "sd_model_name",
+            "VAE": "sd_vae_name",
+            "Clip Skip": "clip_skip",
+            "Denoising Strength": "denoising_strength",
+        }
+        infotexts = f"{info['prompt']}\n"
+        if "negative_prompt" in info:
+            infotexts += f"Negative prompt: {info['negative_prompt']}\n"
+        lines = []
+        matching = re.compile(r"{(.+?)}")
+        for key in keys:
+            mapping_key = keys[key]
+            if mapping_key in info:
+                value = info[mapping_key]
+                if matching.search(key):
+                    groups = matching.findall(key)
+                    for group in groups:
+                        if group in info:
+                            key = key.replace(f"{{{group}}}", str(info[group]))
+                if value is not None:
+                    print(f"{key}: {value}")
+                    lines.append(f"{key}: {value}")
+        line = ", ".join(lines)
+        infotexts += line + "\n"
+        print(infotexts)
         r = {
             "info": {
-                "infotexts": [],
+                "infotexts": [infotexts],
             },
             "parameters": {},
-            "images": [],
+            "images": images,
         }
-        for node_id in enumerate(images):
-            for image_data in images[node_id]:
-                r["images"].append(image_data)
-                r["info"]["infotexts"].append(prompt)
-
         return r
 
-    async def arun(self, prompts, options={}):
+    async def saveImage(self, image_data, prompt, options={}, info={}):
+        try:
+            import modules.save as save
+
+            r = self.imageWrapper([image_data], prompt, options, info)
+            await save.async_save_images(r, options)
+        except Exception as e:
+            printError("Failed to save image", e)
+            printError("retrying to other method save image")
+            image = Image.open(io.BytesIO(image_data))
+            dirctory = options.get("dir", "outputs")
+            os.makedirs(dirctory, exist_ok=True)
+            now = datetime.datetime.now()
+            imagename = now.strftime("%H%M%S")
+            image.save(f"{dirctory}/img{imagename}.png")
+            printInfo(f"Image saved as {dirctory}/img{imagename}.png")
+
+    async def arun(self, prompts, options={}, infos=[]):
         client = ComufyClient()
-        ws = websocket.WebSocket()
-        for prompt in prompts:
-            client_id = str(uuid.uuid4())
-            ws.connect("ws://{}/ws?clientId={}".format(self.server_address, client_id))
-            images = await client.getImages(ws, prompt, client_id)
-            if images is None:
-                print("Failed to get images")
-                continue
 
-            # Commented out code to display the output images:
+        if "websocket" in options.get("save_image", []):
+            ws = websocket.WebSocket()
+            for i, prompt in enumerate(prompts):
+                info = infos[i]
+                printInfo(f"process queuing {i+1}/{len(prompts)}")
+                client_id = str(uuid.uuid4())
+                ws.connect(f"ws://{self.server_address}/ws?clientId={client_id}")
+                images = await client.getImages(ws, prompt, client_id)
+                if images is None:
+                    printInfo("Failed to get images")
+                    continue
 
-            for node_id in images:
-                for image_data in images[node_id]:
-                    import datetime
-                    import io
-                    import os
+                # Commented out code to display the output images:
 
-                    from PIL import Image
+                for node_id in images:
+                    for image_data in images[node_id]:
+                        await self.saveImage(image_data, prompt, options, info)
+                ws.close()
+        elif "ui" in options.get("save_image", ["ui"]):
+            for prompt in prompts:
+                client_id = str(uuid.uuid4())
+                try:
+                    images = await client.getImageFromUI(prompt, client_id, options)
+                    for image_data in images:
+                        if image_data["image"] is not None:
+                            await self.saveImage(image_data["image"], prompt, options)
+                        else:
+                            printInfo(f"image show url: {image_data['url']}")
+                except Exception as e:
+                    printError("Connection error", e)
 
-                    image = Image.open(io.BytesIO(image_data))
-                    dirctory = options.get("dir", "outputs")
-                    os.makedirs(dirctory, exist_ok=True)
-                    now = datetime.datetime.now()
-                    imagename = now.strftime("%H%M%S")
-                    image.save(f"{dirctory}/img{imagename}.png")
-            ws.close()
-
-    def run(self, prompt, options={}):
+    def run(self, prompt, options={}, infos=[]):
         import asyncio
 
-        asyncio.run(self.arun(prompt, options))
+        asyncio.run(self.arun(prompt, options, infos))
 
+    def convertSamplerNameWebUi2Comfy(self, name):
+        name = name.lower()
+        convert = {
+            "dpm++ 2m": {"sampler": "dpmpp_2m", "scheduler": "karras"},
+            "dpm++ sde": {"sampler": "dpmpp_sde", "scheduler": "karras"},
+            "dpm++ 2M SDE": {"sampler": "dpmpp_2m_sde", "scheduler": "karras"},
+            "dpm++ 2M SDE Heun": {
+                "sampler": "dpmpp_2m_sde_heun",
+                "scheduler": "karras",
+            },
+            "dpm++ 2S a": {"sampler": "dpmpp_2s_a", "scheduler": "karras"},
+            "dpm++ 3M SDE": {"sampler": "dpmpp_3m_sde", "scheduler": "karras"},
+            "euler a": {"sampler": "euler_ancestral", "scheduler": "normal"},
+            "euler": {"sampler": "euler", "scheduler": "normal"},
+            "lms": {"sampler": "lms", "scheduler": "normal"},
+            "heun": {"sampler": "heun", "scheduler": "normal"},
+            "dpm2": {"sampler": "dpm_2", "scheduler": "normal"},
+            "dpm2 a": {"sampler": "dpm_2_ancestral", "scheduler": "normal"},
+            "dpm fast": {"sampler": "dpm_fast", "scheduler": "normal"},
+            "dpm adaptive": {"sampler": "dpm_adaptive", "scheduler": "normal"},
+            "restart": {"sampler": None, "scheduler": "normal"},
+            "ddim": {"sampler": "ddim", "scheduler": "normal"},
+            "plms": {"sampler": "plms", "scheduler": "normal"},
+            "unipc": {"sampler": "unipc", "scheduler": "normal"},
+            "lcm": {"sampler": "lcm", "scheduler": "normal"},
+        }
+        if name in convert:
+            printDebug(f"Sampler {name} converted to {convert[name]}")
+            return convert[name]
+        return {"sampler": name, "scheduler": None}
+
+    @staticmethod
+    def txt2img(
+        prompts,
+        vae=None,
+        hostname="http://127.0.0.1:8188",
+        output_dir="outputs",
+        options={},
+    ):
+        try:
+            sd_model = options.get("sd_model", None)
+            vae = options.get("sd_vae", None)
+            wf = ComfyUIWorkflow()
+            if sd_model is None:
+                raise ValueError("Comfyui is model must needs to be set")
+            wf.setModel(sd_model)
+            if vae is not None:
+                wf.setVAE(vae)
+            workflows = []
+            lora_dir = options.get("lora_dir", "lora")
+            infos = []
+            for prompt_text in prompts:
+                opt = options.copy()
+                if prompt_text.get("prompt") is None:
+                    workflows.append(prompt_text)
+                    continue
+                prompt_text["lora_dir"] = lora_dir
+                prompt = prompt_text.get("prompt", "")
+                negative_prompt = prompt_text.get("negative_prompt", "")
+                sampler_name = prompt_text.get("sampler_name", "euler")
+                sampler = ComufyClient().convertSamplerNameWebUi2Comfy(sampler_name)
+                if sampler_name is None:
+                    raise ValueError(f"Sampler {sampler_name} not found")
+                prompt_text["sampler_name"] = sampler["sampler"]
+                scheduler = prompt_text.get("scheduler")
+                if scheduler is None:
+                    scheduler = sampler.get("scheduler", "normal")
+                prompt_text["scheduler"] = scheduler
+                for key in prompt_text:
+                    opt[key] = prompt_text[key]
+                workflow, info = wf.createWorkflow(prompt, negative_prompt, opt)
+                workflows.append(workflow)
+                infos.append(info)
+            opt["dir"] = output_dir
+            client = ComufyClient()
+            client.setHostname(hostname)
+            client.run(workflows, opt, infos)
+            return True
+        except Exception as e:
+            printError("Failed to run comfyui", e)
+            return False
+
+
+# options
+# --api-comfy   # use comfy api
+# --api-comfy-save ui    # save_image ["ui"]
+# --api-comfy-save both    # save_image ["ui", "save"]
+# --api-comfy-save save    # save_image ["websocket]
 
 if __name__ == "__main__":
     import time
@@ -502,7 +748,8 @@ if __name__ == "__main__":
         workflows = []
         infos = []
         options = {}
-        options["save_image"] = ["ui", "websocket"]
+        # options["save_image"] = ["ui", "websocket"]
+        options["save_image"] = ["websocket"]
         options["dir"] = "f:/ai/outputs/txt2img-images"
 
         for prompt_text in prompts:
@@ -511,7 +758,6 @@ if __name__ == "__main__":
                 workflows.append(prompt_text)  # native prompt
                 continue
             prompt_text["lora_dir"] = "e:\\ai\\models\\lora"
-            # print(json.dumps(prompt_text, indent=4, ensure_ascii=False))
             prompt = prompt_text.get("prompt", "")
             prompt_text["sampler_name"] = "euler_ancestral"
             prompt_text["scheduler"] = "normal"
@@ -526,4 +772,4 @@ if __name__ == "__main__":
     duration = time.time() - start_time
     minutes = duration // 60
     seconds = duration % 60
-    print(f"Duration: {minutes}m {seconds}s")
+    printInfo(f"Total Duration: {minutes}m {seconds}s")

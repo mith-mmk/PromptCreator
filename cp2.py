@@ -139,6 +139,22 @@ def main(args):
         if args.api_type == "interrogate":
             interrogate_from_args(args)
             return True
+    if args.api_comfy and args.api_mode:
+        Logger.error("api-comfy and api-mode is not same time")
+        return False
+    save_image = []
+    if args.api_comfy:
+        api_mode = "comfy"
+        save_mode = args.api_comfy_save.lower()
+        if save_mode == "save":
+            save_image = ["websocket"]
+        elif save_mode == "both":
+            save_image = ["ui", "save"]
+        elif save_mode == "ui":
+            save_image = ["ui"]
+        else:
+            Logger.error("api-comfy-save option error use [save, both, ui]")
+            return False
 
     if args.input is not None:
         Logger.debug(f"input: {args.input}")
@@ -287,6 +303,27 @@ def main(args):
         if not result:
             return False
         # api.shutdown()
+    elif args.api_comfy:
+        import modules.comfyui as comfyui
+
+        sd_model = args.api_set_sd_model or options.get("sd_model")
+        sd_vae = args.api_set_sd_vae or options.get("sd_vae", "None")
+        if sd_vae == "Automatic":
+            sd_vae = None
+        opt["sd_model"] = sd_model
+        opt["sd_vae"] = sd_vae
+        opt["save_image"] = save_image
+        opt["lora_dir"] = args.api_comfy_lora
+        result = comfyui.ComufyClient.txt2img(
+            output_text,
+            hostname=args.api_base,
+            output_dir=args.api_output_dir,
+            options=opt,
+        )
+
+        Logger.debug(result)
+        if not result:
+            return False
     return True
 
 
@@ -468,12 +505,31 @@ def run_from_args(command_args=None):
         "--mask-blur", type=int, default=None, help="Mask blur for img2img"
     )
 
+    # profiles
+
     parser.add_argument(
         "--profile",
         type=str,
         default=None,
         help="profile for create prompt, profile is override yml",
     )
+
+    # comfyui
+
+    parser.add_argument(
+        "--api-comfy-save",
+        type=str,
+        default="save",
+        help="on save place for comfyui api ui, save, both",
+    )
+
+    parser.add_argument(
+        "--api-comfy-lora",
+        type=str,
+        default="models/lora",
+        help="comfyui lora model search directory for local",
+    )
+
     parser.add_argument(
         "--debug", type=bool, nargs="?", const=True, default=False, help="debug mode"
     )
@@ -506,6 +562,16 @@ def run_from_args(command_args=None):
         const=True,
         default=False,
         help="multibyte escaped json",
+    )
+
+    # comfyui
+    parser.add_argument(
+        "--api-comfy",
+        type=bool,
+        nargs="?",
+        const=True,
+        default=False,
+        help="use comfyui api alternative to webui",
     )
 
     args = parser.parse_args(command_args)

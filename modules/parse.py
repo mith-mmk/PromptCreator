@@ -265,8 +265,13 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None):
     return json_raw
 
 
-# parsing json from image's metadata
 def create_img2params(imagefile):
+    parameters, _ = imgloader(imagefile, img2img=True)
+    return create_parms(parameters)
+
+
+# parsing json from image's metadata
+def create_parms(parameters):
     schema = [
         "enable_hr",
         "denoising_strength",
@@ -296,8 +301,6 @@ def create_img2params(imagefile):
         "s_noise",
         "sampler",
     ]
-
-    parameters, _ = imgloader(imagefile, img2img=True)
 
     # convert txt2img parameters to img2img parameters
 
@@ -373,6 +376,11 @@ def create_img2params(imagefile):
 
 # parsing json from image's metadata
 def create_img2txt(imagefile):
+    parameters, _ = imgloader(imagefile)
+    return create_infotext(parameters)
+
+
+def create_infotext(parameters):
     schema = [
         "enable_hr",
         "denoising_strength",
@@ -406,7 +414,6 @@ def create_img2txt(imagefile):
         "sd_vae",
     ]
 
-    parameters, _ = imgloader(imagefile)
     # convert txt2img parameters to img2img parameters
 
     if "hires_upscale" in parameters:
