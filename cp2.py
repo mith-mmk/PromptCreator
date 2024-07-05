@@ -354,6 +354,7 @@ def run_from_args(command_args=None):
 
     parser.add_argument(
         "--api-mode",
+        "-x",
         type=bool,
         nargs="?",
         const=True,
@@ -363,6 +364,7 @@ def run_from_args(command_args=None):
 
     parser.add_argument(
         "--api-base",
+        "-H",
         type=str,
         default="http://127.0.0.1:7860",
         help="direct call api e.g http://127.0.0.1:7860",
@@ -374,6 +376,7 @@ def run_from_args(command_args=None):
 
     parser.add_argument(
         "--api-output-dir",
+        "-o",
         type=str,
         default="outputs",
         help="api output images directory",
@@ -381,6 +384,7 @@ def run_from_args(command_args=None):
 
     parser.add_argument(
         "--api-input-json",
+        "-i",
         type=str,
         default=None,
         help="api direct inputs from a json file",
@@ -388,6 +392,7 @@ def run_from_args(command_args=None):
 
     parser.add_argument(
         "--api-filename-pattern",
+        "-P",
         type=str,
         default=None,
         help="api outputs filename pattern default: [num]-[seed]",
@@ -395,6 +400,7 @@ def run_from_args(command_args=None):
 
     parser.add_argument(
         "--max-number",
+        "-N",
         type=int,
         default=-1,
         help="override option.number for yaml mode",
@@ -418,6 +424,7 @@ def run_from_args(command_args=None):
 
     parser.add_argument(
         "--json-verbose",
+        "-j",
         type=bool,
         nargs="?",
         const=True,
@@ -435,6 +442,7 @@ def run_from_args(command_args=None):
     )
     parser.add_argument(
         "--api-set-sd-model",
+        "-C",
         type=str,
         default=None,
         help='Change sd model "[Filename]" e.g. wd-v1-3 for "wd-v1-3.ckpt"',
@@ -442,6 +450,7 @@ def run_from_args(command_args=None):
 
     parser.add_argument(
         "--api-set-sd-vae",
+        "-V",
         type=str,
         default="Automatic",
         help='Change sd vae "[Filename]" e.g. "Anything-V3.0.vae.pt", None is not using VAE',
@@ -467,24 +476,34 @@ def run_from_args(command_args=None):
         help="save extend meta data",
     )
     parser.add_argument(
-        "--image-type", type=str, default="png", help="image type jpg or png"
+        "--image-type",
+        type=str,
+        default="png",
+        help="image type jpg, png or webp",
+        choices=["jpg", "png", "webp"],
     )
     parser.add_argument(
-        "--image-quality", type=int, default=80, help="image quality 1-100"
+        "--image-quality",
+        type=int,
+        default=80,
+        help="image quality 1-100",
     )
 
     # img2img
 
     parser.add_argument(
         "--api-type",
+        "-t",
         type=str,
         default="txt2img",
+        choices=["txt2img", "img2img", "interrogate"],
         help='call API type "txt2img", "img2img", "interrogate" default txt2img',
     )
 
     parser.add_argument(
         "--interrogate",
         type=str,
+        choices=["clip", "deepdanbooru"],
         default=None,
         help='If an image does not have prompt, it uses alternative interrogate API or api-type="interrogate". model "clip" or "deepdanbooru"',
     )
@@ -508,6 +527,7 @@ def run_from_args(command_args=None):
 
     parser.add_argument(
         "--profile",
+        "-p",
         type=str,
         default=None,
         help="profile for create prompt, profile is override yml",
@@ -517,9 +537,11 @@ def run_from_args(command_args=None):
 
     parser.add_argument(
         "--api-comfy-save",
+        "-S",
         type=str,
         default="save",
-        help="on save place for comfyui api ui, save, both",
+        choices=["save", "both", "ui"],
+        help="on save place for comfyui api ui(save to comfyui), save(save to local, webui like metadata), both(save to both, comfyui metadata)",
     )
 
     parser.add_argument(
@@ -559,6 +581,7 @@ def run_from_args(command_args=None):
     # comfyui
     parser.add_argument(
         "--api-comfy",
+        "-X",
         type=bool,
         nargs="?",
         const=True,
@@ -589,7 +612,6 @@ if __name__ == "__main__":
     try:
         result = run_from_args()
         if not result:
-            print("Not result Error")
             exit(1)
     except Exception as e:
         print(f"Error, help is --help option {e}")

@@ -44,11 +44,7 @@ def save_images_wapper(r, opt={"dir": "./outputs"}):
     asyncio.run(async_save_images(r, opt=opt))
 
 
-async def async_save_images(r, opt={"dir": "./outputs"}):
-    import copy
-
-    opt = copy.deepcopy(opt)
-
+async def create_files(r, opt={"dir": "./outputs"}):
     dir = opt["dir"]
 
     nameseed = opt.get("filename_pattern", "[num]-[seed]")
@@ -122,9 +118,6 @@ async def async_save_images(r, opt={"dir": "./outputs"}):
         info = r["info"]
     Logger.debug("info", info)
 
-    count = len(r["images"])
-    Logger.stdout(f"\033[Kreturn {count} images")
-
     filename_pattern = {}
 
     variables = get_variables(opt)
@@ -163,9 +156,33 @@ async def async_save_images(r, opt={"dir": "./outputs"}):
     Logger.debug(
         "filename_pattern", json.dumps(filename_pattern, ensure_ascii=False, indent=2)
     )
+    return filename_pattern, need_names, num, nameseed
+
+
+async def async_save_images(r, opt={"dir": "./outputs"}):
+    import copy
+
+    Logger.debug("deepcopy opt")
+    opt = copy.deepcopy(opt)
+    Logger.debug("aysnc_save_images")
+    try:
+        filename_pattern, need_names, num, nameseed = await create_files(r, opt)
+    except Exception as e:
+        Logger.error("create_files error", e)
+        raise e
+    dir = opt["dir"]
+
+    variables = get_variables(opt)
+    count = len(r["images"])
+    Logger.stdout(f"\033[Kreturn {count} images")
+    if isinstance(r["info"], str):
+        info = json.loads(r["info"])
+    else:
+        info = r["info"]
 
     for n, i in enumerate(r["images"]):
         try:
+            Logger.debug("save", n)
             meta = info["infotexts"][n]
             if isinstance(i, str):
                 image = Image.open(io.BytesIO(base64.b64decode(i)))
@@ -260,6 +277,8 @@ def create_filename(nameseed, num, filename_pattern, need_names, parameters, opt
     filename = nameseed + ".png"
     if opt.get("image_type") == "jpg":
         filename = nameseed + ".jpg"
+    elif opt.get("image_type") == "webp":
+        filename = nameseed + ".webp"
 
     for seeds in need_names:
         replacer = ""
@@ -422,6 +441,18 @@ def image_save(image, filename, meta, extendend_meta, opt={}):
             Logger.error("piexif not found")
             image.save(filename, quality=quality)
         Logger.debug("saved")
+    elif opt.get("image_type") == "webp":
+        import piexif
+
+        quality = opt.get("image_quality", 80)
+        bytes_text = bytes(meta, encoding="utf-16be")
+        exif_dict = {
+            "Exif": {
+                piexif.ExifIFD.UserComment: b"UNICODE\0" + bytes_text,
+            }
+        }
+        exif_bytes = piexif.dump(exif_dict)
+        image.save(filename, "webp", exif=exif_bytes, quality=quality)
     else:
         Logger.debug("save png", filename)
         pnginfo = PngImagePlugin.PngInfo()
