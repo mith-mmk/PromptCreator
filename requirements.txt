@@ -3,3 +3,4 @@ httpx>=0.24.1 # gradio
 Pillow>=9.4.0,<11.0  # gradio
 PyYAML>=6.0,<7.0  # gradio
 piexif # web ui
+websocket-client # comfyui
