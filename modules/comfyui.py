@@ -55,6 +55,7 @@ class ComfyUIWorkflow:
         self.options = options
         self.checkpoint = None
         self.vae = None
+        self.wf_num = 3
 
     # todo:
     # ✓ clip layer
@@ -84,14 +85,17 @@ class ComfyUIWorkflow:
                 "clip": clip,
             },
         }
-        return flow
+        output = {"clip": 0}
+
+        return flow, output
 
     def createLoadCheckpoint(self, checkpoint):
         flow = {
             "class_type": "CheckpointLoaderSimple",
             "inputs": {"ckpt_name": checkpoint},
         }
-        return flow
+        output = {"model": 0, "clip": 1, "vae": 2}
+        return flow, output
 
     def createLoadVAE(self, vae):
         flow = {
@@ -100,7 +104,8 @@ class ComfyUIWorkflow:
                 "vae_name": vae,
             },
         }
-        return flow
+        output = {"vae": 0}
+        return flow, output
 
     def createKSampler(
         self, latent_from, model_from, positive_from, negative_from, options
@@ -110,37 +115,36 @@ class ComfyUIWorkflow:
             "inputs": {
                 "cfg": options.get("cfg", 8),
                 "denoise": options.get("denoise", 1),
-                "latent_image": [latent_from, 0],
-                "model": [model_from, 0],
-                "positive": [positive_from, 0],
-                "negative": [negative_from, 0],
+                "latent_image": latent_from,
+                "model": model_from,
+                "positive": positive_from,
+                "negative": negative_from,
                 "sampler_name": options.get("sampler_name", "euler"),
                 "scheduler": options.get("scheduler", "normal"),
                 "seed": options.get("seed", -1),
                 "steps": options.get("steps", 20),
             },
         }
-        return flow
+        output = {"latent": 0}
+        return flow, output
 
     def createEncodeVAE(self, fromSamples, fromVae, otherVae=False):
-        if otherVae:
-            index = 0
-        else:
-            index = 2  # model include vae
         flow = {
             "class_type": "VAEDecode",
-            "inputs": {"samples": [fromSamples, 0], "vae": [fromVae, index]},
+            "inputs": {"samples": fromSamples, "vae": fromVae},
         }
-        return flow
+        output = {"images": 0}
+        return flow, output
 
     def createSaveWebSocketImage(self, image_form, options):
         flow = {
             "class_type": "SaveImageWebsocket",
             "inputs": {
-                "images": [image_form, 0],
+                "images": image_form,
             },
         }
-        return flow
+        output = {}
+        return flow, output
 
     def createSaveImage(self, image_form, options):
         flow = {
@@ -149,11 +153,11 @@ class ComfyUIWorkflow:
                 "filename_prefix": options.get(
                     "prefix", options.get("filename", "Comfy")
                 ),
-                # "filename_suffix": options.get("suffix", f"-{options.get('seed', 0)}"),
-                "images": [image_form, 0],
+                "images": image_form,
             },
         }
-        return flow
+        output = {}
+        return flow, output
 
     def createEmptyLatentImage(self, options):
         flow = {
@@ -164,45 +168,51 @@ class ComfyUIWorkflow:
                 "width": options.get("width", 512),
             },
         }
-        return flow
+        output = {"latent": 0}
+        return flow, output
 
     def createConditioningConcat(self, from_prompt, to_prompt):
         flow = {
             "class_type": "ConditioningConcat",
             "inputs": {
-                "conditioning_to": [to_prompt, 0],
-                "conditioning_from": [from_prompt, 0],
+                "conditioning_to": to_prompt,
+                "conditioning_from": from_prompt,
             },
         }
-        return flow
+        output = {"conditioning": 0}
+        return flow, output
 
-    def createBatchTextEncode(self, wf, prompt, wf_num, clip, type):
+    def createBatchTextEncode(self, wf, prompt, clip, type):
         prompts = prompt.split("BREAK")
         from_prompt = None
         if type == "sdxl":
-            wf[str(wf_num)] = self.createCLIPTextEncodeSDXL(prompts[0], clip)
+            wf[str(self.wf_num)], o = self.createCLIPTextEncodeSDXL(prompts[0], clip)
         else:
-            wf[str(wf_num)] = self.createCLIPTextEncode(prompts[0], clip)
-        from_prompt = str(wf_num)
+            wf[str(self.wf_num)], o = self.createCLIPTextEncode(prompts[0], clip)
+        from_prompt = [str(self.wf_num), o["conditioning"]]
         prompts = prompts[1:]
         for prompt in prompts:
-            wf_num += 1
+            self.wf_num += 1
             if type == "sdxl":
-                wf[str(wf_num)] = self.createCLIPTextEncodeSDXL(prompt, clip)
+                wf[str(self.wf_num)], o = self.createCLIPTextEncodeSDXL(prompt, clip)
             else:
-                wf[str(wf_num)] = self.createCLIPTextEncode(prompt, clip)
-            to_prompt = str(wf_num)
-            wf_num += 1
-            wf[str(wf_num)] = self.createConditioningConcat(from_prompt, to_prompt)
-            from_prompt = str(wf_num)
-        return wf, wf_num
+                wf[str(self.wf_num)], o = self.createCLIPTextEncode(prompt, clip)
+            to_prompt = [str(self.wf_num), o["conditioning"]]
+            self.wf_num += 1
+            wf[str(self.wf_num)], o = self.createConditioningConcat(
+                from_prompt, to_prompt
+            )
+            from_prompt = [str(self.wf_num), o["conditioning"]]
+        output = {"conditioning": 0}
+        return wf, output
 
     def createCLIPTextEncode(self, prompt, clip):
         flow = {
             "class_type": "CLIPTextEncode",
             "inputs": {"clip": clip, "text": prompt},
         }
-        return flow
+        output = {"conditioning": 0}
+        return flow, output
 
     def createCLIPTextEncodeSDXL(self, text, clip):
         flow = {
@@ -219,26 +229,8 @@ class ComfyUIWorkflow:
                 "target_height": 4096,
             },
         }
-        return flow
-
-    # local でしか使えないので、使わない
-    def searchLora(self, loraname, options, subfolder=""):
-        import os
-
-        lora_dir = options.get("lora_dir")
-        if lora_dir is None:
-            return loraname + ".safetensors"
-        lora_dir = os.path.join(lora_dir, subfolder)
-        if os.path.exists(os.path.join(lora_dir, loraname + ".safetensors")):
-            return os.path.join(subfolder, loraname + ".safetensors")
-        lora_dirs = os.scandir(lora_dir)
-        for dir in lora_dirs:
-            if dir.is_dir():
-                next_subfolder = os.path.join(subfolder, dir.name)
-                result = self.searchLora(loraname, options, next_subfolder)
-                if result is not None:
-                    return result
-        return loraname + ".safetensors"
+        output = {"conditioning": 0}
+        return flow, output
 
     def createLoraLoader(self, fromModel, clip, loraname, weight, options={}):
         if not loraname.endswith(".safetensors"):
@@ -249,11 +241,23 @@ class ComfyUIWorkflow:
                 "lora_name": loraname,
                 "strength_model": weight,
                 "strength_clip": weight,
-                "model": [fromModel, 0],
+                "model": fromModel,
                 "clip": clip,
             },
         }
-        return flow
+        output = {"model": 0, "clip": 1}
+        return flow, output
+
+    # example
+    # createCustom("UpscaleLatent", {"upscale_method": "nearest-exact", "width": 1024, "height": 1024, "clop": "disabled"}, {"output": {"latent": 0}})
+
+    def createCustom(self, class_type, input, options={}):
+        flow = {
+            "class_type": class_type,
+            "inputs": input,
+        }
+        output = options.get("output", {})
+        return flow, output
 
     def createWorkflowSDXL(self, prompt, options={}):
         options["type"] = "sdxl"
@@ -264,11 +268,13 @@ class ComfyUIWorkflow:
         return self.createWorkflow(prompt, negative_prompt, options)
 
     def createWorkflow(self, prompt, negative_prompt, options={}):
+        printDebug("Creating workflow")
         info = {
             "prompt": prompt,
             "negative_prompt": negative_prompt,
         }
         other_vae = False
+        printDebug(f"parse prompt {prompt}")
         lora_matcher = re.compile(r"\<lora\:(.+?)\:([0-9\.]+)\>")
         postive_loras = lora_matcher.findall(prompt)
         prompt = lora_matcher.sub("", prompt)
@@ -290,84 +296,94 @@ class ComfyUIWorkflow:
         info["seed"] = seed
 
         workflow = {}
-        wf_num = 3
+        self.wf_num = 3
         base_width = 1024 if options.get("type") == "sdxl" else 512
         width = options.get("width", base_width)
         base_height = 1024 if options.get("type") == "sdxl" else 512
         height = options.get("height", base_height)
         batch_size = options.get("batch_size", 1)
 
-        workflow[str(wf_num)] = self.createEmptyLatentImage(
+        printDebug(f"Creating empty latent image")
+        workflow[str(self.wf_num)], o = self.createEmptyLatentImage(
             {
                 "batch_size": batch_size,
                 "height": height,
                 "width": width,
             }
         )
-        latent_from = str(wf_num)
-        wf_num += 1
+        latent_from = [str(self.wf_num), o["latent"]]
+        self.wf_num += 1
         info["width"] = width
         info["height"] = height
         info["batch_size"] = batch_size
 
-        workflow[str(wf_num)] = self.createLoadCheckpoint(checkpoint)
-        model_from = str(wf_num)
-        positive_clip_from = [model_from, 1]  # 1 is clip index
-        negative_clip_from = [model_from, 1]
-        vae_from = model_from
-        wf_num += 1
+        printDebug(f"checkpoint: {checkpoint}")
+        workflow[str(self.wf_num)], o = self.createLoadCheckpoint(checkpoint)
+        model_from = [str(self.wf_num), o["model"]]
+        positive_clip_from = [str(self.wf_num), o["clip"]]  # 1 is clip index
+        negative_clip_from = [str(self.wf_num), o["clip"]]
+        vae_from = [str(self.wf_num), o["vae"]]
+        self.wf_num += 1
         info["sd_model_name"] = checkpoint
 
+        printDebug(f"set stop at clip layer")
         if options.get("stop_at_clip_layer") is not None:
-            workflow[str(wf_num)] = self.creatCLIPSetLastLayer(
+            workflow[str(self.wf_num)], o = self.creatCLIPSetLastLayer(
                 options.get("stop_at_clip_layer"), positive_clip_from
             )
-            positive_clip_from = [str(wf_num), 0]
-            negative_clip_from = [str(wf_num), 0]
-            wf_num += 1
+            positive_clip_from = [str(self.wf_num), o["clip"]]
+            negative_clip_from = [str(self.wf_num), o["clip"]]
+            self.wf_num += 1
             info["clip_skip"] = abs(options.get("stop_at_clip_layer", 1))
 
+        printDebug(f"vae: {vae}")
         if vae != "None":
-            workflow[str(wf_num)] = self.createLoadVAE(vae)
-            vae_from = str(wf_num)
-            wf_num += 1
+            workflow[str(self.wf_num)], o = self.createLoadVAE(vae)
+            vae_from = [str(self.wf_num), o["vae"]]
+            self.wf_num += 1
             other_vae = True
         info["sd_vae_name"] = vae
         if vae == "None":
             info["sd_vae_name"] = None
 
+        printDebug(f"load lora")
         for lora, weight in postive_loras:
-            wf = self.createLoraLoader(
+            wf, o = self.createLoraLoader(
                 model_from, positive_clip_from, lora, float(weight), options
             )
             if wf is not None:
-                workflow[str(wf_num)] = wf
-                model_from = str(wf_num)
-                wf_num += 1
-                positive_clip_from = [model_from, 1]
+                workflow[str(self.wf_num)] = wf
+                model_from = [str(self.wf_num), o["model"]]
+                positive_clip_from = [str(self.wf_num), o["clip"]]
+                self.wf_num += 1
 
         for lora, weight in negative_loras:
-            wf = self.createLoraLoader(
+            wf, o = self.createLoraLoader(
                 negative_clip_from, negative_prompt, lora, float(weight), options
             )
             if wf is not None:
-                workflow[str(wf_num)] = wf
-                model_from = str(wf_num)
-                wf_num += 1
-                negative_clip_from = [model_from, 1]
+                workflow[str(self.wf_num)] = wf
+                model_from = [str(self.wf_num), o["model"]]
+                negative_clip_from = [str(self.wf_num), o["clip"]]
+                self.wf_num += 1
 
-        workflow, wf_num = self.createBatchTextEncode(
-            workflow, prompt, wf_num, positive_clip_from, options.get("type")
+        printDebug(f"create batch text encode")
+        workflow, o = self.createBatchTextEncode(
+            workflow, prompt, positive_clip_from, options.get("type")
         )
-        positive_from = str(wf_num)
-        wf_num += 1
-        workflow, wf_num = self.createBatchTextEncode(
-            workflow, negative_prompt, wf_num, negative_clip_from, options.get("type")
+        positive_from = [str(self.wf_num), o["conditioning"]]
+        self.wf_num += 1
+        workflow, o = self.createBatchTextEncode(
+            workflow,
+            negative_prompt,
+            negative_clip_from,
+            options.get("type"),
         )
-        negative_from = str(wf_num)
-        wf_num += 1
+        negative_from = [str(self.wf_num), o["conditioning"]]
+        self.wf_num += 1
 
-        workflow[str(wf_num)] = self.createKSampler(
+        printDebug(f"create k sampler")
+        workflow[str(self.wf_num)], o = self.createKSampler(
             latent_from,
             model_from,
             positive_from,
@@ -381,8 +397,8 @@ class ComfyUIWorkflow:
                 "steps": options.get("steps", 20),
             },
         )
-        sampler_from = str(wf_num)
-        wf_num += 1
+        sampler_from = [str(self.wf_num), o["latent"]]
+        self.wf_num += 1
         info["cfg_scale"] = options.get("cfg_scale", 7)
         # info["denoising_strength"] = options.get("nomal_denoising_strength")
         info["sampler_name"] = options.get(
@@ -391,14 +407,18 @@ class ComfyUIWorkflow:
         info["scheduler"] = options.get("scheduler", "karras")
         info["steps"] = options.get("steps", 20)
 
-        workflow[str(wf_num)] = self.createEncodeVAE(sampler_from, vae_from, other_vae)
-        encode_from = str(wf_num)
-        wf_num += 1
+        printDebug(f"create encode vae")
+        workflow[str(self.wf_num)], o = self.createEncodeVAE(
+            sampler_from, vae_from, other_vae
+        )
+        encode_from = [str(self.wf_num), o["images"]]
+        self.wf_num += 1
+        printDebug(f"create save image")
         if "ui" in options.get("save_image", []):
-            workflow[str(wf_num)] = self.createSaveImage(encode_from, options)
-            wf_num += 1
+            workflow[str(self.wf_num)], o = self.createSaveImage(encode_from, options)
+            self.wf_num += 1
         if "websocket" in options.get("save_image", ["websocket"]):
-            workflow["save_image_websocket_node"] = self.createSaveWebSocketImage(
+            workflow["save_image_websocket_node"], o = self.createSaveWebSocketImage(
                 encode_from, options
             )
         return workflow, info
@@ -411,6 +431,18 @@ class ComufyClient:
         self.server_address = self.hostname.replace("http://", "").replace(
             "https://", ""
         )
+
+    async def getModels(self):
+        res = await self.client.get(
+            "http://localhost:8188/object_info/CheckpointLoaderSimple"
+        )
+        if res.status_code != 200:
+            printError(f"Failed to get models {res.text}")
+            return None
+        res_json = res.json()
+        models = res_json["input"]["required"]["ckpt_name"]  # [][]
+
+        return models
 
     def setHostname(self, hostname):
         self.hostname = hostname
@@ -515,7 +547,10 @@ class ComufyClient:
                         images_output.append(out[8:])
                         output_images[current_node] = images_output
             return output_images
-
+        except KeyboardInterrupt:
+            printInfo("Interrupted")
+            await self.client.post(f"{self.hostname}/interrupt")
+            raise KeyboardInterrupt
         except Exception as e:
             return None
 
@@ -594,16 +629,23 @@ class ComufyClient:
         return r, options
 
     async def saveImage(self, image_data, prompt, options={}, info={}, prompt_text={}):
-
-        # print(prompt_text.get("verbose", {}).get("values", {}).get("title", "None"))
         try:
             import modules.save as save
 
-            r, options = await self.imageWrapper(
-                [image_data], prompt_text, options, info
-            )
+            try:
 
-            await save.async_save_images(r, options)
+                r, options = await self.imageWrapper(
+                    [image_data], prompt_text, options, info
+                )
+            except Exception as e:
+                printError("Failed to wrap image", e)
+                raise e
+
+            try:
+                await save.async_save_images(r, options)
+            except Exception as e:
+                printError("Failed to async save image", e)
+                raise e
         except Exception as e:
             printError("Failed to save image", e)
             printError("retrying to other method save image")
@@ -614,6 +656,28 @@ class ComufyClient:
             imagename = now.strftime("%H%M%S")
             image.save(f"{dirctory}/img{imagename}.png")
             printInfo(f"Image saved as {dirctory}/img{imagename}.png")
+
+    async def uploadImage(
+        self, filename, binary=None, minetype="image/png", overwrite=False
+    ):
+        if binary is None:
+            with open(filename, "rb") as f:
+                binary = f.read()
+        else:
+            file = (filename, binary, minetype)
+
+        payload = {}
+        payload["image"] = file
+        if overwrite:
+            payload["overwrite"] = True
+
+        res = await self.client.post(
+            "http://localhost:8188/upload/image", files=payload
+        )
+        if res.status_code != 200:
+            printError(f"Failed to upload image {filename} {res.text}")
+            return None
+        return res.json()
 
     async def arun(self, prompts, options={}):
         client = ComufyClient()
