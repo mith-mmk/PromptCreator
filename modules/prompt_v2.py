@@ -614,11 +614,12 @@ def prompt_random_v2(yml, max_number, input=[], pre_choice=[], excludes=[]):
     else:
         output = input
 
+    Logger.debug(f"prompt_random_v2 {output}")
     for idx, current in enumerate(output):
         Logger.debug(f"prompt_random_v2 {idx} {current}")
         current_variables = {}
         attributes = None
-        Logger.debug(f"variables choices")
+        Logger.debug(f"variables pre-choices")
         for key in pre_choice:
             parsed_choice = parced_choice(yml, key)
             current_variables[key] = parsed_choice["variables"]
@@ -626,7 +627,7 @@ def prompt_random_v2(yml, max_number, input=[], pre_choice=[], excludes=[]):
                 if attributes is None:
                     attributes = {}
                     attributes[key] = parsed_choice["attributes"]
-
+        Logger.debug(f"variables choices")
         for key in variables:
             if key not in pre_choice:
                 current_variables[key], attribute = choice_v2(variables[key])
@@ -634,8 +635,8 @@ def prompt_random_v2(yml, max_number, input=[], pre_choice=[], excludes=[]):
                     attributes = {}
                 if attribute is not None:
                     attributes[key] = attribute
+        Logger.debug(f"current check")
         if current is None:
-            Logger.debug(f"prompt_random_v2 copy current")
             # yml commands を コピー
             current = copy.deepcopy(yml.get("command", {}))
             verbose = {}
@@ -649,8 +650,12 @@ def prompt_random_v2(yml, max_number, input=[], pre_choice=[], excludes=[]):
             # info をコピー
             for key in yml.get("info", {}):
                 verbose[key] = yml["info"][key]
+            Logger.debug(json.dumps(current, ensure_ascii=False, indent=4))
             current["verbose"] = verbose
+            Logger.debug(f"copy current end")
+        Logger.verbose(f"promt formula {idx}")
         try:
+            Logger.debug(f"prompt_random_v2 {idx}")
             current = prompt_formula_v2(
                 current,
                 current_variables,
@@ -661,7 +666,9 @@ def prompt_random_v2(yml, max_number, input=[], pre_choice=[], excludes=[]):
             )
         except Exception as e:
             Logger.error(f"Error happen prompt_formula_v2 {e}")
+            Logger.error(f"{current}")
             raise Exception(f"Error happen prompt_formula_v2 {e}")
+        Logger.debug(f"prompt_random_v2 {idx} {current}")
         if isinstance(current, dict):
             Logger.debug(f"get verbose {current}")
             current.get("verbose", {})["variables"] = current_variables

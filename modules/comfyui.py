@@ -11,7 +11,6 @@ import urllib.request
 import uuid
 
 import httpx
-
 # import httpx_ws
 import websocket  # NOTE: websocket-client (https://github.com/websocket-client/websocket-client)
 from PIL import Image
@@ -59,11 +58,17 @@ class ComfyUIWorkflow:
 
     # todo:
     # ✓ clip layer
-    # token BREAK over 75 tokens
+    # ✓ token BREAK over 75 tokens
+    # ✓ lora
+    # ✓ BREAK
+    # AND
+    # [sentens]
+    # [from:to:average]
     # hiresfix
     # img2img
-    # infotext warpper for prompt
-    # save_images wrapper
+    # ✓ infotext warpper for prompt
+    # ✓ save_images wrapper
+    # search alternative model
     # img2video and other
 
     def setModel(self, model):
@@ -182,7 +187,35 @@ class ComfyUIWorkflow:
         output = {"conditioning": 0}
         return flow, output
 
-    def createBatchTextEncode(self, wf, prompt, clip, type):
+    def createConditioningAverage(self, from_prompt, to_prompt, average):
+        flow = {
+            "class_type": "ConditioningAverage",
+            "inputs": {
+                "conditioning_to": to_prompt,
+                "conditioning_from": from_prompt,
+                "conditioning_to_strength": average,
+            },
+        }
+        output = {"conditioning": 0}
+        return flow, output
+
+    def createConditioningCombine(self, from_prompt, to_prompt):
+        flow = {
+            "class_type": "ConditioningCombine",
+            "inputs": {
+                "conditioning_to": to_prompt,
+                "conditioning_from": from_prompt,
+            },
+        }
+        output = {"conditioning": 0}
+        return flow, output
+
+    def createBatchTextEncode(self, wf, prompt, clip, type, steps=20):
+        # and_matcher = re.compile(r"AND")
+        blacket_matcher = re.compile(r"\[([^\:\|]?)\]")
+        blackets_all = blacket_matcher.findall(prompt)
+        for blacket in blackets_all:
+            prompt = prompt.replace(f"[{blacket}]", f"({blacket}:0.91")
         prompts = prompt.split("BREAK")
         from_prompt = None
         if type == "sdxl":
@@ -193,13 +226,21 @@ class ComfyUIWorkflow:
         prompts = prompts[1:]
         for prompt in prompts:
             self.wf_num += 1
-            if type == "sdxl":
-                wf[str(self.wf_num)], o = self.createCLIPTextEncodeSDXL(prompt, clip)
-            else:
-                wf[str(self.wf_num)], o = self.createCLIPTextEncode(prompt, clip)
+            wf, o = self.createBatchTextEncode(wf, prompt, clip, type, steps)
             to_prompt = [str(self.wf_num), o["conditioning"]]
             self.wf_num += 1
             wf[str(self.wf_num)], o = self.createConditioningConcat(
+                from_prompt, to_prompt
+            )
+            from_prompt = [str(self.wf_num), o["conditioning"]]
+        prompts = prompt.split("AND")
+        prompts = prompts[1:]
+        for prompt in prompts:
+            self.wf_num += 1
+            wf, o = self.createBatchTextEncode(wf, prompt, clip, type, steps)
+            to_prompt = [str(self.wf_num), o["conditioning"]]
+            self.wf_num += 1
+            wf[str(self.wf_num)], o = self.createConditioningCombine(
                 from_prompt, to_prompt
             )
             from_prompt = [str(self.wf_num), o["conditioning"]]
@@ -276,6 +317,7 @@ class ComfyUIWorkflow:
         other_vae = False
         printDebug(f"parse prompt {prompt}")
         lora_matcher = re.compile(r"\<lora\:(.+?)\:([0-9\.]+)\>")
+
         postive_loras = lora_matcher.findall(prompt)
         prompt = lora_matcher.sub("", prompt)
         negative_loras = lora_matcher.findall(negative_prompt)
@@ -369,7 +411,11 @@ class ComfyUIWorkflow:
 
         printDebug(f"create batch text encode")
         workflow, o = self.createBatchTextEncode(
-            workflow, prompt, positive_clip_from, options.get("type")
+            workflow,
+            prompt,
+            positive_clip_from,
+            options.get("type"),
+            options.get("steps", 20),
         )
         positive_from = [str(self.wf_num), o["conditioning"]]
         self.wf_num += 1
@@ -378,6 +424,7 @@ class ComfyUIWorkflow:
             negative_prompt,
             negative_clip_from,
             options.get("type"),
+            options.get("steps", 20),
         )
         negative_from = [str(self.wf_num), o["conditioning"]]
         self.wf_num += 1
@@ -425,9 +472,9 @@ class ComfyUIWorkflow:
 
 
 class ComufyClient:
-    def __init__(self) -> None:
+    def __init__(self, hostname="http://127.0.0.1:8188") -> None:
         self.client = httpx.AsyncClient()
-        self.hostname = "http://127.0.0.1:8188"
+        self.hostname = hostname
         self.server_address = self.hostname.replace("http://", "").replace(
             "https://", ""
         )
@@ -440,7 +487,7 @@ class ComufyClient:
             printError(f"Failed to get models {res.text}")
             return None
         res_json = res.json()
-        models = res_json["input"]["required"]["ckpt_name"]  # [][]
+        models = res_json["inputs"]["required"]["ckpt_name"]  # [][]
 
         return models
 
@@ -589,6 +636,8 @@ class ComufyClient:
         import copy
 
         options = copy.deepcopy(options)
+        printInfo(json.dumps(info, indent=4))
+
         options["verbose"] = prompt_text.get("verbose", {})
         keys = {
             "Steps": "steps",
@@ -601,24 +650,29 @@ class ComufyClient:
             "Clip Skip": "clip_skip",
             "Denoising Strength": "denoising_strength",
         }
-        infotexts = f"{info['prompt']}\n"
-        if "negative_prompt" in info:
-            infotexts += f"Negative prompt: {info['negative_prompt']}\n"
-        lines = []
-        matching = re.compile(r"{(.+?)}")
-        for key in keys:
-            mapping_key = keys[key]
-            if mapping_key in info:
-                value = info[mapping_key]
-                if matching.search(key):
-                    groups = matching.findall(key)
-                    for group in groups:
-                        if group in info:
-                            key = key.replace(f"{{{group}}}", str(info[group]))
-                if value is not None:
-                    lines.append(f"{key}: {value}")
-        line = ", ".join(lines)
-        infotexts += line
+        if "prompt" not in info:
+            text = prompt_text.copy()
+            del text["verbose"]
+            infotexts = json.dumps(prompt_text)
+        else:
+            infotexts = f"{info['prompt']}\n"
+            if "negative_prompt" in info:
+                infotexts += f"Negative prompt: {info['negative_prompt']}\n"
+            lines = []
+            matching = re.compile(r"{(.+?)}")
+            for key in keys:
+                mapping_key = keys[key]
+                if mapping_key in info:
+                    value = info[mapping_key]
+                    if matching.search(key):
+                        groups = matching.findall(key)
+                        for group in groups:
+                            if group in info:
+                                key = key.replace(f"{{{group}}}", str(info[group]))
+                    if value is not None:
+                        lines.append(f"{key}: {value}")
+            line = ", ".join(lines)
+            infotexts += line
         r = {
             "info": {
                 "infotexts": [infotexts],
@@ -680,8 +734,6 @@ class ComufyClient:
         return res.json()
 
     async def arun(self, prompts, options={}):
-        client = ComufyClient()
-
         if "websocket" in options.get("save_image", []):
             ws = websocket.WebSocket()
             for i, _prompt in enumerate(prompts):
@@ -692,7 +744,7 @@ class ComufyClient:
                 printInfo(f"process queuing {i+1}/{len(prompts)}")
                 client_id = str(uuid.uuid4())
                 ws.connect(f"ws://{self.server_address}/ws?clientId={client_id}")
-                images = await client.getImages(ws, prompt, client_id, _prompt)
+                images = await self.getImages(ws, prompt, client_id, _prompt)
                 if images is None:
                     printError("Failed to get images")
                     continue
@@ -707,7 +759,7 @@ class ComufyClient:
             for prompt in prompts:
                 client_id = str(uuid.uuid4())
                 try:
-                    images = await client.getImageFromUI(prompt, client_id, options)
+                    images = await self.getImageFromUI(prompt, client_id, options)
                     for image_data in images:
                         if image_data["image"] is not None:
                             await self.saveImage(image_data["image"], prompt, options)
@@ -752,6 +804,154 @@ class ComufyClient:
             return convert[name]
         return {"sampler": name, "scheduler": None}
 
+    def checkWorkflow(self, workflow, options={}):
+        try:
+            res = asyncio.run(self.client.get(self.hostname + "/object_info"))
+            if res is None:
+                printError("Failed to get models")
+                return False
+            if res.status_code != 200:
+                printError("Failed to check workflow")
+                return False
+            object_info = res.json()
+            printDebug("ComfyUI object_info")
+            printDebug(json.dumps(object_info, indent=4))
+            info = {}
+            positive = None
+            negative = None
+            for node_id in workflow:
+                node = workflow[node_id]
+                class_type = node["class_type"]
+                if class_type not in object_info:
+                    printError(
+                        f"Class type {class_type} not found, Check workflow or plugin"
+                    )
+                    raise Exception(f"Class type {class_type} not found")
+                required = object_info[class_type].get("input", {}).get("required", {})
+                if class_type not in object_info:
+                    printError(f"Class type {class_type} not found")
+                    raise Exception(f"Class type {class_type} not found")
+                if class_type == "KSampler":
+                    info["sampler_name"] = node["inputs"]["sampler_name"]
+                    info["scheduler"] = node["inputs"]["scheduler"]
+                    info["steps"] = node["inputs"]["steps"]
+                    info["seed"] = node["inputs"]["seed"]
+                    info["cfg_scale"] = node["inputs"]["cfg"]
+                    info["denoising_strength"] = node["inputs"]["denoise"]
+                    if positive is None:
+                        positive = node["inputs"]["positive"]
+                    if negative is None:
+                        negative = node["inputs"]["negative"]
+
+                    check = False
+                    for sampler_name in required["sampler_name"]:
+                        if info["sampler_name"] in sampler_name:
+                            check = True
+                            break
+                    if not check:
+                        printError(f"Sampler {info['sampler_name']} not found")
+                        raise Exception(f"Sampler {info['sampler_name']} not found")
+                    check = False
+                    for scheduler in required["scheduler"]:
+                        if info["scheduler"] in scheduler:
+                            check = True
+                            break
+                    if not check:
+                        printError(f"Scheduler {info['scheduler']} not found")
+                        raise Exception(f"Scheduler {info['scheduler']} not found")
+                if class_type == "CLIPSetLastLayer":
+                    if node["inputs"]["stop_at_clip_layer"] >= 0:
+                        raise ValueError("stop_at_clip_layer must be negative")
+                    info["clip_skip"] = abs(node["inputs"]["stop_at_clip_layer"])
+                if class_type == "VAELoader":
+                    info["sd_vae_name"] = node["inputs"]["vae_name"]
+                    check = False
+                    for vae_name in required["vae_name"]:
+                        if info["sd_vae_name"] in vae_name:
+                            check = True
+                            break
+                    if not check:
+                        printError(f"VAE {info['sd_vae_name']} not found")
+                        raise Exception(f"VAE {info['sd_vae_name']} not found")
+                if class_type == "CheckpointLoaderSimple":
+                    info["sd_model_name"] = node["inputs"]["ckpt_name"]
+                    check = False
+                    for model_name in required["ckpt_name"]:
+                        if info["sd_model_name"] in model_name:
+                            check = True
+                            break
+                    if not check:
+                        printError(f"Model {info['sd_model_name']} not found")
+                        raise Exception(f"Model {info['sd_model_name']} not found")
+                if class_type == "LoraLoader":
+                    if node["inputs"]["lora_name"] is None:
+                        node["inputs"]["lora"] = []
+                    node["inputs"]["lora"].append(node["inputs"]["lora_name"])
+                    check = False
+                    for lora_name in required["lora_name"]:
+                        if info["lora_name"] in lora_name:
+                            check = True
+                            break
+                    if not check:
+                        printError(f"Lora {info['lora_name']} not found")
+                        raise Exception(f"Lora {info['lora_name']} not found")
+                if class_type == "CLIPTextEncode":
+                    info["prompt"] = node["inputs"]["text"]
+
+            def prompt_search(workflow, position, prompt=""):
+                node_id = position[0]
+                index = position[1]
+                while True:
+                    node = workflow[node_id]
+                    if node is None:
+                        return prompt
+                    class_type = node["class_type"]
+                    if class_type == "CLIPTextEncode":
+                        prompt = node["inputs"]["text"] + prompt
+                        return prompt
+                    if class_type == "CLIPTextEncodeSDXL":
+                        prompt = node["inputs"]["text_g"] + prompt
+                        return prompt
+                    if class_type == "ConditioningConcat":
+                        prompt_1 = prompt_search(
+                            workflow, node["inputs"]["conditioning_from"]
+                        )
+                        prompt_2 = prompt_search(
+                            workflow, node["inputs"]["conditioning_to"]
+                        )
+                        prompt = prompt_1 + " BREAK " + prompt_2
+                    if class_type == "ConditioningAverage":
+                        prompt_to = prompt_search(
+                            workflow, node["inputs"]["conditioning_to"]
+                        )
+                        prompt_from = prompt_search(
+                            workflow, node["inputs"]["conditioning_from"]
+                        )
+                        average = node["inputs"]["conditioning_to_strength"]
+                        prompt = f"[{prompt_to}:{prompt_from}:{average}]"
+                    if class_type == "ConditioningCombine":
+                        prompt_1 = prompt_search(
+                            workflow, node["inputs"]["conditioning_1"]
+                        )
+                        prompt_2 = prompt_search(
+                            workflow, node["inputs"]["conditioning_2"]
+                        )
+                        prompt = prompt_1 + " AND " + prompt_2
+                    else:
+                        return prompt
+
+            positive_prompt = prompt_search(workflow, positive)
+            negative_prompt = prompt_search(workflow, negative)
+            if positive_prompt != "":
+                info["prompt"] = positive_prompt
+            if negative_prompt != "":
+                info["negative_prompt"] = negative_prompt
+        except Exception as e:
+            printError("Failed to check workflow", e)
+            return None
+        printDebug("Workflow is valid")
+        return info
+
     @staticmethod
     def txt2img(
         prompts,
@@ -764,8 +964,6 @@ class ComufyClient:
             sd_model = options.get("sd_model", None)
             vae = options.get("sd_vae", None)
             wf = ComfyUIWorkflow()
-            if sd_model is None:
-                raise ValueError("Comfyui is model must needs to be set")
             wf.setModel(sd_model)
             if vae is not None:
                 wf.setVAE(vae)
@@ -773,14 +971,32 @@ class ComufyClient:
             for prompt_text in prompts:
                 opt = options.copy()
                 if prompt_text.get("prompt") is None:
-                    workflows.append(prompt_text)
+                    import copy
+
+                    workflow = copy.deepcopy(prompt_text)
+                    del workflow["verbose"]
+                    printDebug("Use Workflow")
+                    info = ComufyClient(hostname=hostname).checkWorkflow(workflow, opt)
+                    if info is None:
+                        printError("Failed to check workflow")
+                        continue
+                    workflows.append(
+                        {
+                            "workflow": workflow,
+                            "info": info,
+                            "prompt_text": prompt_text,
+                        }
+                    )
+                    continue
+                if sd_model is None:
+                    printError("Model not set")
                     continue
                 prompt = prompt_text.get("prompt", "")
                 n_iter = prompt_text.get("n_iter", 1)
                 negative_prompt = prompt_text.get("negative_prompt", "")
                 sampler_name = prompt_text.get("sampler_name", "euler")
                 sampler = ComufyClient().convertSamplerNameWebUi2Comfy(sampler_name)
-                if sampler_name is None:
+                if sampler_name is None or sampler is None:
                     raise ValueError(f"Sampler {sampler_name} not found")
                 prompt_text["sampler_name"] = sampler["sampler"]
                 scheduler = prompt_text.get("scheduler")
@@ -795,8 +1011,7 @@ class ComufyClient:
                     {"workflow": workflow, "info": info, "prompt_text": prompt_text}
                 )
             opt["dir"] = output_dir
-            client = ComufyClient()
-            client.setHostname(hostname)
+            client = ComufyClient(hostname=hostname)
             client.run(workflows, opt)
             return True
         except Exception as e:
@@ -841,7 +1056,9 @@ if __name__ == "__main__":
             for key in prompt_text:
                 opt[key] = prompt_text[key]
             workflow, info = wf.createWorkflow(prompt, negative_prompt, opt)
-            workflows.append(workflow)
+            workflows.append(
+                {"workflow": workflow, "info": info, "prompt_text": prompt_text}
+            )
             infos.append(info)
         client = ComufyClient()
         client.run(workflows, opt)
