@@ -11,6 +11,7 @@ import urllib.request
 import uuid
 
 import httpx
+
 # import httpx_ws
 import websocket  # NOTE: websocket-client (https://github.com/websocket-client/websocket-client)
 from PIL import Image
@@ -33,6 +34,13 @@ def printInfo(*args, **kwargs):
 def printError(*args, **kwargs):
     if logger is not None:
         logger.error(*args, **kwargs)
+    else:
+        print(*args, **kwargs)
+
+
+def printVerbose(*args, **kwargs):
+    if logger is not None:
+        logger.verbose(*args, **kwargs)
     else:
         print(*args, **kwargs)
 
@@ -526,27 +534,33 @@ class ComufyClient:
         return res.json()
 
     async def getImageFromUI(self, prompt, client_id, options={}):
-        res = await self.queuePrompt(prompt, client_id)
-        prompt_id = res["prompt_id"]
-        images = []
-        urls = await self.checkQueue([prompt_id], options)
-        for url in urls:
-            if "save" in options.get("save_image"):
-                res = await self.client.get(url)
-                if res.status_code == 200:
-                    image_data = res.content
+        try:
+            res = await self.queuePrompt(prompt, client_id)
+            prompt_id = res["prompt_id"]
+            images = []
+            urls = await self.checkQueue([prompt_id], options)
+            for url in urls:
+                if "save" in options.get("save_image"):
+                    res = await self.client.get(url)
+                    if res.status_code == 200:
+                        image_data = res.content
+                        data = {
+                            "url": url,
+                            "image": image_data,
+                        }
+                        if seed > 0:
+                            seed += 1
+                        images.append(data)
+                else:
                     data = {
                         "url": url,
-                        "image": image_data,
+                        "image": None,
                     }
                     images.append(data)
-            else:
-                data = {
-                    "url": url,
-                    "image": None,
-                }
-                images.append(data)
-        return images
+            return images
+        except Exception as e:
+            printError("Failed to get images", e)
+            raise Exception("Failed to get images from comfyui in getImageFromUI")
 
     async def getImages(self, ws, prompt, client_id, options={}):
         try:
@@ -595,10 +609,11 @@ class ComufyClient:
                         output_images[current_node] = images_output
             return output_images
         except KeyboardInterrupt:
-            printInfo("Interrupted")
+            printWarning("Interrupted")
             await self.client.post(f"{self.hostname}/interrupt")
             raise KeyboardInterrupt
         except Exception as e:
+            printError("Failed to get images", e)
             return None
 
     async def checkQueue(self, prompt_ids, options={}):
@@ -636,8 +651,6 @@ class ComufyClient:
         import copy
 
         options = copy.deepcopy(options)
-        printInfo(json.dumps(info, indent=4))
-
         options["verbose"] = prompt_text.get("verbose", {})
         keys = {
             "Steps": "steps",
@@ -687,10 +700,10 @@ class ComufyClient:
             import modules.save as save
 
             try:
-
                 r, options = await self.imageWrapper(
                     [image_data], prompt_text, options, info
                 )
+                options["workflow"] = json.dumps(prompt, ensure_ascii=False)
             except Exception as e:
                 printError("Failed to wrap image", e)
                 raise e
@@ -750,9 +763,14 @@ class ComufyClient:
                     continue
 
                 for node_id in images:
+                    seed = int(info.get("seed", -1))
                     for image_data in images[node_id]:
+                        _info = info.copy()
+                        if seed > 0:
+                            _info["seed"] = seed
+                            seed += 1
                         await self.saveImage(
-                            image_data, prompt, options, info, prompt_text
+                            image_data, prompt, options, _info, prompt_text
                         )
                 ws.close()
         elif "ui" in options.get("save_image", ["ui"]):
@@ -800,11 +818,36 @@ class ComufyClient:
             "lcm": {"sampler": "lcm", "scheduler": "normal"},
         }
         if name in convert:
-            printDebug(f"Sampler {name} converted to {convert[name]}")
+            printVerbose(f"Sampler {name} converted to {convert[name]}")
             return convert[name]
         return {"sampler": name, "scheduler": None}
 
     def checkWorkflow(self, workflow, options={}):
+        def model_search(model_name, required):
+            re_ext = re.compile(r"\.(safetensors|pt|ckpt)$")
+            base_name = re_ext.sub("", model_name)
+            check = False
+            alternames = []
+            for model_names in required:
+                if model_name in model_names:
+                    return True, []
+                else:
+                    _model_name = model_name.replace("\\", "/")
+                    if _model_name in model_names:
+                        alternames.append(_model_name)
+                        break
+                    _model_name = model_name.replace("/", "\\")
+                    if _model_name in model_names:
+                        alternames.append(_model_name)
+                        break
+                    for name in model_names:
+                        base_name = re_ext.sub("", name)
+                        if base_name.endswith(base_name):
+                            alternames.append(name)
+                        if base_name.endswith(model_name):
+                            alternames.append(model_name)
+            return check, alternames
+
         try:
             res = asyncio.run(self.client.get(self.hostname + "/object_info"))
             if res is None:
@@ -865,83 +908,125 @@ class ComufyClient:
                     info["clip_skip"] = abs(node["inputs"]["stop_at_clip_layer"])
                 if class_type == "VAELoader":
                     info["sd_vae_name"] = node["inputs"]["vae_name"]
-                    check = False
-                    for vae_name in required["vae_name"]:
-                        if info["sd_vae_name"] in vae_name:
-                            check = True
-                            break
+                    check, alternames = model_search(
+                        info["sd_vae_name"], required["vae_name"]
+                    )
                     if not check:
-                        printError(f"VAE {info['sd_vae_name']} not found")
-                        raise Exception(f"VAE {info['sd_vae_name']} not found")
+                        if len(alternames) > 0:
+                            printWarning(
+                                f"VAE {info['sd_vae_name']} not found, but found similar models {alternames} use {alternames[0]}"
+                            )
+                            node["inputs"]["vae_name"] = alternames[0]
+                        else:
+                            printError(f"VAE {info['sd_vae_name']} not found")
+                            raise Exception(f"VAE {info['sd_vae_name']} not found")
                 if class_type == "CheckpointLoaderSimple":
                     info["sd_model_name"] = node["inputs"]["ckpt_name"]
-                    check = False
-                    for model_name in required["ckpt_name"]:
-                        if info["sd_model_name"] in model_name:
-                            check = True
-                            break
+                    re_ext = re.compile(r"\.(safetensors|pt|ckpt)$")
+                    sd_model_name = re_ext.sub("", info["sd_model_name"])
+                    check, alternames = model_search(
+                        info["sd_model_name"], required["ckpt_name"]
+                    )
+
                     if not check:
-                        printError(f"Model {info['sd_model_name']} not found")
-                        raise Exception(f"Model {info['sd_model_name']} not found")
+                        if len(alternames) > 0:
+                            printWarning(
+                                f"Model {info['sd_model_name']} not found, but found similar models {alternames} use {alternames[0]}"
+                            )
+                            node["inputs"]["ckpt_name"] = alternames[0]
+                        else:
+                            printError(f"Model {info['sd_model_name']} not found")
+                            raise Exception(f"Model {info['sd_model_name']} not found")
                 if class_type == "LoraLoader":
-                    if node["inputs"]["lora_name"] is None:
-                        node["inputs"]["lora"] = []
-                    node["inputs"]["lora"].append(node["inputs"]["lora_name"])
-                    check = False
-                    for lora_name in required["lora_name"]:
-                        if info["lora_name"] in lora_name:
-                            check = True
-                            break
+                    if info["lora"] is None:
+                        info["lora"] = []
+
+                    lora_name = node["inputs"]["lora_name"]
+                    info["lora"].append(lora_name)
+                    check, alternames = model_search(lora_name, required["lora_name"])
+
                     if not check:
-                        printError(f"Lora {info['lora_name']} not found")
-                        raise Exception(f"Lora {info['lora_name']} not found")
+                        if len(alternames) > 0:
+                            printWarning(
+                                f"Lora {info['lora_name']} not found, but found similar loras {alternames} use {alternames[0]}"
+                            )
+                            node["inputs"]["lora_name"] = alternames[0]
+                        else:
+                            printError(f"Lora {info['lora_name']} not found")
+                            raise Exception(f"Lora {info['lora_name']} not found")
                 if class_type == "CLIPTextEncode":
                     info["prompt"] = node["inputs"]["text"]
 
             def prompt_search(workflow, position, prompt=""):
                 node_id = position[0]
                 index = position[1]
-                while True:
-                    node = workflow[node_id]
-                    if node is None:
-                        return prompt
-                    class_type = node["class_type"]
-                    if class_type == "CLIPTextEncode":
-                        prompt = node["inputs"]["text"] + prompt
-                        return prompt
-                    if class_type == "CLIPTextEncodeSDXL":
-                        prompt = node["inputs"]["text_g"] + prompt
-                        return prompt
-                    if class_type == "ConditioningConcat":
-                        prompt_1 = prompt_search(
-                            workflow, node["inputs"]["conditioning_from"]
-                        )
-                        prompt_2 = prompt_search(
-                            workflow, node["inputs"]["conditioning_to"]
-                        )
-                        prompt = prompt_1 + " BREAK " + prompt_2
-                    if class_type == "ConditioningAverage":
-                        prompt_to = prompt_search(
-                            workflow, node["inputs"]["conditioning_to"]
-                        )
-                        prompt_from = prompt_search(
-                            workflow, node["inputs"]["conditioning_from"]
-                        )
-                        average = node["inputs"]["conditioning_to_strength"]
-                        prompt = f"[{prompt_to}:{prompt_from}:{average}]"
-                    if class_type == "ConditioningCombine":
-                        prompt_1 = prompt_search(
-                            workflow, node["inputs"]["conditioning_1"]
-                        )
-                        prompt_2 = prompt_search(
-                            workflow, node["inputs"]["conditioning_2"]
-                        )
-                        prompt = prompt_1 + " AND " + prompt_2
-                    else:
+                node = workflow[node_id]
+                if node is None:
+                    return prompt
+                class_type = node["class_type"]
+                if class_type == "CLIPTextEncode":
+                    prompt = node["inputs"]["text"] + prompt
+                    return prompt
+                if class_type == "CLIPTextEncodeSDXL":
+                    prompt = node["inputs"]["text_g"] + prompt
+                    return prompt
+                if class_type == "ConditioningConcat":
+                    prompt_1 = prompt_search(
+                        workflow, node["inputs"]["conditioning_from"]
+                    )
+                    if prompt_1 is None:
+                        prompt_1 = ""
+                    prompt_2 = prompt_search(
+                        workflow, node["inputs"]["conditioning_to"]
+                    )
+                    prompt = prompt_1 + " BREAK " + prompt_2
+                    return prompt
+                if class_type == "ConditioningAverage":
+                    prompt_to = prompt_search(
+                        workflow, node["inputs"]["conditioning_to"]
+                    )
+                    prompt_from = prompt_search(
+                        workflow, node["inputs"]["conditioning_from"]
+                    )
+                    average = node["inputs"]["conditioning_to_strength"]
+                    prompt = f"[{prompt_to}:{prompt_from}:{average}]"
+                    return prompt
+                if class_type == "ConditioningCombine":
+                    prompt_1 = prompt_search(workflow, node["inputs"]["conditioning_1"])
+                    prompt_2 = prompt_search(workflow, node["inputs"]["conditioning_2"])
+                    prompt = prompt_1 + " AND " + prompt_2
+                    return prompt
+                else:
+                    printVerbose(
+                        f"Class type {class_type} is unknown,also custom node, try search before node"
+                    )
+                    try:
+                        obj_info = object_info.get(class_type, {})
+                        required = obj_info["input"]["required"]
+                        conds = []
+                        for key in required:
+                            if required[key][0] == "CONDITIONING":
+                                conds.append(key)
+                        if len(conds) > index:
+                            return prompt_search(workflow, node["inputs"][conds[index]])
+                        elif len(conds) == 1:
+                            return prompt_search(workflow, node["inputs"][conds[0]])
+                        else:
+                            for key in required:
+                                if (
+                                    required[key][0] == "STRING"
+                                    and required[key][1]["multiline"]
+                                ):
+                                    return prompt_search(workflow, node["inputs"][key])
+                    except Exception as e:
+                        printError("Failed to search prompt", e)
                         return prompt
 
             positive_prompt = prompt_search(workflow, positive)
             negative_prompt = prompt_search(workflow, negative)
+            printVerbose(f"reconstruct prompts:")
+            printVerbose(f"Positive prompt: {positive_prompt}")
+            printVerbose(f"Negative prompt: {negative_prompt}")
             if positive_prompt != "":
                 info["prompt"] = positive_prompt
             if negative_prompt != "":
@@ -1056,9 +1141,9 @@ if __name__ == "__main__":
             for key in prompt_text:
                 opt[key] = prompt_text[key]
             workflow, info = wf.createWorkflow(prompt, negative_prompt, opt)
-            workflows.append(
-                {"workflow": workflow, "info": info, "prompt_text": prompt_text}
-            )
+            n_iter = prompt_text.get("n_iter", 1)
+            for _ in range(prompt_text["n_iter"]):
+                workflow, info = wf.createWorkflow(prompt, negative_prompt, opt)
             infos.append(info)
         client = ComufyClient()
         client.run(workflows, opt)
