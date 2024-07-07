@@ -69,7 +69,7 @@ jsonl(eyes.jsonl)
 {"W": 0.1, "C": ["eyes"], "V": ["red eyes"]}  // "V" is string or string array("V"は文字列または文字列配列)
 ```
 
-You can write text file(semiclon separated), but cannot write category (テキスト(セミコロン区切り)でも書けまが、カテゴリーは書けません)
+You can write text file(semiclon separated), but cannot write category (テキスト(セミコロン区切り)でも書けますが、カテゴリーは書けません)
 
 eyes.txt
 ```text
@@ -80,7 +80,7 @@ eyes.txt
 0.1;red eyes
 ```
 
-## 実行方法(How to run)
+## How to run(実行方法)
 ```
 python cp2.py input.yaml
 ```
@@ -534,7 +534,7 @@ functions(関数) str1,str2,.. are string(文字列) and x,y... are number(数�
 - week(): current week(現在の週)
 
 # ComfyUI
-- --api-comfy option is use ComfyUI API(ComfyUI APIを使う)
+- --api-comfy option is use ComfyUI API(--api-comfyを指定するとComfyUI APIを使います)
 - Try to create workflow to run prompt in comfy(promptをcomfyで実行できるようにワークフローを作成を試みます)
 - At present, only txt2img is supported, and hires.fix is not supported(現時点でサポートされているのはtxt2imgのみで、hires.fixはサポートされていません)
 - You can also load workflow directly. Save the workflow for the API in ComfyUI(workflowを直接読み込むことも可能です。ComfyUIでAPI用のworkflowを保存してください)
@@ -546,6 +546,12 @@ python cp2.py --api-output-dir ./outputs/txt2img-images --api-comfy --api-base h
 ```
 
 ## Use workflow instead of prompt(Promptの代わりにWorkflowを使う)
+
+```shell
+python cp2.py prompts/prompt.yaml --api-output-dir ./outputs/txt2img-images --api-comfy --api-base http://localhost:8188 --image-type webp -api-base http://localhost:8188 --max-number 1 --api-filename-pattern '[num]-[seed]'
+```
+
+
 ```yaml
 version: 2
 variables:
