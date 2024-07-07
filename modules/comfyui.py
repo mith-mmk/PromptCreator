@@ -928,8 +928,6 @@ class ComufyClient:
                             raise Exception(f"VAE {info['sd_vae_name']} not found")
                 if class_type == "CheckpointLoaderSimple":
                     info["sd_model_name"] = node["inputs"]["ckpt_name"]
-                    re_ext = re.compile(r"\.(safetensors|pt|ckpt)$")
-                    sd_model_name = re_ext.sub("", info["sd_model_name"])
                     check, alternames = self._model_search(
                         info["sd_model_name"], required["ckpt_name"]
                     )
@@ -1059,6 +1057,7 @@ class ComufyClient:
             vae = options.get("sd_vae", None)
             wf = ComfyUIWorkflow()
             wf.setModel(sd_model)
+            client = ComufyClient(hostname=hostname)
             if vae is not None:
                 wf.setVAE(vae)
             workflows = []
@@ -1099,13 +1098,20 @@ class ComufyClient:
                 prompt_text["scheduler"] = scheduler
                 for key in prompt_text:
                     opt[key] = prompt_text[key]
+                seed = opt.get("seed", -1)
+                if seed == -1:
+                    seed = random.randint(0, 2**31 - 1)
                 for _ in range(n_iter):
+                    opt["seed"] = seed
                     workflow, info = wf.createWorkflow(prompt, negative_prompt, opt)
-                workflows.append(
-                    {"workflow": workflow, "info": info, "prompt_text": prompt_text}
-                )
+                    # client.checkWorkflow(workflow, opt)
+                    if seed > 0:
+                        opt["seed"] = seed
+                        seed += prompt_text.get("batch_size", 1)
+                    workflows.append(
+                        {"workflow": workflow, "info": info, "prompt_text": prompt_text}
+                    )
             opt["dir"] = output_dir
-            client = ComufyClient(hostname=hostname)
             client.run(workflows, opt)
             return True
         except Exception as e:
@@ -1137,6 +1143,7 @@ if __name__ == "__main__":
         options["save_image"] = ["websocket"]
         options["dir"] = "f:/ai/outputs/txt2img-images"
 
+        client = ComufyClient()
         for prompt_text in prompts:
             opt = options.copy()
             if prompt_text.get("prompt") is None:
@@ -1150,11 +1157,11 @@ if __name__ == "__main__":
             for key in prompt_text:
                 opt[key] = prompt_text[key]
             workflow, info = wf.createWorkflow(prompt, negative_prompt, opt)
+            client.checkWorkflow(workflow, opt)
             n_iter = prompt_text.get("n_iter", 1)
             for _ in range(prompt_text["n_iter"]):
                 workflow, info = wf.createWorkflow(prompt, negative_prompt, opt)
             infos.append(info)
-        client = ComufyClient()
         client.run(workflows, opt)
     duration = time.time() - start_time
     minutes = duration // 60
