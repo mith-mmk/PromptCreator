@@ -458,6 +458,8 @@ def image_save(image, filename, meta, extendend_meta, opt={}):
         pnginfo = PngImagePlugin.PngInfo()
         pnginfo.add_text("parameters", meta)
         Logger.debug("parameters", meta)
+        if "workflow" in opt:
+            pnginfo.add_text("prompt", opt["workflow"])
         if extendend_meta is not None:
             pnginfo.add_text("expantion", extendend_meta)
         image.save(filename, pnginfo=pnginfo)
