@@ -852,25 +852,28 @@ class ComufyClient:
 
     def checkWorkflow(self, workflow, options={}):
         try:
+            printDebug(f"Checking workflow {workflow}")
             res = asyncio.run(self.client.get(self.hostname + "/object_info"))
             if res is None:
                 printError("Failed to get models")
                 return False
             if res.status_code != 200:
-                printError("Failed to check workflow")
+                printError("Failed to check workflow, object info not found")
                 return False
             object_info = res.json()
             printDebug("ComfyUI object_info")
-            printDebug(json.dumps(object_info, indent=4))
+            # printDebug(json.dumps(object_info, indent=4))
             info = {}
             positive = None
             negative = None
             for node_id in workflow:
+
+                printDebug(f"Checking node {node_id}")
                 node = workflow[node_id]
                 class_type = node["class_type"]
                 if class_type not in object_info:
                     printError(
-                        f"Class type {class_type} not found, Check workflow or plugin"
+                        f"{node_id} Class type {class_type} not found, Check workflow or plugin"
                     )
                     raise Exception(f"Class type {class_type} not found")
                 required = object_info[class_type].get("input", {}).get("required", {})
@@ -941,7 +944,8 @@ class ComufyClient:
                             printError(f"Model {info['sd_model_name']} not found")
                             raise Exception(f"Model {info['sd_model_name']} not found")
                 if class_type == "LoraLoader":
-                    if info["lora"] is None:
+
+                    if "lora" not in info:
                         info["lora"] = []
 
                     lora_name = node["inputs"]["lora_name"]

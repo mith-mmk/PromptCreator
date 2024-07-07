@@ -252,6 +252,9 @@ def main(args):
                         t["variables"] = copy.deepcopy(variables)
                         t["info"] = copy.deepcopy(info)
                         del t["verbose"]
+            if not isinstance(output_text, list):
+                output_text["verbose"] = output_text.get("verbose", {})
+                output_text = [output_text]
     else:
         Logger.error("option error, no input file")
         raise Exception("option error")
@@ -364,6 +367,7 @@ def run_from_args(command_args=None):
 
     parser.add_argument(
         "--api-base",
+        "--hostname",
         "-H",
         type=str,
         default="http://127.0.0.1:7860",
@@ -537,6 +541,7 @@ def run_from_args(command_args=None):
 
     parser.add_argument(
         "--api-comfy-save",
+        "--comfy-save",
         "-S",
         type=str,
         default="save",
@@ -601,7 +606,9 @@ def run_from_args(command_args=None):
         ]
     if args.verbose:
         Logger.print_levels = ["info", "warning", "error", "critical", "verbose"]
-    if args.input is None and not (args.api_mode and args.api_input_json is not None):
+    if args.input is None and not (
+        (args.api_mode or args.api_comfy) and args.api_input_json is not None
+    ):
         parser.print_help()
         Logger.info("need [input] or --api-mode --api_input_json [filename]")
         return False
