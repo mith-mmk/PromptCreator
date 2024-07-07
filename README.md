@@ -6,6 +6,7 @@
 ## objective(目的)
  The Prompt Creator V2 is a prompt creator for AUTOMATIC1111/stable-diffusion-webui(Profileから、Stable Diffusion用のプロンプトを自動作成します)
  You can also automatically generate images by using the API.(またAPIを叩くことにより画像の自動生成を可能にします)
+ ComfyUI API is also supported(ComfyUI APIもサポートしています)
 
  - A config file is required(設定ファイルが必要です)
  - A config file is written in yaml(設定ファイルはyaml形式で記述します)
