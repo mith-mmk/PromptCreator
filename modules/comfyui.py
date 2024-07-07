@@ -486,6 +486,7 @@ class ComufyClient:
         self.server_address = self.hostname.replace("http://", "").replace(
             "https://", ""
         )
+        self.object_info = None
 
     async def getModels(self):
         res = await self.client.get(
@@ -823,9 +824,15 @@ class ComufyClient:
         return {"sampler": name, "scheduler": None}
 
     def _model_search(self, model_name, required):
-        base_name = re.sub(r"\.(safetensors|pt|ckpt)$", "", model_name)
+        ext = re.compile(r"\.(safetensors|pt|ckpt)$")
+        base_name = ext.sub("", model_name)
         check = False
         alternames = []
+        if self.object_info is not None:
+            parsed = self.object_info.get("perced", {})
+        else:
+            printError("Object info not found")
+            return False, []
         for model_names in required:
             if model_name in model_names:
                 return True, []
@@ -841,27 +848,38 @@ class ComufyClient:
                     printVerbose(f"Model {model_name} converted to {_model_name}")
                     break
                 for name in model_names:
-                    _base_name = re.sub(r"\.(safetensors|pt|ckpt)$", "", name)
+                    _base_name = parsed.get(name)
+                    if _base_name is None:
+                        _base_name = ext.sub("", name)
+                        parsed[name] = _base_name
                     if _base_name.endswith(base_name):
                         printVerbose(f"Model {model_name} converted to {name}")
                         alternames.append(name)
                     elif name.endswith(model_name):
                         printVerbose(f"Model {model_name} converted to {name}")
-                        alternames.append(_model_name)
+                        alternames.append(name)
+        self.object_info["perced"] = parsed
         return check, alternames
 
     def checkWorkflow(self, workflow, options={}):
+        workflow = workflow.copy()
         try:
-            printDebug(f"Checking workflow {workflow}")
-            res = asyncio.run(self.client.get(self.hostname + "/object_info"))
-            if res is None:
-                printError("Failed to get models")
-                return False
-            if res.status_code != 200:
-                printError("Failed to check workflow, object info not found")
-                return False
-            object_info = res.json()
+            printDebug(f"Checking workflow ...")
+            if self.object_info is None:
+                with httpx.Client() as client:
+                    res = client.get(self.hostname + "/object_info")
+                    if res is None:
+                        printError("Failed to get models")
+                        return False
+                    if res.status_code != 200:
+                        printError("Failed to check workflow, object info not found")
+                        return False
+                object_info = res.json()
+                self.object_info = {"object_info": object_info}
+            else:
+                object_info = self.object_info["object_info"]
             printDebug("ComfyUI object_info")
+
             # printDebug(json.dumps(object_info, indent=4))
             info = {}
             positive = None
@@ -908,11 +926,11 @@ class ComufyClient:
                     if not check:
                         printError(f"Scheduler {info['scheduler']} not found")
                         raise Exception(f"Scheduler {info['scheduler']} not found")
-                if class_type == "CLIPSetLastLayer":
+                elif class_type == "CLIPSetLastLayer":
                     if node["inputs"]["stop_at_clip_layer"] >= 0:
                         raise ValueError("stop_at_clip_layer must be negative")
                     info["clip_skip"] = abs(node["inputs"]["stop_at_clip_layer"])
-                if class_type == "VAELoader":
+                elif class_type == "VAELoader":
                     info["sd_vae_name"] = node["inputs"]["vae_name"]
                     check, alternames = self._model_search(
                         info["sd_vae_name"], required["vae_name"]
@@ -926,7 +944,7 @@ class ComufyClient:
                         else:
                             printError(f"VAE {info['sd_vae_name']} not found")
                             raise Exception(f"VAE {info['sd_vae_name']} not found")
-                if class_type == "CheckpointLoaderSimple":
+                elif class_type == "CheckpointLoaderSimple":
                     info["sd_model_name"] = node["inputs"]["ckpt_name"]
                     check, alternames = self._model_search(
                         info["sd_model_name"], required["ckpt_name"]
@@ -941,7 +959,7 @@ class ComufyClient:
                         else:
                             printError(f"Model {info['sd_model_name']} not found")
                             raise Exception(f"Model {info['sd_model_name']} not found")
-                if class_type == "LoraLoader":
+                elif class_type == "LoraLoader":
 
                     if "lora" not in info:
                         info["lora"] = []
@@ -955,13 +973,13 @@ class ComufyClient:
                     if not check:
                         if len(alternames) > 0:
                             printWarning(
-                                f"Lora {info['lora_name']} not found, but found similar loras {alternames} use {alternames[0]}"
+                                f"Lora {lora_name} not found, but found similar loras {alternames} use {alternames[0]}"
                             )
                             node["inputs"]["lora_name"] = alternames[0]
                         else:
-                            printError(f"Lora {info['lora_name']} not found")
-                            raise Exception(f"Lora {info['lora_name']} not found")
-                if class_type == "CLIPTextEncode":
+                            printError(f"Lora {lora_name} not found")
+                            raise Exception(f"Lora {lora_name} not found")
+                elif class_type == "CLIPTextEncode":
                     info["prompt"] = node["inputs"]["text"]
 
             def prompt_search(workflow, position, prompt=""):
@@ -974,10 +992,10 @@ class ComufyClient:
                 if class_type == "CLIPTextEncode":
                     prompt = node["inputs"]["text"] + prompt
                     return prompt
-                if class_type == "CLIPTextEncodeSDXL":
+                elif class_type == "CLIPTextEncodeSDXL":
                     prompt = node["inputs"]["text_g"] + prompt
                     return prompt
-                if class_type == "ConditioningConcat":
+                elif class_type == "ConditioningConcat":
                     prompt_1 = prompt_search(
                         workflow, node["inputs"]["conditioning_from"]
                     )
@@ -988,7 +1006,7 @@ class ComufyClient:
                     )
                     prompt = prompt_1 + " BREAK " + prompt_2
                     return prompt
-                if class_type == "ConditioningAverage":
+                elif class_type == "ConditioningAverage":
                     prompt_to = prompt_search(
                         workflow, node["inputs"]["conditioning_to"]
                     )
@@ -998,7 +1016,7 @@ class ComufyClient:
                     average = node["inputs"]["conditioning_to_strength"]
                     prompt = f"[{prompt_to}:{prompt_from}:{average}]"
                     return prompt
-                if class_type == "ConditioningCombine":
+                elif class_type == "ConditioningCombine":
                     prompt_1 = prompt_search(workflow, node["inputs"]["conditioning_1"])
                     prompt_2 = prompt_search(workflow, node["inputs"]["conditioning_2"])
                     prompt = prompt_1 + " AND " + prompt_2
@@ -1034,6 +1052,7 @@ class ComufyClient:
             printVerbose(f"reconstruct prompts:")
             printVerbose(f"Positive prompt: {positive_prompt}")
             printVerbose(f"Negative prompt: {negative_prompt}")
+
             if positive_prompt != "":
                 info["prompt"] = positive_prompt
             if negative_prompt != "":
@@ -1042,7 +1061,7 @@ class ComufyClient:
             printError("Failed to check workflow", e)
             return None
         printDebug("Workflow is valid")
-        return info
+        return workflow, info
 
     @staticmethod
     def txt2img(
@@ -1069,7 +1088,7 @@ class ComufyClient:
                     workflow = copy.deepcopy(prompt_text)
                     del workflow["verbose"]
                     printDebug("Use Workflow")
-                    info = ComufyClient(hostname=hostname).checkWorkflow(workflow, opt)
+                    workflow, info = client.checkWorkflow(workflow, opt)
                     if info is None:
                         printError("Failed to check workflow")
                         continue
@@ -1088,7 +1107,7 @@ class ComufyClient:
                 n_iter = prompt_text.get("n_iter", 1)
                 negative_prompt = prompt_text.get("negative_prompt", "")
                 sampler_name = prompt_text.get("sampler_name", "euler")
-                sampler = ComufyClient().convertSamplerNameWebUi2Comfy(sampler_name)
+                sampler = client.convertSamplerNameWebUi2Comfy(sampler_name)
                 if sampler_name is None or sampler is None:
                     raise ValueError(f"Sampler {sampler_name} not found")
                 prompt_text["sampler_name"] = sampler["sampler"]
@@ -1103,15 +1122,22 @@ class ComufyClient:
                     seed = random.randint(0, 2**31 - 1)
                 for _ in range(n_iter):
                     opt["seed"] = seed
-                    workflow, info = wf.createWorkflow(prompt, negative_prompt, opt)
-                    # client.checkWorkflow(workflow, opt)
+                    _workflow, info = wf.createWorkflow(prompt, negative_prompt, opt)
+                    if _workflow is None:
+                        printError("Failed create workflow")
+                        continue
+                    workflow, _ = client.checkWorkflow(_workflow, opt)
+                    if workflow is None:
+                        printError("Failed to check workflow")
+                        continue
                     if seed > 0:
                         opt["seed"] = seed
-                        seed += prompt_text.get("batch_size", 1)
+                        seed += info.get("batch_size", 1)
                     workflows.append(
                         {"workflow": workflow, "info": info, "prompt_text": prompt_text}
                     )
             opt["dir"] = output_dir
+            client = ComufyClient(hostname=hostname)
             client.run(workflows, opt)
             return True
         except Exception as e:
