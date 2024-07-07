@@ -225,6 +225,12 @@ usage: cp2.py [-h] [--append-dir APPEND_DIR] [--output OUTPUT] [--json [JSON]] [
   --json-escape
                         multibyte escaped json(マルチバイトをエスケープしたjsonを出力する)
 
+  --api-comfy
+                        use comfyui api alternative to webui(Automatic1111ではなくComfyUIのAPIを使う。portが変わるため明示的なhostnameの指定が必要)
+  --api-comfy-save      save image directory for comfyui api(ComfyUIのAPI画像を保存先)
+                        ui = ComfyUI server, save = save to local, both = both(ComfyUIサーバーの保存先に保存、ローカルに保存、両方)
+                        Meta data is converted to Automatic1111 compatible only when save is specified(メタデータはsaveを指定したときのみAutomatic1111互換に変換しようと試みます)
+
 ## Compatibility(互換性)
     - V2 is not compatible with V1(旧バージョンとの互換性はありません)
 
@@ -525,6 +531,118 @@ functions(関数) str1,str2,.. are string(文字列) and x,y... are number(数�
 - second(): current second(現在の秒)
 - weekday(): current weekday(現在の曜日)
 - week(): current week(現在の週)
+
+# ComfyUI
+- --api-comfy option is use ComfyUI API(ComfyUI APIを使う)
+- Try to create workflow to run prompt in comfy(promptをcomfyで実行できるようにワークフローを作成を試みます)
+- At present, only txt2img is supported, and hires.fix is not supported(現時点でサポートされているのはtxt2imgのみで、hires.fixはサポートされていません)
+- You can also load workflow directly. Save the workflow for the API in ComfyUI(workflowを直接読み込むことも可能です。ComfyUIでAPI用のworkflowを保存してください)
+- When you run the workflow directly, the behavior of the --api-comfy-save option is not guaranteed(Workflowを直接実行した場合、--api-comfy-saveオプションの挙動は保証されません)
+
+## direct run workflow(ワークフローを直接実行)
+```shell
+python cp2.py --api-output-dir ./outputs/txt2img-images --api-comfy --api-base http://localhost:8188 --image-type webp --api-input-json ./workflow_api.json
+```
+
+## Use workflow instead of prompt(Promptの代わりにWorkflowを使う)
+```yaml
+version: 2
+variables:
+    seed: ${=random_int()}
+    prompt: ['cat is run']
+    negative: ['nsfw']
+command: ./workflows_apijson
+```
+
+```json
+{
+  "3": {
+    "inputs": {
+      "seed": "${seed}",      // random seed(ランダムシード)
+      "steps": 25,
+      "cfg": 12.5,
+      "sampler_name": "dpmpp_sde",
+      "scheduler": "karras",
+      "denoise": 1,
+      "model": [
+        "82",
+        2
+      ],
+      "positive": [
+        "82",
+        0
+      ],
+      "negative": [
+        "82",
+        1
+      ],
+      "latent_image": [
+        "5",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "19": {   // positive prompt(ポジティブプロンプト)
+    "inputs": {
+      "width": 4096,
+      "height": 4096,
+      "crop_w": 0,
+      "crop_h": 0,
+      "target_width": 4096,
+      "target_height": 4096,
+      "text_g": "${prompt}",
+      "text_l": "${prompt}",
+      "clip": [
+        "23",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncodeSDXL",
+    "_meta": {
+      "title": "positive prompt"
+    }
+  },
+  "20": {   // negative prompt(ネガティブプロンプト)
+    "inputs": {
+      "width": 4096,
+      "height": 4096,
+      "crop_w": 0,
+      "crop_h": 0,
+      "target_width": 4096,
+      "target_height": 4096,
+      "text_g": "${prompt}",
+      "text_l": "${prompt}",
+      "clip": [
+        "23",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncodeSDXL",
+    "_meta": {
+      "title": "negative prompt"
+    }
+  },
+  // ...
+  // Can save locally by setting the node id of "save_image_websocket_node" to "save_image_websocket_node"
+  // Save image to websocket(画像をwebsocketに保存) の node idを"save_image_websocket_node"にするとローカルに保存可能
+  "save_image_websocket_node": {  
+    "inputs": {
+      "images": [
+        "8",        // node of "image"
+        0
+      ]
+    },
+    "class_type": "SaveImageWebsocket", 
+    "_meta": {
+      "title": "SaveImageWebsocket"
+    }
+  },
+}
+```
 
 # issue(問題)
  - issue #1 nseted associative array is not supported(入れ子の連想配列はサポートされていません)
