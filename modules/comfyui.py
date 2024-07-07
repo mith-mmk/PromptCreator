@@ -822,32 +822,35 @@ class ComufyClient:
             return convert[name]
         return {"sampler": name, "scheduler": None}
 
-    def checkWorkflow(self, workflow, options={}):
-        def model_search(model_name, required):
-            re_ext = re.compile(r"\.(safetensors|pt|ckpt)$")
-            base_name = re_ext.sub("", model_name)
-            check = False
-            alternames = []
-            for model_names in required:
-                if model_name in model_names:
-                    return True, []
-                else:
-                    _model_name = model_name.replace("\\", "/")
-                    if _model_name in model_names:
+    def _model_search(self, model_name, required):
+        base_name = re.sub(r"\.(safetensors|pt|ckpt)$", "", model_name)
+        check = False
+        alternames = []
+        for model_names in required:
+            if model_name in model_names:
+                return True, []
+            else:
+                _model_name = model_name.replace("\\", "/")
+                if _model_name in model_names:
+                    alternames.append(_model_name)
+                    printVerbose(f"Model {model_name} converted to {_model_name}")
+                    break
+                _model_name = model_name.replace("/", "\\")
+                if _model_name in model_names:
+                    alternames.append(_model_name)
+                    printVerbose(f"Model {model_name} converted to {_model_name}")
+                    break
+                for name in model_names:
+                    _base_name = re.sub(r"\.(safetensors|pt|ckpt)$", "", name)
+                    if _base_name.endswith(base_name):
+                        printVerbose(f"Model {model_name} converted to {name}")
+                        alternames.append(name)
+                    elif name.endswith(model_name):
+                        printVerbose(f"Model {model_name} converted to {name}")
                         alternames.append(_model_name)
-                        break
-                    _model_name = model_name.replace("/", "\\")
-                    if _model_name in model_names:
-                        alternames.append(_model_name)
-                        break
-                    for name in model_names:
-                        base_name = re_ext.sub("", name)
-                        if base_name.endswith(base_name):
-                            alternames.append(name)
-                        if base_name.endswith(model_name):
-                            alternames.append(model_name)
-            return check, alternames
+        return check, alternames
 
+    def checkWorkflow(self, workflow, options={}):
         try:
             res = asyncio.run(self.client.get(self.hostname + "/object_info"))
             if res is None:
@@ -908,7 +911,7 @@ class ComufyClient:
                     info["clip_skip"] = abs(node["inputs"]["stop_at_clip_layer"])
                 if class_type == "VAELoader":
                     info["sd_vae_name"] = node["inputs"]["vae_name"]
-                    check, alternames = model_search(
+                    check, alternames = self._model_search(
                         info["sd_vae_name"], required["vae_name"]
                     )
                     if not check:
@@ -924,7 +927,7 @@ class ComufyClient:
                     info["sd_model_name"] = node["inputs"]["ckpt_name"]
                     re_ext = re.compile(r"\.(safetensors|pt|ckpt)$")
                     sd_model_name = re_ext.sub("", info["sd_model_name"])
-                    check, alternames = model_search(
+                    check, alternames = self._model_search(
                         info["sd_model_name"], required["ckpt_name"]
                     )
 
@@ -943,7 +946,9 @@ class ComufyClient:
 
                     lora_name = node["inputs"]["lora_name"]
                     info["lora"].append(lora_name)
-                    check, alternames = model_search(lora_name, required["lora_name"])
+                    check, alternames = self._model_search(
+                        lora_name, required["lora_name"]
+                    )
 
                     if not check:
                         if len(alternames) > 0:
