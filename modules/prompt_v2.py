@@ -400,7 +400,21 @@ def read_file_v2(filename, error_info=""):
                 Logger.debug(f"strs {strs}")
             elif ext == ".json":
                 with open(filename, "r", encoding="utf_8") as f:
-                    strs.append(json.load(f))
+                    json_data = json.load(f)
+                    if type(json_data) is list:
+                        parsed = []
+                        for item in json_data:
+                            if "W" in item:
+                                item["weight"] = item.get("W", 0.1)
+                                del item["W"]
+                            if "C" in item:
+                                item["choice"] = item.get("C", [])
+                                del item["C"]
+                            if "V" in item:
+                                item["variables"] = item.get("V", [])
+                                del item["V"]
+                            parsed.append(item)
+                        strs.extend(parsed)
             else:
                 with open(filename, "r", encoding="utf_8") as f:
                     for i, item in enumerate(f.readlines()):
