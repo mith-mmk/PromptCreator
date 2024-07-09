@@ -884,6 +884,7 @@ class ComufyClient:
             info = {}
             positive = None
             negative = None
+            is_error = False
             for node_id in workflow:
 
                 printDebug(f"Checking node {node_id}")
@@ -897,7 +898,7 @@ class ComufyClient:
                 required = object_info[class_type].get("input", {}).get("required", {})
                 if class_type not in object_info:
                     printError(f"Class type {class_type} not found")
-                    raise Exception(f"Class type {class_type} not found")
+                    is_error = True
                 if class_type == "KSampler":
                     info["sampler_name"] = node["inputs"]["sampler_name"]
                     info["scheduler"] = node["inputs"]["scheduler"]
@@ -917,7 +918,7 @@ class ComufyClient:
                             break
                     if not check:
                         printError(f"Sampler {info['sampler_name']} not found")
-                        raise Exception(f"Sampler {info['sampler_name']} not found")
+                        is_error = True
                     check = False
                     for scheduler in required["scheduler"]:
                         if info["scheduler"] in scheduler:
@@ -925,10 +926,10 @@ class ComufyClient:
                             break
                     if not check:
                         printError(f"Scheduler {info['scheduler']} not found")
-                        raise Exception(f"Scheduler {info['scheduler']} not found")
+                        is_error = True
                 elif class_type == "CLIPSetLastLayer":
                     if node["inputs"]["stop_at_clip_layer"] >= 0:
-                        raise ValueError("stop_at_clip_layer must be negative")
+                        is_error = True
                     info["clip_skip"] = abs(node["inputs"]["stop_at_clip_layer"])
                 elif class_type == "VAELoader":
                     info["sd_vae_name"] = node["inputs"]["vae_name"]
@@ -942,8 +943,8 @@ class ComufyClient:
                             )
                             node["inputs"]["vae_name"] = alternames[0]
                         else:
+                            is_error = True
                             printError(f"VAE {info['sd_vae_name']} not found")
-                            raise Exception(f"VAE {info['sd_vae_name']} not found")
                 elif class_type == "CheckpointLoaderSimple":
                     info["sd_model_name"] = node["inputs"]["ckpt_name"]
                     check, alternames = self._model_search(
@@ -957,10 +958,10 @@ class ComufyClient:
                             )
                             node["inputs"]["ckpt_name"] = alternames[0]
                         else:
+                            is_error = True
                             printError(f"Model {info['sd_model_name']} not found")
                             raise Exception(f"Model {info['sd_model_name']} not found")
                 elif class_type == "LoraLoader":
-
                     if "lora" not in info:
                         info["lora"] = []
 
@@ -977,10 +978,90 @@ class ComufyClient:
                             )
                             node["inputs"]["lora_name"] = alternames[0]
                         else:
+                            is_error = True
                             printError(f"Lora {lora_name} not found")
                             raise Exception(f"Lora {lora_name} not found")
                 elif class_type == "CLIPTextEncode":
                     info["prompt"] = node["inputs"]["text"]
+
+                # all required inputs check
+                for key in required:
+                    if key in node["inputs"]:
+                        node_type = required[key][0]
+                        if not isinstance(node_type, str):
+                            if isinstance(node_type, list):
+                                printVerbose(f"Array Node type {node_type}")
+                                input_values = node["inputs"][key]
+                                if (
+                                    key != "ckpt_name"
+                                    or key != "lora_name"
+                                    or key != "vae_name"
+                                ):
+
+                                    if input_values not in node_type:
+                                        printError(
+                                            f'node "{node_id}" {key} must be one of required_values, but got {input_values} not found'
+                                        )
+                                        printVerbose(f"Required values {node_type}")
+                                        is_error = True
+                        elif node_type == "INT":
+                            if not isinstance(node["inputs"][key], int):
+                                try:
+                                    node["inputs"][key] = int(node["inputs"][key])
+                                except Exception as e:
+                                    printError(
+                                        f"{node_id} {key} must be integer, but got {node['inputs'][key]}"
+                                    )
+                                    is_error = True
+                            min = required[key][1].get("min", None)
+                            max = required[key][1].get("max", None)
+                            if min is not None and node["inputs"][key] < min:
+                                printError(
+                                    f"{node_id} {key} must be greater than {min}, but got {node['inputs'][key]}"
+                                )
+                                is_error = True
+                            if max is not None and node["inputs"][key] > max:
+                                printError(
+                                    f"{node_id} {key} must be less than {max}, but got {node['inputs'][key]}"
+                                )
+                                is_error = True
+                        elif node_type == "FLOAT":
+                            if not isinstance(node["inputs"][key], float):
+                                try:
+                                    node["inputs"][key] = float(node["inputs"][key])
+                                except Exception as e:
+                                    printError(
+                                        f"node \"{node_id}\" {key} must be float, but got {node['inputs'][key]}"
+                                    )
+                                    is_error = True
+                            min = required[key][1].get("min", None)
+                            max = required[key][1].get("max", None)
+                            if min is not None and node["inputs"][key] < min:
+                                printError(
+                                    f"{node_id} {key} must be greater than {min}, but got {node['inputs'][key]}"
+                                )
+                                is_error = True
+                            if max is not None and node["inputs"][key] > max:
+                                printError(
+                                    f"{node_id} {key} must be less than {max}, but got {node['inputs'][key]}"
+                                )
+                                is_error = True
+                        elif node_type == "STRING":
+                            if not isinstance(node["inputs"][key], str):
+                                printError(
+                                    f"{node_id} {key} must be string, but got {node['inputs'][key]}"
+                                )
+                                is_error = True
+                            allow_mutli = required[key][1].get("multiline", False)
+                            if not allow_mutli:
+                                if "\n" in node["inputs"][key]:
+                                    printError(
+                                        f"{node_id} {key} must be single line, but got multiline"
+                                    )
+                                    is_error = True
+
+                    else:
+                        printError(f"Required input {key} not found")
 
             def prompt_search(workflow, position, prompt=""):
                 node_id = position[0]
@@ -1059,7 +1140,10 @@ class ComufyClient:
                 info["negative_prompt"] = negative_prompt
         except Exception as e:
             printError("Failed to check workflow", e)
-            return None
+            return None, None
+        if is_error:
+            printError("Workflow is invalid")
+            return None, None
         printDebug("Workflow is valid")
         return workflow, info
 
