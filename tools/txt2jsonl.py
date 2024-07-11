@@ -43,7 +43,9 @@ def read_file_v2(filename, error_info=""):
                         item = item_split_txt(item, error_info, 0.1)
                         strs.append(item)
                     except Exception:
-                        print(f"Error happen line {error_info} {filename} {i} {item}")
+                        print(
+                            f"Error happen line {i+1}, {error_info} {filename} {item}"
+                        )
         except FileNotFoundError:
             raise FileNotFoundError
     return strs
@@ -134,40 +136,6 @@ def convert(path_or_file, output_dir):
     print(files)
 
 
-def jsonl2jonsl(files):
-    # jsonl ファイルを読み込む
-    for file in files:
-        with open(file, "r", encoding="utf_8") as f:
-            data = f.readlines()
-        for idx, item in enumerate(data):
-            item = json.loads(item)
-            val = item["V"]
-            length = len(val)
-            # prompt = val[0]
-            # negative = val[1]
-            # height = val[2]
-            # width = val[3]
-            # scale = val[4]
-            if length > 1:
-                item["prompt"] = val[0]
-            if length > 2:
-                item["negative"] = val[1]
-            if length > 3:
-                item["height"] = val[2]
-            if length > 4:
-                item["width"] = val[3]
-            if length > 5:
-                item["scale"] = val[4]
-            del item["V"]
-            item["V"] = val[0]
-            data[idx] = item
-        # save new jsonl file
-        new_filename = file.replace(".jsonl", "-new.jsonl")
-        with open(new_filename, "w", encoding="utf_8") as f:
-            for item in data:
-                f.write(json.dumps(item, ensure_ascii=False) + "\n")
-
-
 def jsonl2jsonl(files, islora=False):
     for file in files:
         print(file)
@@ -187,6 +155,7 @@ def jsonl2jsonl(files, islora=False):
                     item = json.loads(comment[0])
                     item["comment"] = "//" + comment[1]
             except json.JSONDecodeError:
+                print(f"Error happen line {idx+1}, {file} {item}")
                 continue
             # "W"  "C" その他 "V" の順番でdump
             output_json = {}
