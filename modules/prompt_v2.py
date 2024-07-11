@@ -92,7 +92,7 @@ def text_formula_v2(text, args):
                 if variable in variables:
                     try:
                         replace_text = variables.get(variable)[array_index]
-                        text = text.replace("${" + formula + "}", replace_text)
+                        text = text.replace("${" + formula + "}", str(replace_text))
                     except Exception:
                         Logger.verbose(
                             f"{formula} index {array_index} is not, set use empty in {text}"
@@ -113,7 +113,7 @@ def text_formula_v2(text, args):
                 if variable in variables:
                     try:
                         replace_text = variables.get(variable, "")[array_index]
-                        text = text.replace("${" + formula + "}", replace_text)
+                        text = text.replace("${" + formula + "}", str(replace_text))
                     except Exception:
                         Logger.verbose(
                             f"{formula} index {array_index} is not, set use empty in {text}"
@@ -139,7 +139,7 @@ def text_formula_v2(text, args):
                             f"variable {variable} not has '{key}', use empty"
                         )
                         replace_text = ""
-                    text = text.replace("${" + formula + "}", replace_text)
+                    text = text.replace("${" + formula + "}", str(replace_text))
                 except Exception:
                     Logger.error(f"Error happen dict formula {formula}")
             else:
@@ -162,6 +162,8 @@ def nested_prompt_formula_v2(items, args):
         return None
     if type(items) is str:
         return text_formula_v2(items, args)
+    elif isinstance(items, float) or isinstance(items, int):
+        return items
     elif type(items) is dict:
         for key in items:
             if type(items[key]) is str:
@@ -209,6 +211,8 @@ def prompt_formula_v2(
 
     if type(new_prompt) is str:
         return text_formula_v2(new_prompt, args)
+    elif isinstance(new_prompt, float) or isinstance(new_prompt, int):
+        return new_prompt
     elif type(new_prompt) is dict:
         for key in new_prompt:
             # verbose は変換しない
@@ -933,7 +937,33 @@ def create_text_v2(opt):
             choices = method["choice"]
             if type(choices) is str:
                 choices = choices.split(" ")
+
             pre_choices.extend(choices)
+        elif key == "preset":
+            Logger.debug(f"preset {method}")
+            presets = method["preset"]
+            if type(presets) is str:
+                presets = presets.split(" ")
+            for preset in presets:
+                if preset not in variables:
+                    Logger.error(f"preset {preset} is not found")
+                    continue
+                Logger.verbose(f"preset {preset}")
+                weighted_variables = yml.get("weighted_variables", {})
+
+                value, attributes = choice_v2(weighted_variables[preset])
+                Logger.verbose(f"preset {preset} {value}")
+                weighted_variables[preset] = [
+                    {
+                        "variables": value,
+                        "choice_start": 0.0,
+                        "choice_end": 1.0,
+                    }
+                ]
+                if attributes is not None:
+                    for attribute in attributes:
+                        weighted_variables[preset][0][attribute] = attributes[attribute]
+
         elif key == "exclude":
             excludes = method["exclude"]
             if type(excludes) is str:
