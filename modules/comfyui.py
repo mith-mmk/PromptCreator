@@ -11,7 +11,6 @@ import urllib.request
 import uuid
 
 import httpx
-
 # import httpx_ws
 import websocket  # NOTE: websocket-client (https://github.com/websocket-client/websocket-client)
 from PIL import Image
@@ -297,6 +296,130 @@ class ComfyUIWorkflow:
         output = {"model": 0, "clip": 1}
         return flow, output
 
+    def createHiresfix(
+        self,
+        workflow,
+        fromLatent,
+        fromModel,
+        fromPositive,
+        formNegative,
+        clip,
+        seed,
+        options={},
+    ):
+        upscale_method = options.get("upscale_method", "nearest-exact")
+        denoising_strength = options.get("denoising_strength", 0)
+        scale = options.get("hr_scale", 2)
+        width = options.get("hr_resize_x", 0)
+        height = options.get("hr_resize_y", 0)
+        seconde_step = options.get("hr_second_pass_steps", 0)
+        if seconde_step == 0:
+            seconde_step = options.get("steps", 20)
+        if width == 0 and height == 0:
+            if scale == 1:
+                return workflow[str(self.wf_num)], {
+                    "latent": fromLatent,
+                    "model": fromModel,
+                    "clip": clip,
+                }
+            workflow[str(self.wf_num)], o = self.createCustom(
+                "LatentUpscaleBy",
+                {
+                    "samples": fromLatent,
+                    "upscale_method": upscale_method,
+                    "scale_by": scale,
+                },
+                {"output": {"latent": 0}},
+            )
+        else:
+            f1width = options.get("width", 512)
+            f1height = options.get("height", 512)
+            aspect = f1width / f1height
+            if width == 0:
+                width = height * aspect
+            elif height == 0:
+                aspect = f1height / f1width
+                height = width * aspect
+            workflow[str(self.wf_num)], o = self.createCustom(
+                "LatentUpscale",
+                {
+                    "samples": fromLatent,
+                    "upscale_method": upscale_method,
+                    "width": width,
+                    "height": height,
+                    "clop": "disabled",
+                },
+                {"output": {"latent": 0}},
+            )
+        fromLatent = [str(self.wf_num), o["latent"]]
+        self.wf_num += 1
+
+        hr_positive = options.get("hr_prompt", None)
+        if hr_positive is not None:
+            if options.get("type") == "sdxl":
+                workflow[str(self.wf_num)], o = self.createCLIPTextEncodeSDXL(
+                    hr_positive, clip
+                )
+            else:
+                workflow[str(self.wf_num)], o = self.createCLIPTextEncode(
+                    hr_positive, clip
+                )
+            fromPositive = [str(self.wf_num), o["conditioning"]]
+            self.wf_num += 1
+
+        hr_negative = options.get("hr_negative_prompt", None)
+        if hr_negative is not None:
+            if options.get("type") == "sdxl":
+                workflow[str(self.wf_num)], o = self.createCLIPTextEncodeSDXL(
+                    hr_negative, clip
+                )
+            else:
+                workflow[str(self.wf_num)], o = self.createCLIPTextEncode(
+                    hr_negative, clip
+                )
+            formNegative = [str(self.wf_num), o["conditioning"]]
+            self.wf_num += 1
+
+        checkpoint = options.get("hr_checkpoint_name", None)
+        if checkpoint is not None:
+            workflow[str(self.wf_num)], o = self.createLoadCheckpoint(checkpoint)
+            self.wf_num += 1
+            fromModel = [str(self.wf_num), o["model"]]
+            clip = [str(self.wf_num), o["clip"]]
+
+        if "hr_scheduler" in options:
+            scheduler = options["hr_scheduler"]
+        else:
+            scheduler = options.get("scheduler", "karras")
+        if "hr_sampler_name" in options:
+            sampler_name = options["hr_sampler_name"]
+        else:
+            sampler_name = options.get("sampler_name", "dpmpp_2m_sde")
+
+        workflow[str(self.wf_num)], o = self.createKSampler(
+            fromLatent,
+            fromModel,
+            fromPositive,
+            formNegative,
+            {
+                "cfg": options.get("cfg_scale", 7),
+                "denoise": denoising_strength,
+                "sampler_name": scheduler,
+                "scheduler": sampler_name,
+                "seed": seed,
+                "steps": seconde_step,
+            },
+        )
+        result = {
+            "latent": o["latent"],
+            "model": fromModel,
+            "positive": fromPositive,
+            "neagative": formNegative,
+            "clip": clip,
+        }
+
+        return workflow, result
+
     # example
     # createCustom("UpscaleLatent", {"upscale_method": "nearest-exact", "width": 1024, "height": 1024, "clop": "disabled"}, {"output": {"latent": 0}})
 
@@ -461,6 +584,25 @@ class ComfyUIWorkflow:
         )  # sampler mapper
         info["scheduler"] = options.get("scheduler", "karras")
         info["steps"] = options.get("steps", 20)
+
+        if options.get("enable_hr", False):
+            printDebug(f"create hiresfix")
+            workflow, result = self.createHiresfix(
+                workflow,
+                sampler_from,
+                model_from,
+                positive_from,
+                negative_from,
+                positive_clip_from,
+                seed,
+                options,
+            )
+            sampler_from = result["latent"]
+            model_from = result["model"]
+            positive_from = result["positive"]
+            negative_from = result["negative"]
+            positive_clip_from = result["clip"]
+            self.wf_num += 1
 
         printDebug(f"create encode vae")
         workflow[str(self.wf_num)], o = self.createEncodeVAE(
