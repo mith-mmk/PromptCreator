@@ -70,7 +70,7 @@ class ComfyUIWorkflow:
     # ✓ lora
     # ✓ BREAK
     # AND
-    # [sentens]
+    # [sentens] not implement [[]] [[] xxx ]...
     # [from:to:average]
     # hiresfix
     # img2img
@@ -223,7 +223,7 @@ class ComfyUIWorkflow:
         blacket_matcher = re.compile(r"\[([^\:\|]?)\]")
         blackets_all = blacket_matcher.findall(prompt)
         for blacket in blackets_all:
-            prompt = prompt.replace(f"[{blacket}]", f"({blacket}:0.91")
+            prompt = prompt.replace(f"[{blacket}]", f"({blacket}:0.91)")
         prompts = prompt.split("BREAK")
         from_prompt = None
         if type == "sdxl":
