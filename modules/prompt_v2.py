@@ -140,10 +140,11 @@ def text_formula_v2(text, args):
                         )
                         replace_text = ""
                     text = text.replace("${" + formula + "}", str(replace_text))
-                except Exception:
-                    Logger.error(f"Error happen dict formula {formula}")
+                except Exception as e:
+                    Logger.error(f"Error happen dict formula {formula} {e}")
             else:
-                Logger.error(f"Error happen dict formula {formula}")
+                pass
+                # Logger.error(f"Error happen dict formula {formula}")
         else:
             # simple formula ${variable}
             if formula in variables:
@@ -472,7 +473,7 @@ def item_split_txt(item, error_info="", default_weight=0.1):
     return {"weight": weight, "variables": variables}
 
 
-def prompt_multiple_v2(yml, variable, array, input=[], attributes=None):
+def prompt_multiple_v2(yml, variable, array, input=[]):
     Logger.debug("prompt_multiple_v2 start")
     output = [{}] * len(array) * len(input) if len(input) > 0 else [{}] * len(array)
     i = 0
@@ -481,21 +482,25 @@ def prompt_multiple_v2(yml, variable, array, input=[], attributes=None):
         Logger.debug(f"input {input}")
 
     for parts in input:
-        # Logger.debug(f"prompt_multiple_v2 {parts}")
         for item in array:
+            Logger.debug(f"prompt_multiple_v2 {item}")
             args = {}
-            args[variable] = item
-            # Logger.debug(f"item {args}")
+            attributes = item.copy()
+            del attributes["variables"]
+            args[variable] = item.get("variables", [])
+            Logger.debug(f"item {args}")
             if parts is None:
                 parts = {}
             output[i] = copy.deepcopy(parts)
             verbose = output[i].get("verbose", {})
             if "variables" not in verbose:
                 verbose["variables"] = {}
-            verbose["variables"][variable] = item
+            verbose["variables"][variable] = item.get("variables", [])
             if attributes:
                 verbose["attributes"] = attributes
-            _output = prompt_formula_v2(output[i], args, opt=yml, attributes=attributes)
+            _output = prompt_formula_v2(
+                output[i], args, opt=yml, attributes={variable: attributes}
+            )
             Logger.debug(f"output {_output}")
             if _output is None:
                 Logger.error(f"Error happen prompt_multiple_v2 return empty")
@@ -683,9 +688,8 @@ def prompt_random_v2(yml, max_number, input=[], pre_choice=[], excludes=[]):
                 excludes=excludes,
             )
         except Exception as e:
-            Logger.error(f"Error happen prompt_formula_v2 {e}")
-            Logger.error(f"{current}")
-            raise Exception(f"Error happen prompt_formula_v2 {e}")
+            Logger.warning(f"Error happen prompt_formula_v2 {e}")
+            Logger.debug(f"{current}")
         Logger.debug(f"prompt_random_v2 {idx} {current}")
         if isinstance(current, dict):
             Logger.debug(f"get verbose {current}")
@@ -871,10 +875,6 @@ def create_text_v2(opt):
                 array[key].append(
                     item_split_txt(txt, error_info=f"variables {key} {i}")
                 )
-        an_array = []
-        for item in array[key]:
-            an_array.append(item.get("variables", []))
-        array[key] = an_array
     output = []
 
     calc_weighted_variables(yml)
@@ -919,14 +919,15 @@ def create_text_v2(opt):
             except Exception as e:
                 Logger.error(f"Error happen prompt_random_v2 {e}")
                 raise Exception(f"Error happen random {e}")
+            excludes = []
         elif key == "multiple":
             multiple = method["multiple"]
             Logger.debug(f"multiple {multiple}")
             if type(multiple) is str:
                 multiple = multiple.split(" ")
+
             for variable in multiple:
                 array = yml.get("array", {}).get(variable, [])
-                # Logger.debug(f"create multiple {variable} {array}")
                 try:
                     output = prompt_multiple_v2(yml, variable, array, output)
                 except Exception as e:
@@ -969,8 +970,6 @@ def create_text_v2(opt):
             if type(excludes) is str:
                 excludes = excludes.split(" ")
             excludes.extend(excludes)
-            pass
-
         elif key == "cleanup":
             Logger.debug(f"cleanup {method}")
             cleanup = method["cleanup"]
