@@ -6,7 +6,7 @@
 ## objective(目的)
  The Prompt Creator V2 is a prompt creator for AUTOMATIC1111/stable-diffusion-webui(Profileから、Stable Diffusion用のプロンプトを自動作成します)
  You can also automatically generate images by using the API.(またAPIを叩くことにより画像の自動生成を可能にします)
- ComfyUI API is also supported(ComfyUI APIもサポートしています)
+ ComfyUI API is also supported([ComfyUI APIもサポートしています](#comfyui))
 
  - A config file is required(設定ファイルが必要です)
  - A config file is written in yaml(設定ファイルはyaml形式で記述します)
@@ -273,10 +273,17 @@ options:
     json: true
     number: 10   # number of prompt(プロンプトの数) multipleの場合は配列数がかけ算される
 methods:  # random: 1  or multiple: array
-    - multiple: char place # array char と place から複数のプロンプトを生成
+    - preset: model  # presets(プリセット) only choice once(最初に一度だけ選択)
+    - exclude : date # exclude choice in "random", run random exclude variables will be clear("random"で除外する変数)
     - random: 0 # random 0 is use options.number(0はoptions.numberを使用)
+    - multiple: char place # array char と place から複数のプロンプトを生成
+    - choice: actions  # values choice before run "random" method(randomの実行前に値を選択)
+    - random: 0 # random use after multiple must set 0(mutipleの後にrandomを使う場合は0を設定する)
     - creanup: prompt # clean up prompt (promptをクリーンアップ)
 variables:
+    model:
+        - xd.safetesors
+        - sd15.safetesors
     actions:
         - standing
         - sitting
@@ -296,7 +303,7 @@ command:
 ```
  This case is generate 10 * 4 * 4 = 160 prompts, beacuse multiple mode uses char number is and place number 4. (この場合、160のプロンプトが生成されます。multipleモードでcharが4つ、placeが4つ指定されているため10 * 4 * 4 = 160になります。)
 
-### array variables(配列変数)
+## array variables(配列変数)
 ```yaml
     char: 
         - 0.1;cat;dog;bird;fish
@@ -307,7 +314,7 @@ command:
 ```
 array variables can set weight at first of array. In this case, char has array of cat, dog, bird, fish with weight 0.1. cat, dog, bird, fish are replaced to 1st to 4th of char array. (配列変数は、配列の最初に重みを指定することができます。この場合、charは0.1の重みでcat、dog、bird、fishの配列を持ちます。cat、dog、bird、fishはcharの配列の1から4番目に置き換えられます。)
 
-### nested variables(ネスト変数)
+## nested variables(ネスト変数)
 ```yaml
     char: 
         - ${animal}
@@ -317,7 +324,7 @@ array variables can set weight at first of array. In this case, char has array o
 ```
 This case is replace char to \$\{animal\} and \$\{human\} (この場合、\$\{char\}が\$\{animal\}と\$\{human\}に置き換えられます)
 
-### attribute, associative array(アトリビュート,連想配列)
+## attribute, associative array(アトリビュート,連想配列)
   reserved words are  "W", "C", "V", "weight", "choice", "variable", "query", these are not accesible. (以上は予約語で、アクセス出来ません)
 
 ```yaml
@@ -352,8 +359,8 @@ jsonl file(beings.jsonl)
 
  issue #1 nseted associative array is not supported(入れ子の連想配列はサポートされていません)
 
-### ファイルの読み込み
-#### text
+## ファイルの読み込み
+### text
 ```yaml
     date: text/date.txt
 ```
@@ -364,7 +371,7 @@ This case is read text file date.txt. (この場合、date.txtファイルを読
 ```
 text is not support query and associative array(textではクエリーと連想配列はサポートされていません)
 
-#### jsonl
+### jsonl
 ```yaml
     date: jsonl/date.jsonl[animal]
 ```
@@ -395,7 +402,22 @@ Example(例)
         "animal": ${date["animal"]} # associative array(連想配列)
         beings: jsonl/date.jsonl[animal,human] # multiple category(複数のカテゴリー) saparated by comma(カンマで区切る) not support space(スペースはサポートされません)
 ```
-#### DB query
+### json
+```json
+[
+  {"W":0.1, "C":["animal"], "V":"day", "animal":"cat"},
+  {"W":0.1, "C":["animal"], "V":"day", "animal":"dog"},
+  {"W":0.1, "C":["animal"], "V":"night", "animal":"bird"},
+  {"W":0.1, "C":["animal"], "V":"night", "animal":"fish"},
+  {"W":0.1, "C":["*"], "V":"moonnight", "animal":"bird"},
+  {"W":0.1, "C":["animal","human"], "V":"night", "animal":"human"},
+  {"W":0.1, "C":["insect"], "V":"night", "animal":"ant"},
+  {"weight":0.1, "choice":["insect"],  "variable":"night", "animal":"ant"},
+]
+```
+- issue: query is not supported(クエリーはサポートされていません)
+
+### DB query
  issue #2 DB query is not supported, yet (DBクエリーはまだサポートされていません)
 
 ```yaml
@@ -408,7 +430,7 @@ variables:
     date: date[category = `animal`] # select * from date where category = `animal`'
 ```
 
-### profile(プロファイル)
+## profile(プロファイル)
 profile is override config file(設定ファイルをprofileで上書きします)
 ```yaml
 command:
@@ -460,7 +482,7 @@ This case is preload profile defaut next animal, last xl (この場合、デフ�
 load_profile is not suport nested profile(プロファイルは入れ子にできません)
 
 
-### Parser(パーサー)
+## Parser(パーサー)
  sentence in \$\{ \} can be parsed (\$\{= \}の中に式が書けます)
 
 Example(例)
@@ -470,7 +492,7 @@ Example(例)
 
 ```
 
-#### Parse tester (パーサーテスター)
+### Parse tester (パーサーテスター)
 ```
 > python tools.py parser_test '2 + x * y' 'x=3,y=4'
 ...
@@ -485,13 +507,22 @@ Example(例)
 1       # true
 ```
 
-#### current functions(現在の関数)
+### current functions(現在の関数)
  not support boolean type (ブーリアン型はサポートされていません) retrun 0(false) or 1(true)(0(偽)または1(真)を返します)
 
 functions(関数) str1,str2,.. are string(文字列) and x,y... are number(数値)
 - chained("objects", 0.8, 3) : create chained string(連鎖変数) "object" = ${object} 0.8 is threshhold, 3 is count(0.8は閾値、3は回数)  
 - choice("objects") : choice one sobjects(オブジェクトの中から1つ選択)
 - contains(str1,str2, str3....) : str1 contains [str2, str3, ...] (文字列str1がstr2...を含むか)
+- attribute("objects", str2) : get attribute of variabled "objects"(変数str1の属性を取得)
+- choice_index("objects", query, number) : choice index of objects(オブジェクトのインデックスを選択)
+- choice_attribute("objects", query, attribute) : choice attribute of objects(オブジェクトの属性を選択)
+- value("objects", query) : get value of objects(オブジェクトの値を取得)
+- replace(str1, str2, str3) : replace str2 to str3 in str1(str1の中のstr2をstr3に置換)
+- split(str1, str2) : split str1 by str2(文字列str1をstr2で分割)
+- upper(str1) : upper case(大文字)
+- lower(str1) : lower case(小文字)
+- if(condition, truecase, falsecase) : if condition is true, return truecase, else return falsecase(ifのconditionがtrueの場合、truecaseを返し、それ以外はfalsecaseを返します)
 - pow(x,y) : x^y(累乗)
 - sqrt(x) : square root(平方根)
 - abs(x) : absolute value(絶対値)
@@ -503,13 +534,8 @@ functions(関数) str1,str2,.. are string(文字列) and x,y... are number(数�
 - float(str1) : string to float(文字列を浮動小数点に変換)
 - str(x) : number to string(数値を文字列に変換)
 - len(str1) : length of string(文字列の長さ)
-- max(x,y), max(str1,str2) : max number(最大値)
-- min(x,y), min(str1,str2) : min number(最小値)
-- replace(str1,str2,str3) : replace str2 to str3 in str1(文字列str1の中のstr2をstr3に置換)
-- split(str1,str2) : split str1 by str2(文字列str1をstr2で分割)
-- upper(str1) : upper case(大文字)
-- lower(str1) : lower case(小文字)
-- if(condition, truecase, falsecase) : if condition is true, return truecase, else return falsecase(ifのconditionがtrueの場合、truecaseを返し、それ以外はfalsecaseを返します)
+- max(x,y,...), max(str1,str2,...) : max number(最大値)
+- min(x,y,..), min(str1,str2,...) : min number(最小値)
 - not(condition) : 0 to 1, 1 to 0(0を1に、1を0に変換)
 - and(condition1, condition2) : and operation(論理積)
 - or(condition1, condition2) : or operation(論理和)
@@ -533,6 +559,29 @@ functions(関数) str1,str2,.. are string(文字列) and x,y... are number(数�
 - weekday(): current weekday(現在の曜日)
 - week(): current week(現在の週)
 
+## save file (ファイルの保存)
+- save file is save prompt list file(ファイルの保存はプロンプトリストファイルを保存します)
+- default save file pattern is \[num\]-\[seed\] (ファイル名パターンは\[num\]-\[seed\]です)
+  
+### save file pattern(ファイル名パターン)
+- \[num\] : number of image(画像の番号) 5 digits(5桁), but --num-length option is set(5桁ですが、--num-lengthオプションで設定できます)
+- \[seed\]: random seed(ランダムシード)
+- \[shortdate\]: current date(現在の日付) YYMMDD
+- \[DATE\]: current date(現在の日付) YYYYMMDD
+- \[date\]: current date(現在の日付) YYYY-MM-DD
+- \[datetime\]: current datetime(現在の日時) YYYYMMDDHHMMSS
+- \[shortyear\]: current year(現在の年) YY
+- \[year\]: current year(現在の年) YYYY
+- \[month\]: current month(現在の月) MM
+- \[day\]: current day(現在の日) DD
+- \[hour\]: current hour(現在の時) HH
+- \[min\]: current minute(現在の分) MM
+- \[sec\]: current second(現在の秒) SS
+- \[var:variable\]: variable(変数)
+- \[var:variable:attribute\]: variable\[attribute\] (変数の属性)
+- \[var:variable(index)\]: variable\[index\] (変数のインデックス)
+- \[info:key\]: info key(情報キー)
+
 # ComfyUI
 - --api-comfy option is use ComfyUI API(--api-comfyを指定するとComfyUI APIを使います)
 - Try to create workflow to run prompt in comfy(promptをcomfyで実行できるようにワークフローを作成を試みます)
@@ -554,7 +603,14 @@ python cp2.py prompts/prompt.yaml --api-output-dir ./outputs/txt2img-images --ap
 
 ```yaml
 version: 2
+methods:
+  - preset: model
+  - random: 0
+  - cleanup: prompt
 variables:
+    model:
+      - xd.safetesors
+      - sd15.safetesors
     seed: ${=random_int()}
     prompt: ['cat is run']
     negative: ['nsfw']

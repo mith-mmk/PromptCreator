@@ -45,8 +45,6 @@ class CallbackFunctions:
                     return self.getChoiceIndex(args[0], args[1], args[2])
                 case "choice_attribute":
                     return self.getChoiceAttribute(args[0], args[1], args[2])
-                case "value":
-                    return self.getValue(args[0])
                 case "test":
                     return "testdayo"
                 case _:
