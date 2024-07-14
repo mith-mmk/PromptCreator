@@ -46,9 +46,7 @@ def txt2img(
             opt["variables"] = item.pop("variables")
         # v2 mode
         if "verbose" in item:
-            verbose = item.pop("verbose")
-            opt["variables"] = verbose.get("variables")
-            opt["values"] = verbose.get("values")
+            opt["verbose"] = item.pop("verbose")
         part = item.get("filepart", "")
         if part:
             del item["filepart"]

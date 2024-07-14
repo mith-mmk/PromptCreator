@@ -121,8 +121,8 @@ async def create_files(r, opt={"dir": "./outputs"}):
     filename_pattern = {}
 
     variables = get_variables(opt)
-    Logger.debug("variables", variables)
 
+    attributes = opt.get("attributes", opt.get("verbose", {}).get("attributes", {}))
     for key, value in info.items():
         filename_pattern[key] = value
 
@@ -135,12 +135,11 @@ async def create_files(r, opt={"dir": "./outputs"}):
             filename_pattern["var:" + key] = value
     filename_pattern["part"] = opt.get("filepart", "")
 
-    if "attributes" in opt.get("verbose", {}):
-        for key, value in opt["verbose"]["attributes"].items():
+    if attributes:
+        for key, value in attributes.items():
             # it's dict
             for k, v in value.items():
                 filename_pattern["var:" + key + ":" + k] = v
-
     if "info" in opt:
         for key, value in opt["info"].items():
             if type(key) is str:

@@ -497,20 +497,23 @@ def prompt_multiple_v2(yml, variable, array, input=[]):
                 verbose["variables"] = {}
             verbose["variables"][variable] = item.get("variables", [])
             if attributes:
-                verbose["attributes"] = attributes
-            _output = prompt_formula_v2(
+                if "attributes" not in verbose:
+                    verbose["attributes"] = {}
+                verbose["attributes"][variable] = attributes
+            current = prompt_formula_v2(
                 output[i], args, opt=yml, attributes={variable: attributes}
             )
-            Logger.debug(f"output {_output}")
-            if _output is None:
-                Logger.error(f"Error happen prompt_multiple_v2 return empty")
-                return None
-            if isinstance(_output, dict):
-                output[i] = _output
+            if isinstance(current, dict):
+                value = item.get("variables", [])[0]
+                Logger.debug(f"get value {value}")
+                if "values" not in verbose:
+                    verbose["values"] = {}
+                verbose["values"][variable] = value
+                output[i] = current
                 output[i]["verbose"] = verbose
             else:
                 raise Exception(
-                    f"Error happen prompt_multiple_v2 return type{type(_output)} {_output}"
+                    f"Error happen prompt_multiple_v2 return type{type(current)} {current}"
                 )
             i = i + 1
     Logger.debug("prompt_multiple_v2 end")
@@ -640,8 +643,12 @@ def prompt_random_v2(yml, max_number, input=[], pre_choice=[], excludes=[]):
     Logger.debug(f"prompt_random_v2 {output}")
     for idx, current in enumerate(output):
         Logger.debug(f"prompt_random_v2 {idx} {current}")
-        current_variables = {}
-        attributes = None
+        if current is not None:
+            current_variables = current.get("verbose", {}).get("variables", {})
+            attributes = current.get("verbose", {}).get("attributes", {})
+        else:
+            current_variables = {}
+            attributes = None
         Logger.debug(f"variables pre-choices")
         for key in pre_choice:
             parsed_choice = parced_choice(yml, key)
