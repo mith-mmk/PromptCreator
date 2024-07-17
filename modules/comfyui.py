@@ -11,6 +11,7 @@ import urllib.request
 import uuid
 
 import httpx
+
 # import httpx_ws
 import websocket  # NOTE: websocket-client (https://github.com/websocket-client/websocket-client)
 from PIL import Image
@@ -705,6 +706,24 @@ class ComufyClient:
             printError("Failed to get images", e)
             raise Exception("Failed to get images from comfyui in getImageFromUI")
 
+    async def write_progress(self, result):
+        import shutil
+
+        width = shutil.get_terminal_size().columns
+        header = result["header"]
+        percentage = result["progress"]
+        footer = result["footer"]
+        usefull_width = width - len(f"{header} || {footer}") - 10
+        perblock = 100.0 / usefull_width
+        if usefull_width > 10:
+            sharp = "█" * int(percentage / perblock + 0.5)
+            space = " " * (usefull_width - len(sharp))
+        else:
+            sharp = ""
+            space = ""
+        string = f"\033[{header} |{sharp}{space}| {footer}"
+        print(string, end="\r")
+
     async def getImages(self, ws, prompt, client_id, options={}):
         try:
             start_time = datetime.datetime.now()
@@ -716,7 +735,6 @@ class ComufyClient:
                 out = ws.recv()
                 if isinstance(out, str):
                     try:
-
                         message = json.loads(out)
                         if message["type"] == "executing":
                             data = message["data"]
@@ -738,10 +756,26 @@ class ComufyClient:
                                 percentage = (float(value) / float(max)) * 100.0
                                 duration = datetime.datetime.now() - start_time
                                 duration = duration.total_seconds()
+                                result = {
+                                    "header": "progress",
+                                    "progress": percentage,
+                                    "footer": f"{value}/{max} {duration:2f} sec",
+                                }
+                                await self.write_progress(result)
+                        elif message.get("type") == "status":
+                            try:
+                                data = message.get("data", {})
+                                status = data.get("status", {})
+                                exec_info = status.get("exec_info", {})
+                                text = "waiting... "
+                                for k, v in exec_info.items():
+                                    text += f"{k}: {v} "
                                 print(
-                                    f"progress {percentage:.1f} {value}/{max} {duration:2f} sec",
+                                    text,
                                     end="\r",
                                 )
+                            except Exception as e:
+                                printError("- Failed to print status", e)
                     except Exception as e:
                         printError("Failed to parse message", e)
                         printError(out[:100])
