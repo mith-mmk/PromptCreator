@@ -293,6 +293,7 @@ def main(args):
         opt["sd_model"] = sd_model
         opt["sd_vae"] = sd_vae
         opt["base_url"] = args.api_base
+        opt["cn_images_dir"] = args.cn_images_dir
         if sd_model is not None:
             api.set_sd_model(base_url=args.api_base, sd_model=sd_model, sd_vae=sd_vae)
         # api.init()
@@ -527,6 +528,9 @@ def run_from_args(command_args=None):
         "--mask-blur", type=int, default=None, help="Mask blur for img2img"
     )
 
+    parser.add_argument(
+        "--cn-images-dir", type=str, default=None, help="ControlNet images directory"
+    )
     # profiles
 
     parser.add_argument(

@@ -1,8 +1,10 @@
+import base64
 import json
 import os
 
 import modules.api as api
 import modules.share as share
+from modules.controlnet import ControlNet
 from modules.logger import getDefaultLogger
 from modules.save import save_images
 
@@ -50,6 +52,45 @@ def txt2img(
         part = item.get("filepart", "")
         if part:
             del item["filepart"]
+        controlnet = item.get("alwayson_scripts", {}).get("controlnet")
+        if controlnet:
+            try:
+                Logger.verbose("Extend Script ControlNet")
+                args = controlnet.get("args")
+                for arg in args:
+                    if not arg.get("enabled"):
+                        Logger.verbose("ControlNet arg is disabled, Skip prompt")
+                        continue
+                    image = arg.get("image")
+                    if image:
+                        dir = opt.get("cn_images_dir", "./inputs")
+                        image = os.path.join(dir, image)
+                        if not os.path.exists(image):
+                            Logger.error(f"Image file not found: {image}")
+                            continue
+                        with open(image, "rb") as f:
+                            arg["image"] = base64.b64encode(f.read()).decode("utf-8")
+                    Logger.info("ControlNet image loaded:")
+                    model = arg.get("model")
+                    if model:
+                        if "cn" in opt:
+                            cn = opt["cn"]
+                        else:
+                            cn = ControlNet(base_url)
+                            opt["cn"] = cn
+                        model = cn.searchModel(model)
+                        if model is None:
+                            Logger.error(f"ControlNet model not found: {model}")
+                            continue
+                        arg["model"] = model
+                    else:
+                        Logger.error("ControlNet model not found")
+                        continue
+                    Logger.info("ControlNet model:", model)
+            except Exception as e:
+                Logger.error("ControlNet error, Skip prompt:", e)
+                continue
+
         payload = json.dumps(item)
         response = api.request_post_wrapper(
             url,

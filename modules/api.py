@@ -18,6 +18,144 @@ Logger = logger.getDefaultLogger()
 # set 5sec is duration 2sec or 6sec, hut set 0.1sec is duration 0.3 sec
 
 
+class ProgressWriter:
+    def __init__(self):
+        pass
+
+    def printProgress(self):
+        pass
+
+
+"""
+class WeuUiAPI:
+    @staticmethod
+    def normalize_base_url(base_url: str) -> str:
+        if base_url[-1] == "/":
+            base_url = base_url[:-1]
+        return base_url
+
+    def __init__(self, hostname="http://localhost:7860", userpass=None):
+        self.client = None
+        self.timeout_c = 0.1
+        self.timeout = 5
+        self.max_timeout = 1000
+        self.client = httpx.AsyncClient()
+        self.sync_client = httpx.Client()
+        self.hostname = self.normalize_base_url(hostname)
+        self.progress_writer = ProgressWriter()
+        self.userpass = userpass
+
+    def getClient(self):
+        if self.client is None:
+            self.client = httpx.AsyncClient(
+                timeout=httpx.Timeout(self.timeout_c, read=self.max_timeout)
+            )
+        return self.client
+
+    def getSyncClient(self):
+        if self.sync_client is None:
+            self.sync_client = httpx.Client(
+                timeout=httpx.Timeout(self.timeout_c, read=self.max_timeout)
+            )
+        return self.sync_client
+
+    def setTimeout(self, timeout, connect_timeout=5):
+        self.timeout = timeout
+        self.timeout_c = connect_timeout
+
+    async def get(self, endpoint):
+        if self.client is None:
+            self.client = httpx.AsyncClient(
+                timeout=httpx.Timeout(self.timeout_c, read=self.max_timeout)
+            )
+        url = self.hostname + endpoint
+        headers = {
+            "Content-Type": "application/json",
+        }
+        if self.userpass:
+            headers["Authorization"] = "Basic " + str(
+                base64.b64encode(self.userpass.encode())
+            )
+        try:
+            res = await self.client.get(url, headers=headers)
+            if res.status_code == 200:
+                return res
+        except httpx.ReadTimeout:
+            Logger.error(f"Read timeout {url}")
+            raise httpx.ReadTimeout(f"Read timeout {url}")
+        except httpx.TimeoutException:
+            Logger.error(f"Failed to get {url} connect timeout")
+            raise httpx.TimeoutException(f"Failed to get {url} connect timeout")
+        except Exception as e:
+            raise e
+        error_result = {"error": res}
+        return error_result
+
+    async def postProgressed(self, endpoint, data):
+        url = self.hostname + endpoint
+        progress_writer = self.progress_writer
+        progress_url = self.hostname + "/sdapi/v1/progress"
+   
+        async def progress_get():
+            start_time = time.time()
+            response = await self.getResponse(progress_url)
+            result = response.json()
+            right = 1.0
+            elapsed_time = write_progress(result, start_time)
+            await asyncio.sleep(0.5)  # initializing wait
+            retry_start = time.time()
+            while right != 0.0 and elapsed_time <= share.get("max_timeout"):
+                await asyncio.sleep(0.2)
+                try:
+                    response = self.getClient().get(progress_url, timeout=1)
+                    retry_start = time.time()
+                    result = response.json()
+                    right = result["progress"]
+                    elapsed_time = await write_progress(result, start_time)
+                    if not isRunning:
+                        break
+                except Exception:
+                    retry_duration = time.time() - retry_start
+                    if retry_duration >= share.get("timeout"):
+                        print("Progress is unknown")
+                        return
+
+            async def post_wrapper(url, data, headers, timeout):
+                result = await self.postResponse(url, data, headers, timeout)
+                self.isRunning = False
+                return result
+
+        self.isRunning = True
+        tasks = [
+            post_wrapper(url, data, headers, share.get("max_timeout")),
+            progress_get(),
+        ]
+        result = await asyncio.gather(*tasks, return_exceptions=False)
+        return result[0]
+
+    async def post(self, endpoint, data):
+        if self.client is None:
+            self.client = httpx.AsyncClient(
+                timeout=httpx.Timeout(self.timeout_c, read=self.max_timeout)
+            )
+        url = self.hostname + endpoint
+        try:
+            res = await self.client.post(url, data=data)
+            if res.status_code == 200:
+                return res
+        except httpx.ReadTimeout:
+            Logger.error(f"Read timeout {url}")
+            raise httpx.ReadTimeout(f"Read timeout {url}")
+        except httpx.TimeoutException:
+            Logger.error(f"Failed to get {url} connect timeout")
+            raise httpx.TimeoutException(f"Failed to get {url} connect timeout")
+        except Exception as e:
+            raise e
+        error_result = {"error": res}
+        return error_result
+"""
+
+
 # connect timeout for local connection case, remote connection case is 5 sec
 share.set("timeout_c", 0.1)
 share.set("timeout", 5)
