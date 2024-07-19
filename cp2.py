@@ -91,6 +91,7 @@ def img2img_from_args(args):
         "userpass",
         "num_once",
         "num_length",
+        "cn_images_dir",
     ]
     for key in opt_keys:
         if dicted_args.get(key) is not None:

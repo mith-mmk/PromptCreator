@@ -14,12 +14,29 @@ import aiofiles.os as aos
 from PIL import Image, PngImagePlugin
 
 import modules.api as api
-
 # import modules.queing as queing
 from modules.logger import getDefaultLogger
 from modules.parse import create_parameters
 
 Logger = getDefaultLogger()
+
+
+class SaveImage:
+    def __init__(self):
+        self.thread = None
+
+    def save_images(self, r, opt={"dir": "./outputs"}):
+        if self.thread is not None:
+            self.thread.join()
+        import copy
+
+        opt = copy.deepcopy(opt)
+        self.thread = threading.Thread(target=save_images_wapper, args=(r, opt))
+        self.thread.start()
+
+    def __del__(self):
+        if self.thread is not None:
+            self.thread.join()
 
 
 def save_images(r, opt={"dir": "./outputs"}):
@@ -179,15 +196,28 @@ async def async_save_images(r, opt={"dir": "./outputs"}):
     else:
         info = r["info"]
 
+    Logger.verbose("save images", len(r["images"]))
+
     for n, i in enumerate(r["images"]):
+        Logger.verbose(
+            f"save image {n + 1} of {len(r['images'])}, {len(info['infotexts'])}"
+        )
+
+        if n >= len(info["infotexts"]):
+            Logger.verbose("infotexts is not enough")
+            break
         try:
             Logger.debug("save", n)
-            meta = info["infotexts"][n]
+            try:
+                meta = info["infotexts"][n]
+            except Exception as e:
+                Logger.warning("infotexts error", e)
+                meta = info["infotexts"][n]
             if isinstance(i, str):
                 image = Image.open(io.BytesIO(base64.b64decode(i)))
             else:
                 image = Image.open(io.BytesIO(i))
-            parameters = create_parameters(info["infotexts"][n])
+            parameters = create_parameters(meta)
             Logger.debug("parameters are", parameters)
 
             filename = create_filename(
@@ -214,7 +244,7 @@ async def async_save_images(r, opt={"dir": "./outputs"}):
             raise KeyboardInterrupt
         except BaseException as e:
             Logger.error("save error", e, filename)
-            raise e
+            # raise e
     #    opt['startnum'] = num
     return len(r["images"])
 
@@ -451,7 +481,10 @@ def image_save(image, filename, meta, extendend_meta, opt={}):
             }
         }
         exif_bytes = piexif.dump(exif_dict)
-        image.save(filename, "webp", exif=exif_bytes, quality=quality)
+        try:
+            image.save(filename, "webp", exif=exif_bytes, quality=quality)
+        except Exception as e:
+            Logger.error("save webp error", e)
     else:
         Logger.debug("save png", filename)
         pnginfo = PngImagePlugin.PngInfo()
@@ -461,5 +494,8 @@ def image_save(image, filename, meta, extendend_meta, opt={}):
             pnginfo.add_text("prompt", opt["workflow"])
         if extendend_meta is not None:
             pnginfo.add_text("expantion", extendend_meta)
-        image.save(filename, pnginfo=pnginfo)
-        Logger.debug("saved")
+        try:
+            image.save(filename, pnginfo=pnginfo)
+        except Exception as e:
+            Logger.error("save png error", e)
+    Logger.debug("saved")
