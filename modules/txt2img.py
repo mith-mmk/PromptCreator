@@ -4,7 +4,7 @@ import os
 
 import modules.api as api
 import modules.share as share
-from modules.extentions import parse_extentions
+from modules.extentions import parse_extentions, xyz_parse
 from modules.logger import getDefaultLogger
 from modules.save import save_images
 
@@ -52,6 +52,8 @@ def txt2img(
         part = item.get("filepart", "")
         if part:
             del item["filepart"]
+        if "script_name" in item:
+            item = xyz_parse(item)
         if "alwayson_scripts" in item:
             parse_extentions(base_url, item, opt)
 

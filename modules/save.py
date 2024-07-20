@@ -14,6 +14,7 @@ import aiofiles.os as aos
 from PIL import Image, PngImagePlugin
 
 import modules.api as api
+
 # import modules.queing as queing
 from modules.logger import getDefaultLogger
 from modules.parse import create_parameters
@@ -196,6 +197,7 @@ async def async_save_images(r, opt={"dir": "./outputs"}):
     else:
         info = r["info"]
 
+    Logger.debug("info", info)
     Logger.verbose("save images", len(r["images"]))
 
     for n, i in enumerate(r["images"]):
