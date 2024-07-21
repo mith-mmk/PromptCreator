@@ -10,7 +10,7 @@ parser.add_argument(
     "formula",
     type=str,
     help="Formula to parse",
-    default=None,
+    default="test",
 )
 
 
@@ -42,7 +42,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 
-def test():
+def test(debug=False):
     formulas = [
         {
             "f": 'if("aa" == aa[1], "true", "false")',
@@ -128,12 +128,12 @@ def test():
             "result": 0,
         },
         {
-            "f": "if(contains(aa[1], 'abd'), 'true', if(contains(aa[2], 'ddd'), 'true', 'false')",
+            "f": "if(contains(aa[1], 'abd'), 'true', if(contains(aa[2], 'ddd'), 'true', 'false'))",
             "var": {"aa": ["abcde", "ddddd"]},
             "result": "true",
         },
         {
-            "f": "if(contains(aa[1], 'abd'), 'true', if(contains(aa[1], 'ddd'), 'true', 'false')",
+            "f": "if(contains(aa[1], 'abd'), 'true', if(contains(aa[1], 'ddd'), 'true', 'false'))",
             "var": {"aa": ["abcde", "ddddd"]},
             "result": "false",
         },
@@ -149,7 +149,7 @@ def test():
             formula["f"],
             variables=formula["var"],
             attributes=attributes,
-            # debug=True,
+            debug=debug,
             version=2,
         )
 
@@ -167,7 +167,7 @@ Logger = getDefaultLogger()
 Logger.setPrintModes(["debug", "info", "warning", "error", "critical", "verbose"])
 
 args = parser.parse_args()
-if args.formula is not None:
+if args.formula != "test":
     formula = args.formula
     variables = {}
     attributes = {}
@@ -224,4 +224,4 @@ if args.formula is not None:
     exit()
 else:
     print("run test")
-    test()
+    test(args.debug)
