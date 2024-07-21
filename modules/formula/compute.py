@@ -453,28 +453,36 @@ class FormulaCompute:
         stack = []
         # blancket check
         if self.version >= 2:
-            pos = len(reversed_polish) - 1
+            debug_print(
+                "reverce porlad:", reversed_polish, mode="value", debug=self.debug
+            )
 
-            def search_functionend(reversed_polish, pos):
+            def search_functionend(reversed_polish, pos, is_nested=False):
                 is_function = False
+                blancket = 0
                 while pos >= 0:
                     token = reversed_polish[pos]
-                    if token["type"] == TOKENTYPE.FUNCTION:
-                        is_function = True
-                    elif token["type"] == TOKENTYPE.BRACKET and is_function:
-                        if token["type"] == TOKENTYPE.FUNCTION:
-                            pos = search_functionend(
-                                reversed_polish, pos - 1
-                            )  # 再帰呼び出し後にposを更新
-                            return pos
+                    if token["type"] == TOKENTYPE.BRACKET:
+                        if token["value"] == ")":
+                            blancket += 1
+                            pos -= 1
+                            continue
                         elif token["value"] == "(":
-                            if is_function:  # 関数の開始括弧を見つけた場合のみ処理
-                                is_function = False
-                                token["type"] = TOKENTYPE.FUNCTIONEND
-                                token["value"] = "$$$FUNCTIONEND$$$"
+                            if blancket > 0:
+                                blancket -= 1
+                                pos -= 1
+                                continue
+                    if token["type"] == TOKENTYPE.FUNCTION:
+                        pos -= 1
+                    if token["type"] == TOKENTYPE.BRACKET:
+                        if token["value"] == "(":
+                            is_function = False
+                            token["type"] = TOKENTYPE.FUNCTIONEND
+                            token["value"] = "$$$FUNCTIONEND$$$"
                     pos -= 1
                 return pos
 
+            pos = len(reversed_polish) - 1
             search_functionend(reversed_polish, pos)
 
             """
@@ -593,7 +601,6 @@ class FormulaCompute:
                     # TOKENから引数の数が分からないので、関数ごとに処理する
                     function = token["value"]
                     if self.version >= 2:
-                        args = []
                         # FANCTIONENDまでの引数を取得する
                         ret, val = function_parse(function, stack)
                     else:
