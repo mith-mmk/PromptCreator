@@ -431,9 +431,9 @@ class ComfyUIWorkflow:
         output = options.get("output", {})
         return flow, output
 
-    def createWorkflowSDXL(self, prompt, options={}):
+    def createWorkflowSDXL(self, prompt,negative_prompt, options={}):
         options["type"] = "sdxl"
-        return self.createWorkflow(prompt, options)
+        return self.createWorkflow(prompt, negative_prompt, options)
 
     def createWorkflowSD15(self, prompt, negative_prompt, options={}):
         options["type"] = "sd15"
