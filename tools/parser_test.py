@@ -1,8 +1,45 @@
 # commandline
+import argparse
 import sys
 
 from modules.formula import FormulaCompute
 from modules.logger import getDefaultLogger
+
+parser = argparse.ArgumentParser(description="Formula Parser")
+parser.add_argument(
+    "formula",
+    type=str,
+    help="Formula to parse",
+    default=None,
+)
+
+
+parser.add_argument(
+    "--variables",
+    type=str,
+    help="Variables to use in the formula",
+    default=None,
+)
+
+
+parser.add_argument(
+    "--version",
+    type=int,
+    help="Version of the parser",
+    default=2.0,
+)
+
+parser.add_argument(
+    "--debug",
+    type=bool,
+    help="Debug mode",
+    default=False,
+    const=True,
+    nargs="?",
+)
+
+
+args = parser.parse_args()
 
 
 def test():
@@ -90,6 +127,16 @@ def test():
             "var": {"aa": ["abcde", "ddddd"]},
             "result": 0,
         },
+        {
+            "f": "if(contains(aa[1], 'abd'), 'true', if(contains(aa[2], 'ddd'), 'true', 'false')",
+            "var": {"aa": ["abcde", "ddddd"]},
+            "result": "true",
+        },
+        {
+            "f": "if(contains(aa[1], 'abd'), 'true', if(contains(aa[1], 'ddd'), 'true', 'false')",
+            "var": {"aa": ["abcde", "ddddd"]},
+            "result": "false",
+        },
     ]
 
     for formula in formulas:
@@ -119,13 +166,13 @@ def test():
 Logger = getDefaultLogger()
 Logger.setPrintModes(["debug", "info", "warning", "error", "critical", "verbose"])
 
-args = sys.argv
-if len(args) > 1:
-    formula = args[1]
+args = parser.parse_args()
+if args.formula is not None:
+    formula = args.formula
     variables = {}
     attributes = {}
-    if len(args) > 2:
-        vals = args[2]  # width=100, height=200, name="test, weight=0.1"
+    if args.variables is not None:
+        vals = args.variables  # width=100, height=200, name="test, weight=0.1"
         vals = vals.split(",")
         for val in vals:
             val = val.split("=")
@@ -159,10 +206,14 @@ if len(args) > 1:
     print(f"Formula: {formula}")
     print(f"Variables: {variables}")
     print(f"attributes: {attributes}")
-    version = int(variables.get("version", 1))
+    version = args.version
 
     compute = FormulaCompute(
-        formula, variables=variables, attributes=attributes, debug=True, version=version
+        formula,
+        variables=variables,
+        attributes=attributes,
+        debug=args.debug,
+        version=version,
     )
     res = compute.getCompute()
     if res is None:

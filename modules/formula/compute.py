@@ -453,27 +453,54 @@ class FormulaCompute:
         stack = []
         # blancket check
         if self.version >= 2:
+            pos = len(reversed_polish) - 1
+
+            def search_functionend(reversed_polish, pos):
+                is_function = False
+                while pos >= 0:
+                    token = reversed_polish[pos]
+                    if token["type"] == TOKENTYPE.FUNCTION:
+                        is_function = True
+                    elif token["type"] == TOKENTYPE.BRACKET and is_function:
+                        if token["type"] == TOKENTYPE.FUNCTION:
+                            pos = search_functionend(
+                                reversed_polish, pos - 1
+                            )  # 再帰呼び出し後にposを更新
+                            return pos
+                        elif token["value"] == "(":
+                            if is_function:  # 関数の開始括弧を見つけた場合のみ処理
+                                is_function = False
+                                token["type"] = TOKENTYPE.FUNCTIONEND
+                                token["value"] = "$$$FUNCTIONEND$$$"
+                    pos -= 1
+                return pos
+
+            search_functionend(reversed_polish, pos)
+
+            """
             nest = 0
             is_function = False
             pos = len(reversed_polish) - 1
-            while pos > 0:
+            while pos >= 0:  # pos > 0 から pos >= 0 へ変更
                 token = reversed_polish[pos]
                 if token["type"] == TOKENTYPE.FUNCTION:
                     is_function = True
-                    pos -= 1
-                    continue
-                if token["type"] == TOKENTYPE.BRACKET and is_function:
+                elif token["type"] == TOKENTYPE.BRACKET and is_function:
                     if token["value"] == ")":
                         nest += 1
-                    else:
+                    elif token["value"] == "(":  # 正しい括弧の種類を確認
                         nest -= 1
-                    if nest == 0:
-                        is_function = False
-                        token["type"] = TOKENTYPE.FUNCTIONEND
-                        token["value"] = "$$$FUNCTIONEND$$$"
+                        if nest == 0:
+                            is_function = False
+                            token["type"] = TOKENTYPE.FUNCTIONEND
+                            token["value"] = "$$$FUNCTIONEND$$$"
                 pos -= 1
+            """
             debug_print(
                 "reverce porlad:", reversed_polish, mode="value", debug=self.debug
+            )
+            debug_print(
+                "reverce porlad:", reversed_polish, mode="type", debug=self.debug
             )
 
         # 逆ポーランド記法を計算する
@@ -540,15 +567,20 @@ class FormulaCompute:
                                 )
                         debug_print(stack, debug=self.debug)
                 case TOKENTYPE.FUNCTION:
-                    # TOKENから引数の数が分からないので、関数ごとに処理する
-                    function = token["value"]
-                    if self.version >= 2:
+
+                    def function_parse(function, stack):
                         args = []
                         # FANCTIONENDまでの引数を取得する
                         while len(stack) > 0:
                             arg = stack.pop()
+                            debug_print(f"arg {arg}", debug=self.debug)
                             if arg["type"] == TOKENTYPE.FUNCTIONEND:
                                 break
+                            elif arg["type"] == TOKENTYPE.FUNCTION:
+                                ret, val = function_parse(arg["value"], stack)
+                                if not ret:
+                                    raise Exception(f"function error {arg['value']}")
+                                args.append(val)
                             args.append(arg)
                         debug_print(
                             f"function {function} args {args}",
@@ -556,6 +588,14 @@ class FormulaCompute:
                             debug=self.debug,
                         )
                         ret, val = callFunction(self, function, args, args)  # type: ignore
+                        return ret, val
+
+                    # TOKENから引数の数が分からないので、関数ごとに処理する
+                    function = token["value"]
+                    if self.version >= 2:
+                        args = []
+                        # FANCTIONENDまでの引数を取得する
+                        ret, val = function_parse(function, stack)
                     else:
                         ret, val = callFunction(self, function, stack)  # type: ignore
                     if not ret:
