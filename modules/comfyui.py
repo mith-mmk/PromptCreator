@@ -11,7 +11,6 @@ import urllib.request
 import uuid
 
 import httpx
-
 # import httpx_ws
 import websocket  # NOTE: websocket-client (https://github.com/websocket-client/websocket-client)
 from PIL import Image
@@ -633,7 +632,7 @@ class ComufyClient:
 
     async def getModels(self):
         res = await self.client.get(
-            "http://localhost:8188/object_info/CheckpointLoaderSimple"
+            f"{self.hostname}/object_info/CheckpointLoaderSimple"
         )
         if res.status_code != 200:
             printError(f"Failed to get models {res.text}")
@@ -916,7 +915,7 @@ class ComufyClient:
             payload["overwrite"] = True
 
         res = await self.client.post(
-            "http://localhost:8188/upload/image", files=payload
+            f"{self.hostname}/upload/image", files=payload
         )
         if res.status_code != 200:
             printError(f"Failed to upload image {filename} {res.text}")

@@ -204,14 +204,16 @@ async def async_save_images(r, opt={"dir": "./outputs"}):
         Logger.verbose(
             f"save image {n + 1} of {len(r['images'])}, {len(info['infotexts'])}"
         )
-
-        if n >= len(info["infotexts"]):
-            Logger.verbose("infotexts is not enough")
-            break
         try:
             Logger.debug("save", n)
             try:
-                meta = info["infotexts"][n]
+                if n >= len(info["infotexts"]):
+                    if not opt.get("cn_save_pre"):
+                        Logger.verbose("infotexts is not enough")
+                        break
+                    meta = ""
+                else:
+                    meta = info["infotexts"][n]
             except Exception as e:
                 Logger.warning("infotexts error", e)
                 meta = info["infotexts"][n]

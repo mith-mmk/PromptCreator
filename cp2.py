@@ -92,6 +92,7 @@ def img2img_from_args(args):
         "num_once",
         "num_length",
         "cn_images_dir",
+        "cn_save_pre",
     ]
     for key in opt_keys:
         if dicted_args.get(key) is not None:
@@ -295,6 +296,7 @@ def main(args):
         opt["sd_vae"] = sd_vae
         opt["base_url"] = args.api_base
         opt["cn_images_dir"] = args.cn_images_dir
+        opt["cn_save_pre"] = args.cn_save_pre
         if sd_model is not None:
             api.set_sd_model(base_url=args.api_base, sd_model=sd_model, sd_vae=sd_vae)
         # api.init()
@@ -532,6 +534,16 @@ def run_from_args(command_args=None):
     parser.add_argument(
         "--cn-images-dir", type=str, default=None, help="ControlNet images directory"
     )
+
+    parser.add_argument(
+        "--cn-save-pre",
+        type=bool,
+        nargs="?",
+        const=True,
+        default=False,
+        help="ControlNet save preproccessed images",
+    )
+
     # profiles
 
     parser.add_argument(
