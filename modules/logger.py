@@ -225,9 +225,9 @@ class LogPrint:
                     while i > 0:
                         # log_dir + '.' + str(i-1) は log_dir + '.' + str(i) にrename
                         rn_logfile = self.log_dir + "." + str(i - 1)
+                        new_logfile = self.log_dir + "." + str(i)
                         if os.path.exists(rn_logfile):
-                            os.rename(rn_logfile, final_logfile)
-                        final_logfile = rn_logfile
+                            os.rename(rn_logfile, new_logfile)
                         i -= 1
                     os.rename(logfile, f"{logfile}.1")
                 except Exception as e:
