@@ -99,7 +99,7 @@ def xyz_parse(item):
     return item
 
 
-def parse_extentions(base_url, item, opt):
+def parse_extentions(base_url, item, opt, method="txt2img"):
     for key, value in item["alwayson_scripts"].items():
         try:
             module = __import__(f"modules.extentions.{key}", fromlist=[key])
