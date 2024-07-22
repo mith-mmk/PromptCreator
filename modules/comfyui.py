@@ -11,9 +11,12 @@ import urllib.request
 import uuid
 
 import httpx
+
 # import httpx_ws
 import websocket  # NOTE: websocket-client (https://github.com/websocket-client/websocket-client)
 from PIL import Image
+
+from modules.save import DataSaver
 
 try:
     from modules.logger import getDefaultLogger
@@ -431,7 +434,7 @@ class ComfyUIWorkflow:
         output = options.get("output", {})
         return flow, output
 
-    def createWorkflowSDXL(self, prompt,negative_prompt, options={}):
+    def createWorkflowSDXL(self, prompt, negative_prompt, options={}):
         options["type"] = "sdxl"
         return self.createWorkflow(prompt, negative_prompt, options)
 
@@ -629,6 +632,7 @@ class ComufyClient:
             "https://", ""
         )
         self.object_info = None
+        self.saver = None
 
     async def getModels(self):
         res = await self.client.get(
@@ -873,7 +877,6 @@ class ComufyClient:
 
     async def saveImage(self, image_data, prompt, options={}, info={}, prompt_text={}):
         try:
-            import modules.save as save
 
             try:
                 r, options = await self.imageWrapper(
@@ -885,7 +888,10 @@ class ComufyClient:
                 raise e
 
             try:
-                await save.async_save_images(r, options)
+                if self.saver is None:
+                    saver = DataSaver()
+                    self.saver = saver
+                await self.saver.asave_images(r, options)
             except Exception as e:
                 printError("Failed to async save image", e)
                 raise e
@@ -914,9 +920,7 @@ class ComufyClient:
         if overwrite:
             payload["overwrite"] = True
 
-        res = await self.client.post(
-            f"{self.hostname}/upload/image", files=payload
-        )
+        res = await self.client.post(f"{self.hostname}/upload/image", files=payload)
         if res.status_code != 200:
             printError(f"Failed to upload image {filename} {res.text}")
             return None

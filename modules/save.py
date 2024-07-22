@@ -22,7 +22,7 @@ from modules.parse import create_parameters
 Logger = getDefaultLogger()
 
 
-class SaveImage:
+class DataSaver:
     def __init__(self):
         self.thread = None
 
@@ -34,6 +34,17 @@ class SaveImage:
         opt = copy.deepcopy(opt)
         self.thread = threading.Thread(target=save_images_wapper, args=(r, opt))
         self.thread.start()
+
+    async def asave_images(self, r, opt={"dir": "./outputs"}):
+        return await async_save_images(r, opt=opt)
+
+    def save(self, filename, data):
+        with open(filename, "wb") as f:
+            f.write(data)
+
+    def save_text(self, filename, data):
+        with open(filename, "w", encoding="utf-8") as f:
+            f.write(data)
 
     def __del__(self):
         if self.thread is not None:

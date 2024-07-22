@@ -6,7 +6,7 @@ import modules.logger as logger
 import modules.share as share
 from modules.interrogate import interrogate
 from modules.parse import create_img2json
-from modules.save import save_images
+from modules.save import DataSaver
 from modules.util import get_part
 
 Logger = logger.getDefaultLogger()
@@ -39,6 +39,7 @@ def img2img(
     progress = base_url + "/sdapi/v1/progress?skip_current_image=true"
     Logger.info("Enter API, connect", url)
     dir = output_dir
+    saver = DataSaver()
     opt["dir"] = output_dir
     Logger.info("output dir", dir)
     os.makedirs(dir, exist_ok=True)
@@ -141,7 +142,7 @@ def img2img(
 
         r = response.json()
         opt["filepart"] = get_part(imagefile)
-        prt_cnt = save_images(r, opt=opt)
+        prt_cnt = saver.save_images(r, opt=opt)
         if share.get("line_count"):
             prt_cnt += share.get("line_count")
             share.set("line_count", 0)

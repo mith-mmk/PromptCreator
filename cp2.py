@@ -17,6 +17,7 @@ from modules.interrogate import interrogate
 from modules.logger import getDefaultLogger
 from modules.prompt import expand_arg
 from modules.prompt_v2 import create_text_v2
+from modules.save import DataSaver
 from modules.txt2img import txt2img
 
 Logger = getDefaultLogger()
@@ -146,7 +147,6 @@ def main(args):
         return False
     save_image = []
     if args.api_comfy:
-        api_mode = "comfy"
         save_mode = args.api_comfy_save.lower()
         if save_mode == "save":
             save_image = ["websocket"]
@@ -178,57 +178,57 @@ def main(args):
             if isinstance(output_filename, str):  # Replace '==' with 'is'
                 Logger.debug(f"output_filename: {output_filename}")
                 try:
-                    with open(output_filename, "w", encoding="utf-8") as f:
-                        if isinstance(output_text, str):
-                            text = output_text
+                    text = ""
+                    if isinstance(output_text, str):
+                        text = output_text
+                    else:
+                        if not options.get("verbose"):
+                            text = copy.deepcopy(output_text)
+                            for t in text:
+                                if t.get("verbose"):
+                                    del t["verbose"]
                         else:
-                            if not options.get("verbose"):
+                            # verbose mode
+                            if not args.v1json:
+                                text = output_text
+                            else:
+                                # conver v2 to v1
+                                Logger.debug("v1json")
                                 text = copy.deepcopy(output_text)
                                 for t in text:
-                                    if t.get("verbose"):
+                                    verbose = t.get("verbose", {})
+                                    variables = verbose.get("variables", {})
+                                    for variable in variables:
+                                        if len(variables[variable]) > 0:
+                                            if "variables" not in t:
+                                                t["variables"] = {}
+                                            item = variables[variable][0]
+                                            t["variables"][variable] = item
+                                    info = verbose.get("info", {})
+                                    for item in info:
+                                        if len(info[item]) > 0:
+                                            if "info" not in t:
+                                                t["info"] = {}
+                                            t["info"][item] = info[item][0]
+                                    if "verbose" in t:
                                         del t["verbose"]
+                                    if "array" in t:
+                                        del t["array"]
+                        if args.prompt:
+                            new_text = []
+                            for item in text:
+                                new_text.append(item.get("prompt", ""))
+                            text = new_text
+                        if args.v1json:
+                            text = json.dumps(text, indent=2)  # escape unicode
+                        else:
+                            if args.json_escape:
+                                text = json.dumps(text, indent=2)
                             else:
-                                # verbose mode
-                                if not args.v1json:
-                                    text = output_text
-                                else:
-                                    # conver v2 to v1
-                                    Logger.debug("v1json")
-                                    text = copy.deepcopy(output_text)
-                                    for t in text:
-                                        verbose = t.get("verbose", {})
-                                        variables = verbose.get("variables", {})
-                                        for variable in variables:
-                                            if len(variables[variable]) > 0:
-                                                if "variables" not in t:
-                                                    t["variables"] = {}
-                                                item = variables[variable][0]
-                                                t["variables"][variable] = item
-                                        info = verbose.get("info", {})
-                                        for item in info:
-                                            if len(info[item]) > 0:
-                                                if "info" not in t:
-                                                    t["info"] = {}
-                                                t["info"][item] = info[item][0]
-                                        if "verbose" in t:
-                                            del t["verbose"]
-                                        if "array" in t:
-                                            del t["array"]
-                            if args.prompt:
-                                new_text = []
-                                for item in text:
-                                    new_text.append(item.get("prompt", ""))
-                                text = new_text
-                            if args.v1json:
-                                text = json.dumps(text, indent=2)  # escape unicode
-                            else:
-                                if args.json_escape:
-                                    text = json.dumps(text, indent=2)
-                                else:
-                                    text = json.dumps(
-                                        text, ensure_ascii=False, indent=2
-                                    )
-                        f.write(text)
+                                text = json.dumps(text, ensure_ascii=False, indent=2)
+                    if output_filename is not None:
+                        saver = DataSaver()
+                        saver.save_text(output_filename, text)
                 except Exception as e:
                     Logger.error(f"output error {e}")
                     raise Exception("output error")

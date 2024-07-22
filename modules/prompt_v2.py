@@ -122,11 +122,17 @@ def text_formula_v2(text, args):
             except Exception as e:
                 Logger.verbose(f"Error happen array formula {error_info} {formula} {e}")
         # dict formula ${variable["key"]}
-        elif re.match(r"([a-zA-Z\-\_].*?)\s*\[\s*\"(.+?)\"\s*\]", _formula):
-            dict_formula = re.match(r"(.+?)\s*\[\s*\"(.+?)\"\s*\]", formula)
+        elif re.match(
+            r"([a-zA-Z\-\_].*?)\s*\[\s*\"(.+?)\"\s*\]|([a-zA-Z\-\_].*?)\s*\[\s*\'(.+?)\'\s*\]",
+            _formula,
+        ):
+            dict_formula = re.match(
+                r"(.+?)\s*\[\s*\"(.+?)\"\s*\]|([a-zA-Z\-\_].*?)\s*\[\s*\'(.+?)\'\s*\]",
+                formula,
+            )
             if dict_formula is not None:
-                variable = dict_formula.group(1)
-                key = dict_formula.group(2)
+                variable = dict_formula.group(1) or dict_formula.group(3)
+                key = dict_formula.group(2) or dict_formula.group(4)
             Logger.debug(f"dict formula {variable} {key}")
             if variable in excludes:
                 continue

@@ -6,7 +6,7 @@ import modules.api as api
 import modules.share as share
 from modules.extentions import parse_extentions, xyz_parse
 from modules.logger import getDefaultLogger
-from modules.save import save_images
+from modules.save import DataSaver
 
 Logger = getDefaultLogger()
 
@@ -19,6 +19,7 @@ def txt2img(
     output_dir="./outputs",
     opt={},
 ):
+    saver = DataSaver()
     base_url = api.normalize_base_url(base_url)
     url = base_url + "/sdapi/v1/txt2img"
     progress = base_url + "/sdapi/v1/progress?skip_current_image=true"
@@ -75,7 +76,8 @@ def txt2img(
 
         r = response.json()
         opt["filepart"] = part
-        prt_cnt = save_images(r, opt=opt)
+        prt_cnt = saver.save_images(r, opt=opt)
+        # prt_cnt = save_images(r, opt=opt)
         if share.get("line_count"):
             prt_cnt += share.get("line_count")
             share.set("line_count", 0)
