@@ -1046,7 +1046,14 @@ class ComufyClient:
             printDebug(f"Checking workflow ...")
             if self.object_info is None:
                 with httpx.Client() as client:
-                    res = client.get(self.hostname + "/object_info")
+                    try:
+                        res = client.get(self.hostname + "/object_info")
+                    except httpx.TimeoutException as e:
+                        printError(f"Connect timeout, Server is down?")
+                        raise e
+                    except httpx.RequestError as e:
+                        printError(f"Failed to get models {e}")
+                        raise Exception(f"Failed to get models {e}")
                     if res is None:
                         printError("Failed to get models")
                         return False
@@ -1446,7 +1453,14 @@ if __name__ == "__main__":
             for key in prompt_text:
                 opt[key] = prompt_text[key]
             workflow, info = wf.createWorkflow(prompt, negative_prompt, opt)
-            client.checkWorkflow(workflow, opt)
+            try:
+                client.checkWorkflow(workflow, opt)
+            except httpx.TimeoutException as e:
+                printError("Timeout server is down?", e)
+                raise e
+            except Exception as e:
+                printError("Failed to check workflow", e)
+
             n_iter = prompt_text.get("n_iter", 1)
             for _ in range(prompt_text["n_iter"]):
                 workflow, info = wf.createWorkflow(prompt, negative_prompt, opt)
