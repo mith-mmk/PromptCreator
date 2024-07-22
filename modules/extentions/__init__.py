@@ -3,55 +3,60 @@ from modules.logger import getDefaultLogger
 Logger = getDefaultLogger()
 
 
-def xyz_index(name):
+def xyz_index(name, method="txt2img"):
     """
     from xyz_grid.py 1.9
     """
-    options = [
-        "Nothing",  # 0
-        "Seed",  # 1
-        "Var. seed",  # 2
-        "Var. strength",  # 3
-        "Steps",  # 4
-        "Hires steps",  # txt2img
-        "CFG Scale",
-        # "Image CFG Scale", # img2img
-        "Prompt S/R",
-        "Prompt order",
-        "Sampler",  # txt2img
-        "Hires sampler",  # txt2img
-        # "Sampler", # img2img
-        "Checkpoint name",
-        "Negative Guidance minimum sigma",
-        "Sigma Churn",
-        "Sigma min",
-        "Sigma max",
-        "Sigma noise",
-        "Schedule type",
-        "Schedule min sigma",
-        "Schedule max sigma",
-        "Schedule rho",
-        "Eta",
-        "Clip skip",
-        "Denoising",
-        "Initial noise multiplier",
-        "Extra noise",
-        "Hires upscaler",  # txt2img
-        # "Cond. Image Mask Weight", # img2img
-        "VAE",
-        "Styles",
-        "UniPC Order",
-        "Face restore",
-        "Token merging ratio",
-        "Token merging ratio high-res",
-        "Always discard next-to-last sigma",
-        "SGM noise multiplier",
-        "Refiner checkpoint",
-        "Refiner switch at",
-        "RNG source",
-        "FP8 mode",  #  1.8
-        "Size",  #  1.9.0 RC
-    ]
+    options = []
+    options.append("Nothing")  # 0
+    options.append("Seed")  # 1
+    options.append("Var. seed")  # 2
+    options.append("Var. strength")  # 3
+    options.append("Steps")  # 4
+    if method == "txt2img":
+        options.append("Hires steps")
+    options.append("CFG Scale")
+    if method == "img2img":
+        options.append("Image CFG Scale")
+    options.append("Prompt S/R")
+    options.append("Prompt order")
+    if method == "txt2img":
+        options.append("Sampler")  # txt2img
+        options.append("Hires sampler")  # txt2img
+    if method == "img2img":
+        options.append("Sampler")  # img2img
+    options.append("Checkpoint name")
+    options.append("Negative Guidance minimum sigma")
+    options.append("Sigma Churn")
+    options.append("Sigma min")
+    options.append("Sigma max")
+    options.append("Sigma noise")
+    options.append("Schedule type")
+    options.append("Schedule min sigma")
+    options.append("Schedule max sigma")
+    options.append("Schedule rho")
+    options.append("Eta")
+    options.append("Clip skip")
+    options.append("Denoising")
+    options.append("Initial noise multiplier")
+    options.append("Extra noise")
+    if method == "txt2img":
+        options.append("Hires upscaler")  # txt2img
+    if method == "img2img":
+        options.append("Cond. Image Mask Weight")  # img2img
+    options.append("VAE")
+    options.append("Styles")
+    options.append("UniPC Order")
+    options.append("Face restore")
+    options.append("Token merging ratio")
+    options.append("Token merging ratio high-res")
+    options.append("Always discard next-to-last sigma")
+    options.append("SGM noise multiplier")
+    options.append("Refiner checkpoint")
+    options.append("Refiner switch at")
+    options.append("RNG source")
+    options.append("FP8 mode")  #  1.8
+    options.append("Size")  #  1.9.0 RC
     if isinstance(name, str):
         return options.index(name)
     elif isinstance(name, int):
