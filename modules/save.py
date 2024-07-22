@@ -27,11 +27,11 @@ class DataSaver:
         self.thread = None
 
     def save_images(self, r, opt={"dir": "./outputs"}):
-        if self.thread is not None:
-            self.thread.join()
         import copy
 
         opt = copy.deepcopy(opt)
+        if self.thread is not None:
+            self.thread.join()
         self.thread = threading.Thread(target=save_images_wapper, args=(r, opt))
         self.thread.start()
 
@@ -157,9 +157,12 @@ async def create_files(r, opt={"dir": "./outputs"}):
 
     for key, value in variables.items():
         if type(value) is list:  # for multi value
-            filename_pattern["var:" + key] = value[0]
-            for n, v in enumerate(value):
-                filename_pattern["var:" + key + "(" + str(n + 1) + ")"] = v
+            try:
+                filename_pattern["var:" + key] = value[0]
+                for n, v in enumerate(value):
+                    filename_pattern["var:" + key + "(" + str(n + 1) + ")"] = v
+            except Exception as e:
+                Logger.warning(f"create filenames - check multi value error {value}")
         else:
             filename_pattern["var:" + key] = value
     filename_pattern["part"] = opt.get("filepart", "")
