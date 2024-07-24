@@ -200,11 +200,12 @@ class LogPrint:
         now = datetime.datetime.now()
         # 日付をまたいでいない場合はreturn
         now = now.strftime("%Y%m%d")
-        start = self.startDay.strftime("%Y%m%d")
+        start = self.startDay.strftime("%Y%m%d")  # type: ignore
         if now <= start:
             return
         if isinstance(self.log_dir, str) and not os.path.exists(self.log_dir):
             return
+        self.startDay = now
         # log_dir + '.' + str(i) は削除
         try:
             if self.f is not None:

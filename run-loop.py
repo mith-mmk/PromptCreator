@@ -12,6 +12,7 @@ import httpx
 import yaml
 
 import create_prompts
+
 # import logging
 import img2img
 import modules.logger as logger
@@ -538,8 +539,9 @@ def run_img2img(config, args=None):
     img_config = config["img2img"]
     profile_name = get_profile_name(args)
     if img_config.get("profiles") and profile_name is not None:
-        Logger.info(f"run txt2img {profile_name}")
+        Logger.info(f"run img2img {profile_name}")
         img_config = img_config["profiles"].get(profile_name) or img_config
+    Logger.verbose(f"img2img config {img_config}")
     options = img_config.get("options", {})
     img2img_steps = img_config["steps"]
     img2img_denosing_stringth = img_config["denosing_strength"]
@@ -566,6 +568,7 @@ def run_img2img(config, args=None):
         Logger.verbose(f"processing folder {folder}")
         files = glob.glob(os.path.join(folder, "*.png"))
         files.extend(glob.glob(os.path.join(folder, "*.jpg")))
+        files.extend(glob.glob(os.path.join(folder, "*.webp")))
         if len(files) == 0:
             Logger.verbose(f"no files in {folder}")
             continue
@@ -682,6 +685,7 @@ def run_img2img(config, args=None):
                 Logger.info(f"img2img.py finished {folder}")
                 try:
                     # *.png, *.jpg を ended_dir に移動
+                    files = glob.glob(os.path.join(work_dir, "*.webp"))
                     files = glob.glob(os.path.join(work_dir, "*.png"))
                     files.extend(glob.glob(os.path.join(work_dir, "*.jpg")))
                     for file in files:
@@ -691,6 +695,7 @@ def run_img2img(config, args=None):
             else:
                 Logger.error(f"img2img.py failed {folder}")
                 try:
+                    files = glob.glob(os.path.join(work_dir, "*.webp"))
                     files = glob.glob(os.path.join(work_dir, "*.png"))
                     files.extend(glob.glob(os.path.join(work_dir, "*.jpg")))
                     for file in files:

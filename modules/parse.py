@@ -100,7 +100,11 @@ def imgloader(imagefile, img2img=False):
             # extend = json.loads(extend)
         else:
             parameters = {"width": image.width, "height": image.height}
-    elif imagefile.lower().endswith(".jpg"):
+    elif (
+        imagefile.lower().endswith(".jpg")
+        or imagefile.lower().endswith(".jpeg")
+        or imagefile.lower().endswith(".webp")
+    ):
         tiff = image.getexif()
         parameters = {"width": image.width, "height": image.height}
         if tiff is not None:
