@@ -40,8 +40,10 @@ def grab_jsonl(input_dir):
     return files
 
 
-def jsonl2csv(input_dir, output_file):
+def jsonl2csv(input_dir, output_file, bom=False):
     with open(output_file, "w", encoding="utf-8") as csvfile:
+        if bom:
+            csvfile.write("\ufeff")
         writer = csv.writer(csvfile, lineterminator="\n")
         files = grab_jsonl(input_dir)
         writer.writerow(
@@ -144,7 +146,7 @@ def jsonl2csv(input_dir, output_file):
                 )
 
 
-def csv2jsonl(filename, ouput_dir):
+def csv2jsonl(filename, ouput_dir, bom=False):
     with open(filename, "r", encoding="utf-8") as csvfile:
         reader = csv.reader(csvfile)
         header = next(reader)
@@ -199,6 +201,8 @@ def csv2jsonl(filename, ouput_dir):
         os.makedirs(dir, exist_ok=True)
         print(f"make dir {dir}")
         with open(output_file, "w", encoding="utf-8") as f:
+            if bom:
+                f.write("\ufeff")
             for line in data:
                 f.write(json.dumps(line, ensure_ascii=False) + "\n")
 
@@ -207,30 +211,24 @@ def csv2jsonl(filename, ouput_dir):
 
 
 def main():
+    import argparse
     import sys
 
-    args = sys.argv
-    if len(args) != 3:
-        print(
-            "Usage: python tools/jsonl2csv.py [input_dir] [output_csv_file] | jsonl [input_csv_file] [output_dir]"
-        )
-        sys.exit(1)
-    if args[1].endswith(".csv"):
-        mode = "csv2jsonl"
-    elif args[2].endswith(".csv"):
-        mode = "jsonl2csv"
+    parser = argparse.ArgumentParser()
+    parser.add_argument("input", help="input file or directory")
+    parser.add_argument("output", help="output file or directory")
+    parser.add_argument("--bom", action="store_true", help="add BOM to output file")
+    args = parser.parse_args()
+
+    if args.input.endswith(".jsonl"):
+        jsonl2csv(args.input, args.output, args.bom)
+    elif args.input.endswith(".csv"):
+        csv2jsonl(args.input, args.output, args.bom)
     else:
         print(
             "Usage: python tools/jsonl2csv.py [input_dir] [output_csv_file] | jsonl [input_csv_file] [output_dir]"
         )
         sys.exit(1)
-
-    input = args[1]
-    output = args[2]
-    if mode == "jsonl2csv":
-        jsonl2csv(input, output)
-    elif mode == "csv2jsonl":
-        csv2jsonl(input, output)
 
 
 main()
