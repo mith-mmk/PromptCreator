@@ -87,6 +87,14 @@ DefaultLogger = logger.getDefaultLogger()
 Logger = logger.getLogger("run-loop")
 
 
+def get_image_files(folder):
+    supoorted_files = ["*.png", "*.jpg", "*.jpeg", "*.webp"]
+    files = []
+    for file in supoorted_files:
+        files.extend(glob.glob(os.path.join(folder, file)))
+    return files
+
+
 def arg_split(args):
     results = []
     csv_reader = csv.reader([args], delimiter=" ")
@@ -566,9 +574,7 @@ def run_img2img(config, args=None):
 
     for folder in folders:
         Logger.verbose(f"processing folder {folder}")
-        files = glob.glob(os.path.join(folder, "*.png"))
-        files.extend(glob.glob(os.path.join(folder, "*.jpg")))
-        files.extend(glob.glob(os.path.join(folder, "*.webp")))
+        files = get_image_files(folder)
         if len(files) == 0:
             Logger.verbose(f"no files in {folder}")
             continue
@@ -685,9 +691,7 @@ def run_img2img(config, args=None):
                 Logger.info(f"img2img.py finished {folder}")
                 try:
                     # *.png, *.jpg を ended_dir に移動
-                    files = glob.glob(os.path.join(work_dir, "*.webp"))
-                    files = glob.glob(os.path.join(work_dir, "*.png"))
-                    files.extend(glob.glob(os.path.join(work_dir, "*.jpg")))
+                    files = get_image_files(work_dir)
                     for file in files:
                         shutil.move(file, ended_dir)
                 except Exception as e:
@@ -695,9 +699,7 @@ def run_img2img(config, args=None):
             else:
                 Logger.error(f"img2img.py failed {folder}")
                 try:
-                    files = glob.glob(os.path.join(work_dir, "*.webp"))
-                    files = glob.glob(os.path.join(work_dir, "*.png"))
-                    files.extend(glob.glob(os.path.join(work_dir, "*.jpg")))
+                    files = get_image_files(work_dir)
                     for file in files:
                         shutil.move(file, folder)
                 except Exception as e:
@@ -737,8 +739,7 @@ def run_img2txt2img(config, args):
         if not os.path.exists(filename):
             Logger.error(f"File not found: {filename}")
         if os.path.isdir(filename):
-            imgfiles.extend(glob.glob(os.path.join(filename, "*.jpg")))
-            imgfiles.extend(glob.glob(os.path.join(filename, "*.png")))
+            imgfiles.extend(get_image_files(filename))
         else:
             imgfiles.append(filename)
     # overrride settings
