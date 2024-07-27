@@ -768,6 +768,25 @@ def expand_arg_v2(args):
     return array
 
 
+def convert_params(param):
+    if isinstance(param, list):
+        return [convert_params(p) for p in param]
+    if isinstance(param, dict):
+        return {k: convert_params(v) for k, v in param.items()}
+    if isinstance(param, str):
+        if param.isdigit():
+            return int(param)
+        if param == "true":
+            return True
+        if param == "false":
+            return False
+        try:
+            return float(param)
+        except ValueError:
+            pass
+    return param
+
+
 def create_text_v2(opt):
     profile = opt.get("profile")
     override = expand_arg_v2(opt.get("override"))
@@ -1048,6 +1067,12 @@ def create_text_v2(opt):
         }
     else:
         Logger.debug("json mode")
+        for item in output:
+            for key, value in item.items():
+                if key == "verbose":
+                    continue
+                item[key] = convert_params(value)
+                Logger.debug(f"convert {key} {item[key]}")
         return {
             "options": options,
             "yml": yml,
