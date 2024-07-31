@@ -89,10 +89,10 @@ def xyz_parse(item):
                 value.get("include_sub_grids", False),
                 value.get("no_fixed_seeds", False),
                 value.get("margin_size", 0),
-                # value.get("vary_seeds_x", False),
-                # value.get("vary_seeds_y", False),
-                # value.get("vary_seeds_z", False),
-                # value.get("csv_mode)", False),
+                value.get("vary_seeds_x", False),
+                value.get("vary_seeds_y", False),
+                value.get("vary_seeds_z", False),
+                value.get("csv_mode)", False),
             ]
         else:
             Logger.error(f"Invalid type {type(value)} for x/y/z plot")
