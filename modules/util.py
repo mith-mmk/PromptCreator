@@ -6,13 +6,14 @@ def get_part(filename):
         part = os.path.basename(filename).split("part")[-1].split(".")[0]
         parts = part.split("-")
         parts.reverse()
-        part = ""
+        part = []
         for p in parts:
             if not p.isdigit():
-                part = p + "-" + part
+                part.append(p)
             else:
                 break
-        part = part[:-1]
+        part.reverse()
+        part = "-".join(part)
 
     except Exception as e:
         print(f"Failed to get part {e}")

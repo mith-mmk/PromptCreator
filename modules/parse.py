@@ -148,6 +148,7 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None):
         "styles",
         # "sampler_name",  # add 2023/10/22  synonim "sampler_index"
         # "sampler_index"  # This option is exception handling
+        "scheduler",  # add 2024/07/28 from v1.8 handling
         "seed",
         "subseed",
         "subseed_strength",
@@ -388,6 +389,9 @@ def create_infotext(parameters):
     schema = [
         "enable_hr",
         "denoising_strength",
+        "sampler_name",
+        "sampler_index",
+        "scheduler",
         "hr_upscaler",
         "hr_upscale",
         "hr_steps",
