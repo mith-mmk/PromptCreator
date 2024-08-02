@@ -29,6 +29,7 @@ def img2txt2img(
     for model in modelHash:
         modeldict[model["hash"]] = model
     params = []
+    res = []
     for imgfile in imagefiles:
         Logger.info(f"Processing {imgfile}")
 
@@ -71,11 +72,13 @@ def img2txt2img(
                         vae = info
                     if vae is not None:
                         Logger.warning(
-                            f"Model {modelName}'s vae not found, use default vae"
+                            f"Model is {modelName}, VAE is not found, use default vae"
                         )
                         param["override_settings"]["sd_vae"] = vae
                 else:
-                    Logger.warning(f"Model hash {modelHash} not found, use default vae")
+                    Logger.warning(
+                        f"Model hash {modelHash} is not found, use default model, vae"
+                    )
                     if "sd_vae" in opt:
                         param["override_settings"]["sd_vae"] = opt["sd_vae"]
             else:
@@ -109,12 +112,16 @@ def img2txt2img(
             params.append(param)
         except Exception as e:
             Logger.error(f"Failed to create img2txt params {e}")
+            res.append({"imgfile": imgfile, "success": False, "error": e})
             continue
     Logger.info("txt2img start")
     if not dry_run:
         try:
             txt2img(params, base_url=base_url, output_dir=output_dir, opt=opt)
+            res.append({"imgfile": imgfile, "success": True})
         except Exception as e:
             Logger.error(f"Failed to call txt2img {e}")
+            res.append({"imgfile": imgfile, "success": False, "error": e})
     else:
         Logger.info(f"Dry run {params}")
+    return res
