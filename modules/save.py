@@ -79,67 +79,24 @@ async def create_files(r, opt={"dir": "./outputs"}):
     nameseed = opt.get("filename_pattern", "[num]-[seed]")
     need_names = re.findall(r"\[.+?\]", nameseed)
     need_names = [n[1:-1] for n in need_names]
-    before_counter = re.sub(r"\[num\].*", "", nameseed)
-    before_counter = re.sub(r"\[.*?\]", "", before_counter)
-    count = len(before_counter)
+    #    before_counter = re.sub(r"\[num\].*", "", nameseed)
+    #    before_counter = re.sub(r"\[.*?\]", "", before_counter)
+    #    count = len(before_counter)
     use_num = False
     for name in need_names:
         if name == "num":
             use_num = True
             break
-
-    for name in need_names:
-        if name == "num":
-            break
-        if name == "shortdate":
-            count += 6
-        elif name == "date":
-            count += 10
-        elif name == "DATE":
-            count += 8
-        elif name == "datetime":
-            count += 14
-        elif name == "shortyear":
-            count += 2
-        elif name == "year":
-            count += 4
-        elif name == "month":
-            count += 2
-        elif name == "day":
-            count += 2
-        elif name == "time":
-            count += 6
-        elif name == "hour":
-            count += 2
-        elif name == "min":
-            count += 2
-        elif name == "sec":
-            count += 2
-        elif use_num:
-            Logger.error(f"[{name}] is setting before [num]")
-            raise ValueError
-
+    #    count = search_num_start(nameseed, use_num)
     Logger.debug("need_names", need_names)
 
-    num_length = opt.get("num_length", 5)
-    if "startnum" in opt:
-        num = opt["startnum"]
-    else:
-        num = -1
-        num_start = 0 + count
-        num_end = num_length + count
-
-        start_time = datetime.now()
-        for entry in await aos.scandir(dir):
-            if entry.is_file():
-                name = entry.name[num_start:num_end]
-                try:
-                    num = max(num, int(name))
-                except ValueError:
-                    pass
-        num += 1
-        end_time = datetime.now()
-        Logger.debug("scan time", end_time - start_time)
+    #    if "startnum" in opt:
+    #        num = opt["startnum"]
+    #    else:
+    #        start_time = datetime.now()
+    #        num = number_of_files(dir, count)
+    #        end_time = datetime.now()
+    #        Logger.debug("scan time", end_time - start_time)
 
     if type(r["info"]) is str:
         info = json.loads(r["info"])
@@ -162,7 +119,7 @@ async def create_files(r, opt={"dir": "./outputs"}):
                 for n, v in enumerate(value):
                     filename_pattern["var:" + key + "(" + str(n + 1) + ")"] = v
             except Exception as e:
-                Logger.warning(f"create filenames - check multi value error {value}")
+                Logger.verbose(f"create filenames - check multi value error {value}")
         else:
             filename_pattern["var:" + key] = value
     filename_pattern["part"] = opt.get("filepart", "")
@@ -187,7 +144,35 @@ async def create_files(r, opt={"dir": "./outputs"}):
     Logger.debug(
         "filename_pattern", json.dumps(filename_pattern, ensure_ascii=False, indent=2)
     )
+    num = 0  # disipose return value
     return filename_pattern, need_names, num, nameseed
+
+
+def search_num_start(filname_base, use_num=False):
+    if not use_num:
+        return 0
+    need_names = re.findall(r"\[.+?\]", filname_base)
+    need_names = [n[1:-1] for n in need_names]
+    count = 0
+    for name in need_names:
+        if name == "num":
+            return count
+        else:
+            count += 1
+    # if not found num
+    return 0
+
+
+def number_of_files(dir, count=0):
+    num = -1
+    if not os.path.exists(dir):
+        return 0
+    for entry in os.scandir(dir):
+        parts = entry.name.split("-")
+        if parts[count].isdigit():
+            num = max(num, int(parts[count]))
+    num += 1
+    return num
 
 
 async def async_save_images(r, opt={"dir": "./outputs"}):
@@ -330,7 +315,7 @@ def create_filename(nameseed, num, filename_pattern, need_names, parameters, opt
     for seeds in need_names:
         replacer = ""
         if seeds == "num":
-            replacer = str(num).zfill(5)
+            replacer = "[num]"  # after repalce
         # elif seeds == "seed" and "all_seeds" in filename_pattern:
         #    replacer = filename_pattern["all_seeds"][n]
         # elif seeds == "subseed" and "all_subseeds" in filename_pattern:
@@ -432,6 +417,25 @@ def create_filename(nameseed, num, filename_pattern, need_names, parameters, opt
     #            seed = filename_pattern['all_seeds'] [n]
     #            filename = str(num).zfill(5) +'-' +  str(seed) + '.png'
     filename = re.sub(r"\[.+?\:.+?\]", "", filename)
+
+    filebase = os.path.basename(filename)
+    dir = os.path.dirname(filename)
+    # sarch "[num]"
+    num_match = re.search(r"\[num\]", filebase)
+    num_length = opt.get("num_length", 5)
+    if num_match is not None:
+        parts = filebase.split("-")
+        if len(parts) > 1:
+            for n, part in enumerate(parts):
+                if "[num]" in part:
+                    try:
+                        num = number_of_files(os.path.join(opt["dir"], dir), count=n)
+                    except Exception as e:
+                        Logger.error("number_of_files error", e)
+                        num = 0
+                    filename = filename.replace("[num]", str(num).zfill(num_length))
+                    break
+
     return filename
 
 
@@ -458,6 +462,9 @@ def get_extendmeta(meta, variables, opt):
 
 
 def image_save(image, filename, meta, extendend_meta, opt={}):
+    directory = os.path.dirname(filename)
+    if not os.path.exists(directory):
+        os.makedirs(directory, exist_ok=True)
     if opt.get("image_type") == "jpg":
         Logger.debug("save jpg", filename)
         quality = opt.get("image_quality", 80)
