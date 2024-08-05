@@ -326,14 +326,16 @@ async def progress_writer(url, data, progress_url, userpass=None):
                     retry_start = time.time()
                     result = response.json()
                     right = result["progress"]
-                    elapsed_time = await write_progress(result, start_time)
+                    await write_progress(result, start_time)
+                    elapsed_time = time.time() - start_time
                     if not isRunning:
                         break
                 except Exception:
                     retry_duration = time.time() - retry_start
                     if retry_duration >= share.get("timeout"):
                         print("Progress is unknown")
-                        return
+                        retry_start = time.time()
+                        elapsed_time = time.time() - start_time
 
         async def post_wrapper(url, data, headers, timeout):
             #            result = await client.post(url, data=data, headers=headers, timeout=timeout)
