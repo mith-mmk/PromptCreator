@@ -564,7 +564,8 @@ functions(関数) str1,str2,.. are string(文字列) and x,y... are number(数�
 - default save file pattern is \[num\]-\[seed\] (ファイル名パターンは\[num\]-\[seed\]です)
   
 ### save file pattern(ファイル名パターン)
-- \[num\] : number of image(画像の番号) 5 digits(5桁), but --num-length option is set(5桁ですが、--num-lengthオプションで設定できます)
+- / folder separator(フォルダセパレータ)
+- \[num\] : number of image(画像の番号) 5 digits, but --num-length option is set(5桁ですが、--num-lengthオプションで設定できます)
 - \[seed\]: random seed(ランダムシード)
 - \[shortdate\]: current date(現在の日付) YYMMDD
 - \[DATE\]: current date(現在の日付) YYYYMMDD
@@ -728,17 +729,19 @@ command: ./workflows_apijson
  - ✓ categroy query for jsonl(jsonl カテゴリークエリー)
  - ✓ support webp(webpのサポート)
  - ✓ buckground save images(バックグラウンドで画像を保存)
+ - ✓ save images with subfolder(画像を保存にサブフォルダを指定)
 ## todo
- - adjustment arguments(引数の調整) arguments from profile(プロファイルからの引数)
- - Class based codes(クラスベースのコード)
- - more ComfyUI support(ComfyUIのサポートを強化) img2img, hires.fix
- - jpg, webp saves warkflow for ComfyUI(ComfyUI用のjpg, webpワークフロー保存 --comfy-metadata)
- - create workflow sd3 for ComfyUI(ComfyUI用のsd3ワークフローの作成)
- - category query for json(json カテゴリークエリー)
- - Support Controlnet in img2img(img2imgでControlnetをサポート)
- - support upscaling(アップスケーリングのサポート)
  - convert tools(json, jsonl, txt, csv)
- - more functions(関数の追加)
+ - create workflow sd3 for ComfyUI(ComfyUI用のsd3ワークフローの作成) 
+ - category query for json(json カテゴリークエリー)
+
+ - adjustment arguments(引数の調整) arguments from profile(プロファイルからの引数) →　v2.1 or later
+ - Class based codes(クラスベースのコード)　→ v2.1 or later
+ - more ComfyUI support(ComfyUIのサポートを強化) img2img, hires.fix　→ v2.1 or later
+ - jpg, webp saves warkflow for ComfyUI(ComfyUI用のjpg, webpワークフロー保存 --comfy-metadata)　→ v2.1 or later
+ - Support Controlnet in img2img(img2imgでControlnetをサポート) → v2.1 or later
+ - support upscaling(アップスケーリングのサポート) → v2.1 or later
+ - more functions(関数の追加) → v2.1 or later
    - value_choice(variable) : get one value of variable array(変数の配列から1つの値を取得)
 # feature: until V3(V3までの予定)
  - programing language like parser(プログラミング言語のようなパーサー)
