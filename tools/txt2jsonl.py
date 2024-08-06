@@ -221,6 +221,9 @@ def sort_jsonl(files, keys, rebulid=False):
                 del item["C"]
                 if "comment" in item:
                     del item["comment"]
+                if "series" in item:
+                    copy_item["series"] = item["series"]
+                    del item["series"]
                 if "title" in item:
                     copy_item["title"] = item["title"]
                     del item["title"]
