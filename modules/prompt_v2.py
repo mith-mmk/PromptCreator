@@ -360,9 +360,11 @@ def read_file_v2(filename, error_info=""):
                             else:
                                 item["weight"] = 0.1
                             if "V" in item:
-                                value = item.get("V", [])
+                                value = item.get("V", [""])
                                 if type(value) is not list:
                                     value = [value]
+                                if len(value) == 0:
+                                    value = [""]  # empty string
                                 item["variables"] = value
                                 del item["V"]
                             if "C" in item:
