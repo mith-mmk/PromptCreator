@@ -222,6 +222,8 @@ def main():
 
     if args.input.endswith(".jsonl"):
         jsonl2csv(args.input, args.output, args.bom)
+    elif os.path.isdir(args.input):
+        jsonl2csv(args.input, args.output, args.bom)
     elif args.input.endswith(".csv"):
         csv2jsonl(args.input, args.output, args.bom)
     else:

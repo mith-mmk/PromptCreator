@@ -190,7 +190,7 @@ def jsonl2jsonl(files, islora=False):
         save_jsonl(outdata, new_filename)
 
 
-def sort_jsonl(files, keys, rebulid=False):
+def sort_jsonl(files, keys, rebulid=False, expand=False, append=False):
     if isinstance(keys, str):
         keys = [keys]
     for file in files:
@@ -233,6 +233,15 @@ def sort_jsonl(files, keys, rebulid=False):
                 if "prompt" in item:
                     copy_item["prompt"] = item["prompt"]
                     del item["prompt"]
+                    if "append" in item:
+                        copy_item["append"] = item["append"]
+                        del item["append"]
+                    else:
+                        copy_item["append"] = ""
+                if append:
+                    if copy_item["append"] == "":
+                        if len(item["V"]) > 1:
+                            copy_item["append"] = item["V"][1]
                 if "neg" in item:
                     copy_item["neg"] = item["neg"]
                     del item["neg"]
@@ -248,7 +257,13 @@ def sort_jsonl(files, keys, rebulid=False):
                             f"{copy_item['prompt']}f{copy_item['lora']}",
                             copy_item["neg"],
                         ]
-                f.write(json.dumps(copy_item, ensure_ascii=False) + "\n")
+                if expand:
+                    for v in item["V"]:
+                        new_prompt = v
+                        copy_item["prompt"] = new_prompt
+                        f.write(json.dumps(copy_item, ensure_ascii=False) + "\n")
+                else:
+                    f.write(json.dumps(copy_item, ensure_ascii=False) + "\n")
 
 
 def usage():
@@ -274,7 +289,11 @@ elif argv[1] == "format":
 elif argv[1] == "sort":
     sort_jsonl(argv[2:], ["title", "C"], False)
 elif argv[1] == "rebuild":
-    sort_jsonl(argv[2:], "C", False)
+    sort_jsonl(argv[2:], "C", rebulid=False)
+elif argv[1] == "expand":
+    sort_jsonl(argv[2:], ["title", "C"], expand=True)
+elif argv[1] == "append":
+    sort_jsonl(argv[2:], ["title", "C"], append=True)
 else:
     print("error: invalid command use [convert, format, lora, sort, rebuild]")
     usage()
