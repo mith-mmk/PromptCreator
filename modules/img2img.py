@@ -157,6 +157,10 @@ def img2img(
                 share.set("line_count", 0)
             res.append({"imagefile": imagefile, "success": True})
             flash = f"\033[{prt_cnt}A"
+        except KeyboardInterrupt:
+            Logger.error("KeyboardInterrupt")
+            res.append({"imagefile": imagefile, "success": False})
+            break
         except BaseException as e:
             Logger.error(f"img2img failed {imagefile}, {e}")
             res.append({"imagefile": imagefile, "success": False, "error": e})

@@ -110,6 +110,9 @@ def img2txt2img(
 
             param["filepart"] = get_part(imgfile)
             params.append(param)
+        except KeyboardInterrupt:
+            Logger.info("Interrupted")
+            break
         except Exception as e:
             Logger.error(f"Failed to create img2txt params {e}")
             res.append({"imgfile": imgfile, "success": False, "error": e})

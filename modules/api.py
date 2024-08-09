@@ -333,7 +333,7 @@ async def progress_writer(url, data, progress_url, userpass=None):
                 except Exception:
                     retry_duration = time.time() - retry_start
                     if retry_duration >= share.get("timeout"):
-                        print("Progress is unknown")
+                        print("Progress is unknown", end="\r")
                         retry_start = time.time()
                         elapsed_time = time.time() - start_time
 
