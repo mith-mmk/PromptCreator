@@ -206,7 +206,7 @@ def sort_jsonl(files, keys, rebulid=False, expand=False, append=False):
                 else:
                     items.append(json.loads(item))
             except Exception as e:
-                print(f"Wornig: line{idx} {e}")
+                print(f"Wornig: line{idx+1} {e}")
         # sort of key data
         for key in keys:
             items.sort(key=lambda x: x[key])
