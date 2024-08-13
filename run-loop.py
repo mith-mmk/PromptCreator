@@ -744,6 +744,7 @@ def run_img2txt2img(config, args):
             imgfiles.append(filename)
     # overrride settings
     overrides = profile.get("overrides", {})
+    all_images_count = len(imgfiles)
 
     backup = profile.get("backup", None)
     output_dir = profile.get("output", None)
@@ -781,7 +782,8 @@ def run_img2txt2img(config, args):
             result = False
             continue
         count += len(imgfiles)
-        Logger.info(f"img2txt2img finished {count} images")
+        remain = all_images_count - count
+        Logger.info(f"img2txt2img finished {count} images remain {remain}")
         try:
             if backup is not None:
                 if not dry_run:
