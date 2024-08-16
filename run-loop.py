@@ -12,7 +12,6 @@ import httpx
 import yaml
 
 import create_prompts
-
 # import logging
 import img2img
 import modules.logger as logger
@@ -621,7 +620,8 @@ def run_img2img(config, args=None):
                     _overrides = img_config["overrides"]
                     for item in _overrides:
                         if item in items:
-                            overrides[item] = _overrides[item]
+                            if item:
+                                overrides[item] = _overrides[item]
                         elif item == "override_settings":
                             for override in _overrides[item]:
                                 overrides[override] = _overrides[item][override]
