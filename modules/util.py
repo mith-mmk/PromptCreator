@@ -18,4 +18,6 @@ def get_part(filename):
     except Exception as e:
         print(f"Failed to get part {e}")
         part = ""
+    if part == "-":
+        part = ""
     return part

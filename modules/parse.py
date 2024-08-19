@@ -469,7 +469,8 @@ def create_infotext(parameters):
         elif key == "sampler_name":
             sampler_name = value
         elif key == "model":
-            override_settings["sd_model_checkpoint"] = value
+            if "sd_model_checkpoint" not in override_settings:
+                override_settings["sd_model_checkpoint"] = value
         elif key == "model_hash":
             override_settings["sd_model_checkpoint"] = value
         elif key == "VAE" or key == "vae":

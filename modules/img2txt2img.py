@@ -21,6 +21,7 @@ def img2txt2img(
     dry_run = opt.get("dry_run", False)
     # modelHash
     modelHash = api.get_sd_models(base_url)
+
     if modelHash is None:
         Logger.error("Failed to get models")
         # return False
@@ -28,6 +29,9 @@ def img2txt2img(
     modeldict = {}
     for model in modelHash:
         modeldict[model["hash"]] = model
+        modeldict[model["model_name"]] = model
+    modelsKeys = modeldict.keys()
+
     params = []
     res = []
     for imgfile in imagefiles:
@@ -55,14 +59,19 @@ def img2txt2img(
                 overrideSettings = {}
                 param["override_settings"] = overrideSettings
 
-            Logger.info(f"Vae: {overrideSettings.get('sd_vae')}")
+            def search_model(modelHash):
+                for key in modelsKeys:
+                    if isinstance(key, str):
+                        if modelHash.endswith(key):
+                            return modeldict[key]["model_name"]
+                return ""
 
             # If infomation VAE is not filename, get from model name to vae filename dict
             if "sd_vae" not in overrideSettings:
                 modelHash = overrideSettings.get("sd_model_checkpoint")
-                if modelHash in modeldict:
+                if search_model(modelHash) != "":
                     try:
-                        modelName = modeldict[modelHash]["model_name"]
+                        modelName = search_model(modelHash)
                     except Exception:
                         modelName = modelHash
                     info = models.get(modelName, None)
@@ -72,12 +81,12 @@ def img2txt2img(
                         vae = info
                     if vae is not None:
                         Logger.warning(
-                            f"Model is {modelName}, VAE is not found, use default vae"
+                            f"Model hash for VAE is not found, use default vae"
                         )
                         param["override_settings"]["sd_vae"] = vae
                 else:
                     Logger.warning(
-                        f"Model hash {modelHash} is not found, use default model, vae"
+                        f"Model hash {modelHash} for VAE not found, use default vae"
                     )
                     if "sd_vae" in opt:
                         param["override_settings"]["sd_vae"] = opt["sd_vae"]
