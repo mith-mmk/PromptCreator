@@ -197,15 +197,18 @@ class LogPrint:
     def log_rotate(self):
         if self.logging_level is None:
             return
-        now = datetime.datetime.now()
-        # 日付をまたいでいない場合はreturn
-        now = now.strftime("%Y%m%d")
-        start = self.startDay.strftime("%Y%m%d")  # type: ignore
-        if now <= start:
+        if self.log_dir is None:
+            return
+        if not os.path.exists(self.log_dir):
+            return
+        # 作成日時を取得
+        creare_date = os.path.getctime(self.log_dir)
+        creare_date = datetime.datetime.fromtimestamp(creare_date).strftime("%Y%m%d")
+        now = datetime.datetime.now().strftime("%Y%m%d")
+        if now <= creare_date:
             return
         if isinstance(self.log_dir, str) and not os.path.exists(self.log_dir):
             return
-        self.startDay = now
         # log_dir + '.' + str(i) は削除
         try:
             if self.f is not None:
@@ -213,6 +216,7 @@ class LogPrint:
         except Exception:
             print("log file close error")
         i = self.log_days
+        log_txts = []
         if i is not None and i > 0:
             if self.log_dir is None:
                 return
@@ -222,20 +226,24 @@ class LogPrint:
             # log_dir は log_dir + '.' + str(1) にrename
             logfile = self.log_dir
             if os.path.exists(logfile):
+                open(logfile, "w").close()
                 try:
                     while i > 0:
                         # log_dir + '.' + str(i-1) は log_dir + '.' + str(i) にrename
                         rn_logfile = self.log_dir + "." + str(i - 1)
                         new_logfile = self.log_dir + "." + str(i)
                         if os.path.exists(rn_logfile):
+                            log_txts.append(f"{rn_logfile} -> {new_logfile}")
                             os.rename(rn_logfile, new_logfile)
                         i -= 1
                     os.rename(logfile, f"{logfile}.1")
                 except Exception as e:
                     print(e)
-            open(logfile, "w").close()
-            # update startDay
-            self.startDay = datetime.datetime.now()
+        if isinstance(self.log_dir, str):
+            with open(self.log_dir, "w", encoding="utf-8") as f:
+                for txt in log_txts:
+                    f.write(txt + "\n")
+                f.flush()
 
     def stdout(self, *msg):
         print(*msg)
