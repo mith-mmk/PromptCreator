@@ -21,3 +21,15 @@ def get_part(filename):
     if part == "-":
         part = ""
     return part
+
+
+def divide_values(values):
+    """
+    values "width=256,height=256"
+    return ["width=256", "height=256"]
+    """
+    result = {}
+    for value in values.split(","):
+        key, value = value.split("=")
+        result[key] = value
+    return result

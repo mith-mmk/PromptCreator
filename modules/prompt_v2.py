@@ -826,6 +826,26 @@ def create_text_v2(opt):
         Logger.debug(f"yaml mode {prompt_file}")
         yml = yaml_parse_v2(prompt_file, yml)
         Logger.debug(f"yml {yml}")
+        if "values" in opt:
+            for key, value in opt["values"].items():
+                key = "${" + key + "}"
+
+                # yml 内の ${key} を全て value に置き換える
+                def nested_replace(yml, k, v):
+                    if isinstance(yml, dict):
+                        for key, value in yml.items():
+                            if isinstance(value, str):
+                                yml[key] = value.replace(k, v)
+                            else:
+                                nested_replace(value, k, v)
+                    elif isinstance(yml, list):
+                        for idx, value in enumerate(yml):
+                            if isinstance(value, str):
+                                yml[idx] = value.replace(k, v)
+                            else:
+                                nested_replace(value, k, v)
+
+                nested_replace(yml, key, value)
     else:
         Logger.error(f"not support extention {ext}")
         # dispose text mode

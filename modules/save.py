@@ -74,8 +74,6 @@ def save_images_wapper(r, opt={"dir": "./outputs"}):
 
 
 async def create_files(r, opt={"dir": "./outputs"}):
-    dir = opt["dir"]
-
     nameseed = opt.get("filename_pattern", "[num]-[seed]")
     need_names = re.findall(r"\[.+?\]", nameseed)
     need_names = [n[1:-1] for n in need_names]
@@ -435,7 +433,6 @@ def create_filename(nameseed, num, filename_pattern, need_names, parameters, opt
                         num = 0
                     filename = filename.replace("[num]", str(num).zfill(num_length))
                     break
-
     return filename
 
 
@@ -465,6 +462,7 @@ def image_save(image, filename, meta, extendend_meta, opt={}):
     directory = os.path.dirname(filename)
     if not os.path.exists(directory):
         os.makedirs(directory, exist_ok=True)
+    Logger.verbose("save", filename)
     if opt.get("image_type") == "jpg":
         Logger.debug("save jpg", filename)
         quality = opt.get("image_quality", 80)
