@@ -19,6 +19,7 @@ from modules.prompt import expand_arg
 from modules.prompt_v2 import create_text_v2
 from modules.save import DataSaver
 from modules.txt2img import txt2img
+from modules.util import divide_values
 
 Logger = getDefaultLogger()
 
@@ -554,6 +555,15 @@ def run_from_args(command_args=None):
         help="profile for create prompt, profile is override yml",
     )
 
+    # replace value
+    parser.add_argument(
+        "--values",
+        "-v",
+        type=str,
+        default=None,
+        help="values for create prompt, values is override yml\nex) -v width=768,height=1024 -> ${width} in yaml is replaced by 768, ${height} is replaced by 1024",
+    )
+
     # comfyui
 
     parser.add_argument(
@@ -582,6 +592,7 @@ def run_from_args(command_args=None):
         default=False,
         help="output v1 json",
     )
+
     parser.add_argument(
         "--prompt",
         type=bool,
@@ -612,6 +623,9 @@ def run_from_args(command_args=None):
     )
 
     args = parser.parse_args(command_args)
+    if args.values:
+        args.values = divide_values(args.values)
+
     if args.debug:
         Logger.print_levels = [
             "info",
