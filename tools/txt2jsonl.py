@@ -269,7 +269,7 @@ def sort_jsonl(files, keys, rebulid=False, expand=False, append=False):
 def usage():
     print("Usage: python txt2jsonl.py convert txtfile|dir output_dir")
     print(
-        "       python txt2jsonl.py [format|lora|sort|rebuild] [filename, filename, ...]"
+        "       python txt2jsonl.py [format|lora|sort|rebuild|expand|append] [filename, filename, ...]"
     )
     sys.exit(1)
 
