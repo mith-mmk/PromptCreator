@@ -31,5 +31,7 @@ def divide_values(values):
     result = {}
     for value in values.split(","):
         key, value = value.split("=")
+        key = key.strip()
+        value = value.strip()
         result[key] = value
     return result

@@ -226,7 +226,6 @@ class LogPrint:
             # log_dir は log_dir + '.' + str(1) にrename
             logfile = self.log_dir
             if os.path.exists(logfile):
-                open(logfile, "w").close()
                 try:
                     while i > 0:
                         # log_dir + '.' + str(i-1) は log_dir + '.' + str(i) にrename

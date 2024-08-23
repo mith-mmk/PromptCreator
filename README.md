@@ -204,6 +204,13 @@ usage: cp2.py [-h] [--append-dir APPEND_DIR] [--output OUTPUT] [--json [JSON]] [
 
   --override
                         command oveeride ex= "width=768, height=1024"(コマンドを上書きする 例: "width=768, height=1024")
+  
+  --values (-v)         
+                        override values in yaml(yamlの値をオーバーライドする)
+                        ex: "-v prefix=a,face=smile"
+                        filename: "${prefix}-001.json" -> filename: "a-001.json"
+                        face: ["\${face} face"] -> face: ["smile face"]
+                        
 
   --info
                         add infomation ex="date=2022/08/19, comment=random"(情報を追加する 例: "date=2022/08/19, comment=random")
