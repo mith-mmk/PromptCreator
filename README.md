@@ -518,18 +518,30 @@ Example(例)
  not support boolean type (ブーリアン型はサポートされていません) retrun 0(false) or 1(true)(0(偽)または1(真)を返します)
 
 functions(関数) str1,str2,.. are string(文字列) and x,y... are number(数値)
-- chained("objects", 0.8, 3) : create chained string(連鎖変数) "object" = ${object} 0.8 is threshhold, 3 is count(0.8は閾値、3は回数)  
+- chained("objects", 0.8, 3) : create chained string(連鎖変数) "object" = ${object} 0.8 is threshhold, 3 is max count(0.8は閾値、3は回数) 
+  - ex. chained("objects", 0.8, 3) -> \$\{objects} or \$\{objects}, \$\{object} or \$\{objects},\$\{object},\$\{object}
 - choice("objects") : choice one sobjects(オブジェクトの中から1つ選択)
+  - choice("objects") -> \$\{objects}
 - contains(str1,str2, str3....) : str1 contains [str2, str3, ...] (文字列str1がstr2...を含むか)
+  - contains("abc", "a", "b") -> 1, contain("abc", "e", "f") -> 0
 - attribute("objects", str2) : get attribute of variabled "objects"(変数str1の属性を取得)
-- choice_index("objects", query, number) : choice index of objects(オブジェクトのインデックスを選択)
+  - attribute("objects", "size") -> \$\{objects["size"]}
+- choice_index("objects", query, number) : choice index of objects(オブジェクトのインデックスを選択), query is 0.0 - 1.0(クエリは0.0 - 1.0の確率値)
+  - choice_index("objects", query, 1) -> \$\{objects[1]}
 - choice_attribute("objects", query, attribute) : choice attribute of objects(オブジェクトの属性を選択)
+  - choice_attribute("objects", query, "size") -> \$\{objects["size"]}
 - value("objects", query) : get value of objects(オブジェクトの値を取得)
+  - value("objects", query) -> \$\{objects}
 - replace(str1, str2, str3) : replace str2 to str3 in str1(str1の中のstr2をstr3に置換)
+  - replace("abc", "a", "b") -> "bbc"
 - split(str1, str2) : split str1 by str2(文字列str1をstr2で分割)
+  - split("a,b,c", ",") -> ["a", "b", "c"]
 - upper(str1) : upper case(大文字)
+  - upper("abc") -> "ABC"
 - lower(str1) : lower case(小文字)
+  - lower("ABC") -> "abc"
 - if(condition, truecase, falsecase) : if condition is true, return truecase, else return falsecase(ifのconditionがtrueの場合、truecaseを返し、それ以外はfalsecaseを返します)
+  - if(1, "true", "false") -> "true", if(0, "true", "false") -> "false"
 - pow(x,y) : x^y(累乗)
 - sqrt(x) : square root(平方根)
 - abs(x) : absolute value(絶対値)
@@ -547,7 +559,9 @@ functions(関数) str1,str2,.. are string(文字列) and x,y... are number(数�
 - and(condition1, condition2) : and operation(論理積)
 - or(condition1, condition2) : or operation(論理和)
 - match(str1,str2) : match str1 to str2(文字列str1がstr2に一致)
+  - match("abc", "a") -> 1, match("abc", "d") -> 0
 - substring(str1, start, end) : substring of str1(文字列str1の部分文字列)
+  - substring("abc", 1, 2) -> "b"
 - random(start, end) : random integer number(ランダムな整数) or random float number(ランダムな浮動小数点数)
 - random_int(): random integer number(ランダムな整数) 0 - 2^64 -1
 - random_float(): random float number(ランダムな浮動小数点数) 0 - 1
