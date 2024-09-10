@@ -751,11 +751,12 @@ command: ./workflows_apijson
  - ✓ support webp(webpのサポート)
  - ✓ buckground save images(バックグラウンドで画像を保存)
  - ✓ save images with subfolder(画像を保存にサブフォルダを指定)
+ - ✓ fix log rotation logic(ログローテーションロジックの修正)
 ## todo
  - convert tools(json, jsonl, txt, csv)
  - create workflow sd3 for ComfyUI(ComfyUI用のsd3ワークフローの作成) 
  - category query for json(json カテゴリークエリー)
-
+ - support forge API, Forge API has many bugs, yet(Forge APIのサポート、ForgeのAPIは、未だ多くのバグがあり挙動が不安定)
  - adjustment arguments(引数の調整) arguments from profile(プロファイルからの引数) →　v2.1 or later
  - Class based codes(クラスベースのコード)　→ v2.1 or later
  - more ComfyUI support(ComfyUIのサポートを強化) img2img, hires.fix　→ v2.1 or later
