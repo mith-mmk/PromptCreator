@@ -157,7 +157,7 @@ class WeuUiAPI:
 
 
 # connect timeout for local connection case, remote connection case is 5 sec
-share.set("timeout_c", 0.1)
+share.set("timeout_c", 1)
 share.set("timeout", 5)
 # read timeout / txt2img, img2img timeout
 share.set("max_timeout", 1000)
@@ -198,6 +198,7 @@ def get_response(url, userpass=None):
             if res.status_code == 200:
                 return res
             if res.status_code == 404:
+                Logger.error(f"Failed to get {url} {res.status_code}")
                 return None
         except httpx.ReadTimeout:
             Logger.error(f"Read timeout {duration} sec")
@@ -207,6 +208,7 @@ def get_response(url, userpass=None):
                 raise httpx.TimeoutException(f"Failed to get {url} connect timeout")
             current_timeout = share.get("timeout")
         except Exception as e:
+            Logger.error(f"Failed to get {url} {e}")
             raise e
 
 
@@ -500,8 +502,16 @@ def set_sd_model(
     options_url = base_url + "/sdapi/v1/options"
 
     try:
-        sd_opts = get_response(options_url, userpass).json()
-        sd_models = get_response(model_url, userpass).json()
+        sd_opts = {}
+        sd_models = []
+        try:
+            sd_opts = get_response(options_url, userpass).json()
+        except Exception:
+            Logger.error("Failed to get options")
+        try:
+            sd_models = get_response(model_url, userpass).json()
+        except Exception:
+            Logger.error("Failed to get models")
 
         load_model = None
 
@@ -520,7 +530,7 @@ def set_sd_model(
                 break
         Logger.verbose("check current server")
         model = get_vae(base_url, sd_vae, userpass=userpass)
-        Logger.verbose(f"Current vae is {model}")
+        Logger.info(f"Current vae is {model}")
         forge = False
         if model is None:
             forge = True
@@ -543,21 +553,23 @@ def set_sd_model(
             Logger.info(f"{sd_model} model is not found")
             raise Exception(f"{sd_model} model is not found")
         sd_model = load_model
-        if load_model == sd_opts.get("sd_model_checkpoint"):
-            if forge == False and sd_vae == sd_opts.get("sd_vae"):
-                Logger.info(f"Checkpoint {sd_model} and {sd_vae} are already loaded")
-                return
-            else:
-                Logger.info(f"Checkpoint {sd_model} is already loaded")
-                payload = {"sd_vae": sd_vae}
-        elif sd_vae == sd_opts.get("sd_vae"):
-            payload = {"sd_model_checkpoint": sd_model}
+        if forge:  # forge is not check loaded model
+            payload = {
+                "sd_model_checkpoint": sd_model,
+                "forge_additional_modules": sd_vae,
+            }
         else:
-            if forge:
-                payload = {
-                    "sd_model_checkpoint": sd_model,
-                    "forge_additional_modules": sd_vae,
-                }
+            if load_model == sd_opts.get("sd_model_checkpoint"):
+                if sd_vae == sd_opts.get("sd_vae"):
+                    Logger.info(
+                        f"Checkpoint {sd_model} and {sd_vae} are already loaded"
+                    )
+                    return
+                else:
+                    Logger.info(f"Checkpoint {sd_model} is already loaded")
+                    payload = {"sd_vae": sd_vae}
+            elif sd_vae == sd_opts.get("sd_vae"):
+                payload = {"sd_model_checkpoint": sd_model}
             else:
                 payload = {"sd_model_checkpoint": sd_model, "sd_vae": sd_vae}
         Logger.info(f"Checkpoint {sd_model} and {sd_vae} are loading...")
