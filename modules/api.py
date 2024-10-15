@@ -456,18 +456,18 @@ def get_vae(base_url="http://127.0.0.1:7860", vae=None, userpass=None):
     try:
         Logger.verbose(f"Try get vae from {model_url}")
         res = get_response(model_url, userpass=userpass)
+        if res.status_code != 200:
+            Logger.error(f"Failed to get vae {res.status_code}")
+            return None
         # automatic1111 1.6 <- no yet hash support but use metadata?
         for model in res.json():
-            if (
-                model["model_name"] == vae
-                or model["hash"] == vae
-                or model["title"] == vae
-            ):
+            if model["model_name"] == vae or model["filename"] == vae:
                 return model
-    except Exception:
+        return "None"
+    except Exception as e:
+        Logger.error(e)
         Logger.error("Failed to get vae")
-        pass
-    return None
+    return "None"
 
 
 def get_modules(base_url="http://127.0.0.1:7860", modules=[], userpass=None):
