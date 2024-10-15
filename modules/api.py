@@ -456,8 +456,8 @@ def get_vae(base_url="http://127.0.0.1:7860", vae=None, userpass=None):
     try:
         Logger.verbose(f"Try get vae from {model_url}")
         res = get_response(model_url, userpass=userpass)
-        if res.status_code != 200:
-            Logger.error(f"Failed to get vae {res.status_code}")
+        if res is None:
+            Logger.info("Failed to get vae")
             return None
         # automatic1111 1.6 <- no yet hash support but use metadata?
         for model in res.json():
@@ -529,9 +529,8 @@ def set_sd_model(
                 load_model = model["title"]
                 break
         Logger.verbose("check current server")
-        model = get_vae(base_url, sd_vae, userpass=userpass)
-        Logger.info(f"Current vae is {model}")
         forge = False
+        model = get_vae(base_url, sd_vae, userpass=userpass)
         if model is None:
             forge = True
             Logger.info("This sever is forge WebUi, use forge_additional_modules")
@@ -547,6 +546,7 @@ def set_sd_model(
                 sd_vae = [sd_vae]
 
         else:
+            Logger.info(f"Current vae is {model}")
             Logger.info(f"This server is automatic1111 WebUI")
 
         if load_model is None:
