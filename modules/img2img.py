@@ -108,8 +108,33 @@ def img2img(
                     vae = api.get_vae(base_url=base_url, vae=override["vae"])
                     del override["vae"]
                     if vae is None:
-                        continue
-                    override_settings["sd_vae"] = vae.title
+                        # for forge
+                        modules = api.get_modules(base_url=base_url)
+                        if modules is None or len(modules) == 0:
+                            continue
+                        mod = []
+                        for model in modules:
+                            mod.append(model["title"])
+                        override_settings["forge_additional_modules"] = mod
+                    else:
+                        override_settings["sd_vae"] = vae.title
+                if "forge_additional_modules" in override:
+                    modules = api.get_modules(base_url=base_url)
+                    del override["forge_additional_modules"]
+                    if modules is None:
+                        # backward compatibility
+                        vae = api.get_vae(
+                            base_url=base_url,
+                            vae=override["forge_additional_modules"][0]["title"],
+                        )
+                        if vae is None:
+                            continue
+                        override_settings["sd_vae"] = vae.title
+                    else:
+                        mod = []
+                        for model in modules:
+                            mod.append(model["title"])
+                        override_settings["forge_additional_modules"] = mod
                 if "clip_skip" in override:
                     override_settings["CLIP_stop_at_last_layers"] = override[
                         "clip_skip"

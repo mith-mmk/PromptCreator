@@ -196,6 +196,9 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None):
         # "send_images",
         # "save_images",
         # "alwayson_scripts"
+        "module_1",  # add 2024/10/15 for forge f2.0.1.10.1-previous-564 for VAE
+        "module_2",  # add 2024/10/15 for forge f2.0.1.10.1-previous-564 for clip
+        "module_3",  # add 2024/10/15 for forge f2.0.1.10.1-previous-564 for clip
     ]
 
     parameters, extend = imgloader(imagefile, img2img=True)
@@ -258,6 +261,12 @@ def create_img2json(imagefile, alt_image_dir=None, mask_image_dir=None):
             override_settings[key] = value
         elif key == "VAE" or key == "vae":
             override_settings["sd_vae"] = value
+        elif key == "module_1" or key == "module_2" or key == "module_3":
+            # for forge
+            key = "sd_vae"
+            if override_settings.get(key) is None:
+                override_settings[key] = ""
+            override_settings[key] += "," + str(value)
         elif key == "RNG" or key == "RNG":
             override_settings["randn_source"] = value
     if ("sampler" not in json_raw) and (
@@ -305,6 +314,10 @@ def create_parms(parameters):
         "s_tmin",
         "s_noise",
         "sampler",
+        # for forge
+        "module_1",
+        "module_2",
+        "module_3",
     ]
 
     # convert txt2img parameters to img2img parameters
@@ -368,6 +381,12 @@ def create_parms(parameters):
         # Automatic1111 1.6.0 use "Add model name to generation information" option in settings
         elif key == "VAE" or key == "vae":
             override_settings["sd_vae"] = value
+        elif key == "module_1" or key == "module_2" or key == "module_3":
+            # for forge
+            key = "sd_vae"
+            if override_settings.get(key) is None:
+                override_settings[key] = ""
+            override_settings[key] += "," + value
         elif key == "CLIP_stop_at_last_layers":
             override_settings[key] = value
     if ("sampler" not in json_raw) and (
@@ -475,6 +494,12 @@ def create_infotext(parameters):
             override_settings["sd_model_checkpoint"] = value
         elif key == "VAE" or key == "vae":
             override_settings["sd_vae"] = value
+        elif key == "module_1" or key == "module_2" or key == "module_3":
+            # for forge
+            key = "sd_vae"
+            if override_settings.get(key) is None:
+                override_settings[key] = ""
+            override_settings[key] += "," + value
         elif key == "CLIP_stop_at_last_layers":
             override_settings[key] = value
     if ("sampler" not in json_raw) and (

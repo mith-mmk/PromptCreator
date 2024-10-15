@@ -197,6 +197,8 @@ def get_response(url, userpass=None):
 
             if res.status_code == 200:
                 return res
+            if res.status_code == 404:
+                return None
         except httpx.ReadTimeout:
             Logger.error(f"Read timeout {duration} sec")
             raise httpx.ReadTimeout(f"Read timeout {duration} sec")
@@ -447,13 +449,10 @@ def get_sd_model(base_url="http://127.0.0.1:7860", sd_model=None, userpass=None)
 
 
 def get_vae(base_url="http://127.0.0.1:7860", vae=None, userpass=None):
-    if vae == "Automatic":
-        return "Automatic"
-    if vae == "None":
-        return "None"
     base_url = normalize_base_url(base_url)
     model_url = base_url + "/sdapi/v1/sd-vae"
     try:
+        Logger.verbose(f"Try get vae from {model_url}")
         res = get_response(model_url, userpass=userpass)
         # automatic1111 1.6 <- no yet hash support but use metadata?
         for model in res.json():
@@ -464,8 +463,27 @@ def get_vae(base_url="http://127.0.0.1:7860", vae=None, userpass=None):
             ):
                 return model
     except Exception:
+        Logger.error("Failed to get vae")
         pass
     return None
+
+
+def get_modules(base_url="http://127.0.0.1:7860", modules=[], userpass=None):
+    base_url = normalize_base_url(base_url)
+    model_url = base_url + "/sdapi/v1/sd-modules"
+    try:
+        res = get_response(model_url, userpass)
+        if res.status_code != 200:
+            Logger.error(f"Failed to get modules {res.status_code}")
+            return None
+        results = []
+        for module in modules:
+            if module in res.json():
+                results.append(module)
+    except Exception:
+        Logger.error(f"Failed to get modules")
+        return None
+    return results
 
 
 def set_sd_model(
@@ -480,8 +498,6 @@ def set_sd_model(
     base_url = normalize_base_url(base_url)
     model_url = base_url + "/sdapi/v1/sd-models"
     options_url = base_url + "/sdapi/v1/options"
-
-    url = base_url + "/sdapi/v1/options"
 
     try:
         sd_opts = get_response(options_url, userpass).json()
@@ -502,13 +518,33 @@ def set_sd_model(
             ):
                 load_model = model["title"]
                 break
+        Logger.verbose("check current server")
+        model = get_vae(base_url, sd_vae, userpass=userpass)
+        Logger.verbose(f"Current vae is {model}")
+        forge = False
+        if model is None:
+            forge = True
+            Logger.info("This sever is forge WebUi, use forge_additional_modules")
+            # change forge_additional_modules from sd_vae
+            if sd_vae == "None" or sd_vae == "Automatic" or sd_vae is None:
+                sd_vae = []
+            if isinstance(sd_vae, str):
+                # ex) flux.1 "ae.vae, t5xxl_fp8_e4m3fn.safetensors, clip_l.safetensors" -> ["ae.vae", "t5xxl_fp8_e4m3fn", "clip_l"]
+                sd_vae = sd_vae.split(",")
+                sd_vae = [x.strip() for x in sd_vae]
+            if not isinstance(sd_vae, list):
+                # sdxl, stable diffusion 1,2
+                sd_vae = [sd_vae]
+
+        else:
+            Logger.info(f"This server is automatic1111 WebUI")
 
         if load_model is None:
             Logger.info(f"{sd_model} model is not found")
             raise Exception(f"{sd_model} model is not found")
         sd_model = load_model
         if load_model == sd_opts.get("sd_model_checkpoint"):
-            if sd_vae == sd_opts.get("sd_vae"):
+            if forge == False and sd_vae == sd_opts.get("sd_vae"):
                 Logger.info(f"Checkpoint {sd_model} and {sd_vae} are already loaded")
                 return
             else:
@@ -517,10 +553,16 @@ def set_sd_model(
         elif sd_vae == sd_opts.get("sd_vae"):
             payload = {"sd_model_checkpoint": sd_model}
         else:
-            payload = {"sd_model_checkpoint": sd_model, "sd_vae": sd_vae}
+            if forge:
+                payload = {
+                    "sd_model_checkpoint": sd_model,
+                    "forge_additional_modules": sd_vae,
+                }
+            else:
+                payload = {"sd_model_checkpoint": sd_model, "sd_vae": sd_vae}
         Logger.info(f"Checkpoint {sd_model} and {sd_vae} are loading...")
         data = json.dumps(payload)
-        res = request_post_wrapper(url, data, None, base_url, userpass)
+        res = request_post_wrapper(options_url, data, None, base_url, userpass)
         # Version Return null only
         if res.status_code == 200:
             Logger.info("change success sd_model")
