@@ -478,11 +478,18 @@ def get_modules(base_url="http://127.0.0.1:7860", modules=[], userpass=None):
         if res.status_code != 200:
             Logger.error(f"Failed to get modules {res.status_code}")
             return None
+        models = res.json()
         results = []
         for module in modules:
-            if module in res.json():
-                results.append(module)
-    except Exception:
+            for model in models:
+                if (
+                    model["model_name"].startswith(module)
+                    or module == model["filename"]
+                ):
+                    results.append(model)
+        return results
+    except Exception as e:
+        Logger.error(e)
         Logger.error(f"Failed to get modules")
         return None
     return results

@@ -126,7 +126,22 @@ def img2txt2img(
             Logger.error(f"Failed to create img2txt params {e}")
             res.append({"imgfile": imgfile, "success": False, "error": e})
             continue
-    Logger.info("txt2img start")
+    if param.get("override_settings", {}):
+        # if "forge_additional_modules" in param["override_settings"]: get module names
+        if "forge_additional_modules" in param["override_settings"]:
+            modules = api.get_modules(
+                base_url=base_url,
+                modules=param["override_settings"]["forge_additional_modules"],
+            )
+
+            if modules is not None:
+                models = []
+
+                for module in modules:
+                    models.append(module["model_name"])
+                param["override_settings"]["forge_additional_modules"] = models
+
+    Logger.info(f"{param.get('override_settings', {})}")
     if not dry_run:
         try:
             txt2img(params, base_url=base_url, output_dir=output_dir, opt=opt)
