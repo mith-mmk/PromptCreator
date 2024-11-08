@@ -4,7 +4,7 @@ import modules.api as api
 from modules.logger import getDefaultLogger
 from modules.parse import create_img2txt
 from modules.txt2img import txt2img
-from modules.util import get_part
+from modules.util import get_forge_additional_module_names, get_part
 
 Logger = getDefaultLogger()
 
@@ -126,20 +126,7 @@ def img2txt2img(
             Logger.error(f"Failed to create img2txt params {e}")
             res.append({"imgfile": imgfile, "success": False, "error": e})
             continue
-    if param.get("override_settings", {}):
-        # if "forge_additional_modules" in param["override_settings"]: get module names
-        if "forge_additional_modules" in param["override_settings"]:
-            modules = api.get_modules(
-                base_url=base_url,
-                modules=param["override_settings"]["forge_additional_modules"],
-            )
-
-            if modules is not None:
-                models = []
-
-                for module in modules:
-                    models.append(module["model_name"])
-                param["override_settings"]["forge_additional_modules"] = models
+    param = get_forge_additional_module_names(base_url, param)
 
     Logger.info(f"{param.get('override_settings', {})}")
     if not dry_run:

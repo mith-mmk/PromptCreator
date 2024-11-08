@@ -7,7 +7,7 @@ import modules.share as share
 from modules.interrogate import interrogate
 from modules.parse import create_img2json
 from modules.save import DataSaver
-from modules.util import get_part
+from modules.util import get_forge_additional_module_names, get_part
 
 Logger = logger.getDefaultLogger()
 # Call img2img API from webui, it has many bugs
@@ -114,7 +114,10 @@ def img2img(
                         )
                         if modules is None or len(modules) == 0:
                             continue
-                        override_settings["forge_additional_modules"] = modules
+                        models = []
+                        for module in modules:
+                            models.append(module["model_name"])
+                        override_settings["forge_additional_modules"] = models
                     else:
                         # for automatic1111
                         override_settings["sd_vae"] = vae.title
@@ -134,8 +137,7 @@ def img2img(
             if item.get("enable_hr"):
                 if "denoising_strength" not in item:
                     item["denoising_strength"] = 0.5
-
-            # Why is an error happening? json=payload or json=item
+            item = get_forge_additional_module_names(base_url, item)
             payload = json.dumps(item)
             del item["init_images"]
             Logger.debug(json.dumps(item, indent=2))
