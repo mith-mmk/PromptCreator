@@ -545,13 +545,21 @@ def set_sd_model(
             if sd_vae == "None" or sd_vae == "Automatic" or sd_vae is None:
                 sd_vae = []
             if isinstance(sd_vae, str):
-                # ex) flux.1 "ae.vae, t5xxl_fp8_e4m3fn.safetensors, clip_l.safetensors" -> ["ae.vae", "t5xxl_fp8_e4m3fn", "clip_l"]
+                # ex) flux.1 "ae.vae, t5xxl_fp8_e4m3fn.safetensors, clip_l.safetensors" -> ["ae.vae.safetensors", "t5xxl_fp8_e4m3fn.safetensors", "clip_l.safetensors"]
                 sd_vae = sd_vae.split(",")
                 sd_vae = [x.strip() for x in sd_vae]
+                models = get_modules(base_url, sd_vae, userpass=userpass)
+                if models is None:
+                    sd_vae = []
+                else:
+                    sd_vae = [model["model_name"] for model in models]
             if not isinstance(sd_vae, list):
                 # sdxl, stable diffusion 1,2
-                sd_vae = [sd_vae]
-
+                models = get_modules(base_url, [sd_vae], userpass=userpass)
+                if models is None:
+                    sd_vae = [sd_vae]
+                else:
+                    sd_vae = [model["model_name"] for model in models]
         else:
             Logger.info(f"Current vae is {model}")
             Logger.info(f"This server is automatic1111 WebUI")
