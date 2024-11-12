@@ -118,6 +118,9 @@ def img2txt2img(
                 param["seed"] = -1
 
             param["filepart"] = get_part(imgfile)
+            param = get_forge_additional_module_names(base_url, param)
+            if param.get("override_settings", {}) is not None:
+                Logger.info(f"override settings: {param.get('override_settings', {})}")
             params.append(param)
         except KeyboardInterrupt:
             Logger.info("Interrupted")
@@ -126,7 +129,6 @@ def img2txt2img(
             Logger.error(f"Failed to create img2txt params {e}")
             res.append({"imgfile": imgfile, "success": False, "error": e})
             continue
-    param = get_forge_additional_module_names(base_url, param)
 
     Logger.info(f"{param.get('override_settings', {})}")
     if not dry_run:

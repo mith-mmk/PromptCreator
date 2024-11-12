@@ -492,7 +492,6 @@ def get_modules(base_url="http://127.0.0.1:7860", modules=[], userpass=None):
         Logger.error(e)
         Logger.error(f"Failed to get modules")
         return None
-    return results
 
 
 def set_sd_model(
