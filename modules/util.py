@@ -20,12 +20,13 @@ def get_forge_additional_module_names(base_url, param):
                     models.append(module["model_name"])
                 param["override_settings"]["forge_additional_modules"] = models
             else:
+                # Automatic1111
                 try:
                     sd_vae = param["override_settings"]["forge_additional_modules"][0]
                     del param["override_settings"]["forge_additional_modules"]
                     vae = api.get_vae(base_url=base_url, vae=sd_vae)
-                    if vae is not None:
-                        param["override_settings"]["sd_vae"] = vae
+                    if isinstance(vae, dict):
+                        param["override_settings"]["sd_vae"] = vae["model_name"]
                 except Exception as e:
                     pass
                 return param

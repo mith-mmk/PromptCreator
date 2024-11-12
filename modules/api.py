@@ -461,7 +461,11 @@ def get_vae(base_url="http://127.0.0.1:7860", vae=None, userpass=None):
             return None
         # automatic1111 1.6 <- no yet hash support but use metadata?
         for model in res.json():
-            if model["model_name"] == vae or model["filename"] == vae:
+            if (
+                model["model_name"] == vae
+                or model["filename"] == vae
+                or model["model_name"].startswith(vae)
+            ):
                 return model
         return "None"
     except Exception as e:
