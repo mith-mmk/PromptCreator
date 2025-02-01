@@ -492,24 +492,23 @@ def prompt_multiple_v2(yml, variable, array, input=[]):
     for parts in input:
         for item in array:
             Logger.debug(f"prompt_multiple_v2 {item}")
-            args = {}
-            attributes = item.copy()
-            del attributes["variables"]
-            args[variable] = item.get("variables", [])
-            Logger.debug(f"item {args}")
             if parts is None:
                 parts = {}
             output[i] = copy.deepcopy(parts)
+            args = output[i].get("verbose", {}).get("values", {})
+            args[variable] = item.get("variables", [])
+            Logger.debug(f"item {args}")
+
             verbose = output[i].get("verbose", {})
             if "variables" not in verbose:
                 verbose["variables"] = {}
             verbose["variables"][variable] = item.get("variables", [])
-            if attributes:
-                if "attributes" not in verbose:
-                    verbose["attributes"] = {}
-                verbose["attributes"][variable] = attributes
+
             current = prompt_formula_v2(
-                output[i], args, opt=yml, attributes={variable: attributes}
+                output[i],
+                args,
+                opt=yml,
+                attributes=verbose.get("attributes", {}),
             )
             if isinstance(current, dict):
                 value = item.get("variables", [])[0]
