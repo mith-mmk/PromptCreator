@@ -40,30 +40,57 @@ def grab_jsonl(input_dir):
     return files
 
 
-def jsonl2csv(input_dir, output_file, bom=False):
+def jsonl2csv(input_dir, output_file, bom=False, args={}):
     with open(output_file, "w", encoding="utf-8") as csvfile:
         if bom:
             csvfile.write("\ufeff")
         writer = csv.writer(csvfile, lineterminator="\n")
         files = grab_jsonl(input_dir)
-        writer.writerow(
-            [
-                "subject",
-                "choice",
-                "weight",
-                "title",
-                "lora",
-                "prompt",
-                "append",
-                "neg",
-                "variables",
-                "multipy",
-                "width",
-                "height",
-                "attirbutes",
-                "comment",
-            ]
-        )
+        if args.expand:
+            writer.writerow(
+                [
+                    "subject",
+                    "choice",
+                    "weight",
+                    "title",
+                    "lora",
+                    "prompt",
+                    "append",
+                    "neg",
+                    "variable1",
+                    "variable2",
+                    "variable3",
+                    "variable4",
+                    "variable5",
+                    "variable6",
+                    "variable7",
+                    "variable8",
+                    "multipy",
+                    "width",
+                    "height",
+                    "attirbutes",
+                    "comment",
+                ]
+            )
+        else:
+            writer.writerow(
+                [
+                    "subject",
+                    "choice",
+                    "weight",
+                    "title",
+                    "lora",
+                    "prompt",
+                    "append",
+                    "neg",
+                    "variables",
+                    "multipy",
+                    "width",
+                    "height",
+                    "attirbutes",
+                    "comment",
+                ]
+            )
         for file in files:
             data = load_jsonl(file)
             subject = (
@@ -83,17 +110,30 @@ def jsonl2csv(input_dir, output_file, bom=False):
                         choice[i] = str(choice[i])
                     choice = ",".join(choice)
                 weight = item["W"] or item.get("weight", 1.0)
-                variables = item.get("V") or item.get("variables", [])
-                if isinstance(variables, str):
-                    variable = variables.split(";")[0]
-                elif isinstance(variables, list):
-                    if len(variables) > 0:
-                        variable = variables[0]
+                if args.expand:
+                    variables = item.get("V", []) or item.get("variables", [])
+                    if isinstance(variables, str):
+                        variables = [variables]
+                    else:
+                        variables = variables.copy()
+                    for i in range(9 - len(variables)):
+                        variables.append("")
+                    print(variables)
+                    prompt = (
+                        item.get("prompt", "") or item.get("do", variables[0]) or ""
+                    )
+                else:
+                    variables = item.get("V") or item.get("variables", [])
+                    if isinstance(variables, str):
+                        variable = variables.split(";")[0]
+                    elif isinstance(variables, list):
+                        if len(variables) > 0:
+                            variable = variables[0]
+                        else:
+                            variable = ""
                     else:
                         variable = ""
-                else:
-                    variable = ""
-                prompt = item.get("prompt", "") or item.get("do", variable)
+                    prompt = item.get("prompt", "") or item.get("do", variable) or ""
                 lora = item.get("lora", "")
                 loras_in_prompt = re.findall(r"\[lora\](.*?)\[/lora\]", prompt)
                 for lora_in_prompt in loras_in_prompt:
@@ -102,8 +142,9 @@ def jsonl2csv(input_dir, output_file, bom=False):
                 lora = lora + " ".join(loras_in_prompt)
                 width = item.get("width", "")
                 height = item.get("height", "")
-                if isinstance(variables, list):
-                    variables = ";".join(variables)
+                if not args.expand:
+                    if isinstance(variables, list):
+                        variables = ";".join(variables)
                 attributes = {}
                 for key in item.keys():
                     if key not in [
@@ -126,28 +167,59 @@ def jsonl2csv(input_dir, output_file, bom=False):
                     ]:
                         attributes[key] = item[key]
 
-                writer.writerow(
-                    [
-                        subject,
-                        choice,
-                        weight,
-                        item.get("title", ""),
-                        item.get("lora", ""),
-                        prompt,
-                        item.get("append", ""),
-                        item.get("neg", ""),
-                        variables,
-                        item.get("multiply", ""),
-                        width,
-                        height,
-                        json.dumps(attributes, ensure_ascii=False),
-                        item.get("comment", ""),
-                    ]
-                )
+                if args.expand:
+                    writer.writerow(
+                        [
+                            subject,
+                            choice,
+                            weight,
+                            item.get("title", ""),
+                            item.get("lora", ""),
+                            prompt,
+                            item.get("append", ""),
+                            item.get("neg", ""),
+                            variables[0],
+                            variables[1],
+                            variables[2],
+                            variables[3],
+                            variables[4],
+                            variables[5],
+                            variables[6],
+                            variables[7],
+                            item.get("multiply", ""),
+                            width,
+                            height,
+                            json.dumps(attributes, ensure_ascii=False),
+                            item.get("comment", ""),
+                        ]
+                    )
+                else:
+
+                    writer.writerow(
+                        [
+                            subject,
+                            choice,
+                            weight,
+                            item.get("title", ""),
+                            item.get("lora", ""),
+                            prompt,
+                            item.get("append", ""),
+                            item.get("neg", ""),
+                            variables,
+                            item.get("multiply", ""),
+                            width,
+                            height,
+                            json.dumps(attributes, ensure_ascii=False),
+                            item.get("comment", ""),
+                        ]
+                    )
 
 
-def csv2jsonl(filename, ouput_dir, bom=False):
-    with open(filename, "r", encoding="utf-8") as csvfile:
+def csv2jsonl(filename, ouput_dir, bom=False, args={}):
+    utf8 = "utf-8"
+    if bom:
+        utf8 = "utf-8-sig"
+    with open(filename, "r", encoding=utf8) as csvfile:
         reader = csv.reader(csvfile)
         header = next(reader)
         mapper = {}
@@ -155,7 +227,8 @@ def csv2jsonl(filename, ouput_dir, bom=False):
         for i in range(len(header)):
             mapper[header[i]] = i
         subject_idx = mapper.get("subject", None)
-        del mapper["subject"]
+        if mapper.get("subject", None) is not None:
+            del mapper["subject"]
         for row in reader:
             subject = row[subject_idx]
             if subject not in all_data.keys():
@@ -164,7 +237,8 @@ def csv2jsonl(filename, ouput_dir, bom=False):
             for key in mapper.keys():
                 attributes = {}
                 if key in ["variables"]:
-                    data["V"] = row[mapper[key]].split(";")
+                    if not args.expand:
+                        data["V"] = row[mapper[key]].split(";")
                 elif key in ["attirbutes"]:
                     try:
                         attributes = json.loads(row[mapper[key]])
@@ -187,6 +261,15 @@ def csv2jsonl(filename, ouput_dir, bom=False):
 
             for key in attributes.keys():
                 data[key] = attributes[key]
+            if args.expand:
+                variables = []
+                for i in range(1, 9):
+                    key = f"variable{i}"
+                    if key in data.keys():
+                        if data[key] != "":
+                            variables.append(data[key])
+                    del data[key]
+                data["V"] = variables
             all_data[subject].append(data)
     for subject in all_data.keys():
         data = all_data[subject]
@@ -201,8 +284,6 @@ def csv2jsonl(filename, ouput_dir, bom=False):
         os.makedirs(dir, exist_ok=True)
         print(f"make dir {dir}")
         with open(output_file, "w", encoding="utf-8") as f:
-            if bom:
-                f.write("\ufeff")
             for line in data:
                 f.write(json.dumps(line, ensure_ascii=False) + "\n")
 
@@ -218,14 +299,17 @@ def main():
     parser.add_argument("input", help="input file or directory")
     parser.add_argument("output", help="output file or directory")
     parser.add_argument("--bom", action="store_true", help="add BOM to output file")
+    parser.add_argument(
+        "--expand", action="store_true", help="expand Variables to columns"
+    )
     args = parser.parse_args()
 
     if args.input.endswith(".jsonl"):
-        jsonl2csv(args.input, args.output, args.bom)
+        jsonl2csv(args.input, args.output, args.bom, args)
     elif os.path.isdir(args.input):
-        jsonl2csv(args.input, args.output, args.bom)
+        jsonl2csv(args.input, args.output, args.bom, args)
     elif args.input.endswith(".csv"):
-        csv2jsonl(args.input, args.output, args.bom)
+        csv2jsonl(args.input, args.output, args.bom, args)
     else:
         print(
             "Usage: python tools/jsonl2csv.py [input_dir] [output_csv_file] | jsonl [input_csv_file] [output_dir]"

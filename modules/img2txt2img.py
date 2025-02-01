@@ -4,7 +4,7 @@ import modules.api as api
 from modules.logger import getDefaultLogger
 from modules.parse import create_img2txt
 from modules.txt2img import txt2img
-from modules.util import get_part
+from modules.util import get_forge_additional_module_names, get_part
 
 Logger = getDefaultLogger()
 
@@ -118,6 +118,9 @@ def img2txt2img(
                 param["seed"] = -1
 
             param["filepart"] = get_part(imgfile)
+            param = get_forge_additional_module_names(base_url, param)
+            if param.get("override_settings", {}) is not None:
+                Logger.info(f"override settings: {param.get('override_settings', {})}")
             params.append(param)
         except KeyboardInterrupt:
             Logger.info("Interrupted")
@@ -126,7 +129,8 @@ def img2txt2img(
             Logger.error(f"Failed to create img2txt params {e}")
             res.append({"imgfile": imgfile, "success": False, "error": e})
             continue
-    Logger.info("txt2img start")
+
+    Logger.info(f"{param.get('override_settings', {})}")
     if not dry_run:
         try:
             txt2img(params, base_url=base_url, output_dir=output_dir, opt=opt)
