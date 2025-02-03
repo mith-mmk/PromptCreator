@@ -504,6 +504,17 @@ def prompt_multiple_v2(yml, variable, array, input=[]):
                 verbose["variables"] = {}
             verbose["variables"][variable] = item.get("variables", [])
 
+            attributes = copy.deepcopy(item)
+            if "variables" in attributes:
+                del attributes["variables"]
+            if "weight" in attributes:
+                del attributes["weight"]
+            if "choice" in attributes:
+                del attributes["choice"]
+            if "attributes" not in verbose:
+                verbose["attributes"] = {}
+            verbose["attributes"][variable] = attributes
+
             current = prompt_formula_v2(
                 output[i],
                 args,
@@ -516,6 +527,7 @@ def prompt_multiple_v2(yml, variable, array, input=[]):
                 if "values" not in verbose:
                     verbose["values"] = {}
                 verbose["values"][variable] = value
+
                 output[i] = current
                 output[i]["verbose"] = verbose
             else:
