@@ -78,7 +78,11 @@ class ControlNet:
                         Logger.error(f"Image file not found: {image}")
                         continue
                     with open(image, "rb") as f:
-                        arg["image"] = base64.b64encode(f.read()).decode("utf-8")
+                        encoded = base64.b64encode(f.read()).decode("utf-8")
+                        missing_padding = len(encoded) % 4
+                        if missing_padding:
+                            encoded += "=" * (4 - missing_padding)
+                        arg["image"] = f"data:image/png;base64,{encoded}"
                 Logger.info("ControlNet image loaded:")
                 model = arg.get("model")
                 if model:
