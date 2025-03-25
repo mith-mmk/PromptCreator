@@ -79,10 +79,8 @@ class ControlNet:
                         continue
                     with open(image, "rb") as f:
                         encoded = base64.b64encode(f.read()).decode("utf-8")
-                        missing_padding = len(encoded) % 4
-                        if missing_padding:
-                            encoded += "=" * (4 - missing_padding)
-                        arg["image"] = f"data:image/png;base64,{encoded}"
+                        ext = os.path.splitext(image)[1]
+                        arg["image"] = f"data:image/{ext};base64,{encoded}"
                 Logger.info("ControlNet image loaded:")
                 model = arg.get("model")
                 if model:
@@ -102,4 +100,8 @@ class ControlNet:
         except Exception as e:
             Logger.error("ControlNet error, Skip prompt:", e)
             return None
-        return controlnet
+        if controlnet.get("enabled"):
+            return controlnet
+        else:
+            Logger.verbose("ControlNet is disabled")
+            return None

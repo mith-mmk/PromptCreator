@@ -197,6 +197,7 @@ def sort_jsonl(files, keys, rebulid=False, expand=False, append=False):
         with open(file, "r", encoding="utf_8") as f:
             data = f.readlines()
         items = []
+        comment_mode = False
         for idx, item in enumerate(data):
             # //   がある場合はコメントとして処理
             try:
@@ -204,12 +205,19 @@ def sort_jsonl(files, keys, rebulid=False, expand=False, append=False):
                 if len(comment) == 1:
                     items.append(json.loads(item))
                 else:
-                    items.append(json.loads(item))
+                    items.append(json.loads(comment[0]))
             except Exception as e:
                 print(f"Wornig: line{idx+1} {e}")
         # sort of key data
         for key in keys:
-            items.sort(key=lambda x: x[key])
+            print(f"sort {key}")
+            # Vの場合は、arrayの場合[0]、array以外はそのまま
+            if key == "V":
+                items.sort(
+                    key=lambda x: x[key][0] if isinstance(x[key], list) else x[key]
+                )
+            else:
+                items.sort(key=lambda x: x[key])
         # save new jsonl file
         new_filename = file.replace(".jsonl", "-new.jsonl")
         with open(new_filename, "w", encoding="utf_8") as f:
@@ -266,6 +274,61 @@ def sort_jsonl(files, keys, rebulid=False, expand=False, append=False):
                     f.write(json.dumps(copy_item, ensure_ascii=False) + "\n")
 
 
+def check_jsonl(files, keys):
+    # // がある場合はコメントとして処理
+    for file in files:
+        items = {}
+        for key in keys:
+            items[key] = {}
+        print(items)
+        with open(file, "r", encoding="utf_8") as f:
+            data = f.readlines()
+        log_file = file.replace(".jsonl", "-log.jsonl")
+        with open(log_file, "w", encoding="utf_8") as f:
+            for idx, item in enumerate(data):
+                try:
+                    comment = item.split("//")
+                    if len(comment) >= 2:
+                        item = json.loads(comment[0])
+                        comment = comment[1]
+                    else:
+                        item = json.loads(item)
+                        comment = ""
+                except Exception as e:
+                    print(f"Wornig: line{idx+1} {e}")
+                if not isinstance(comment, str):
+                    comment = ""
+                if isinstance(item, str):
+                    print(f"Error: line{idx+1} {item} is str")
+                    continue
+                # prompt が存在する場合 V[0]に入れる
+                if "prompt" in item:
+                    if item.get("V") is None:
+                        item["V"] = [item["prompt"]]
+                    elif isinstance(item["V"], list):
+                        item["V"][0] = item["prompt"]
+                    elif isinstance(item["V"], str):
+                        item["V"] = [item["prompt"]]
+                for key in keys:
+                    if item[key] is not None:
+                        if isinstance(item[key], list):
+                            _key = item[key][0]
+                        else:
+                            _key = item[key]
+                        if _key is None:
+                            continue
+                        if items[key].get(_key) is None:
+                            items[key][_key] = idx + 1
+                        else:
+                            comment += f' duplicate: line:{items[key][_key]} {idx+1} {key} "{_key}"'
+
+                f.write(json.dumps(item, ensure_ascii=False))
+                if comment != "":
+                    f.write(" // " + comment + "\n")
+                else:
+                    f.write("\n")
+
+
 def usage():
     print("Usage: python txt2jsonl.py convert txtfile|dir output_dir")
     print(
@@ -287,13 +350,15 @@ elif argv[1] == "lora":
 elif argv[1] == "format":
     jsonl2jsonl(argv[2:])
 elif argv[1] == "sort":
-    sort_jsonl(argv[2:], ["title", "C"], False)
+    sort_jsonl(argv[2:], ["prompt", "V", "C"], False)
 elif argv[1] == "rebuild":
     sort_jsonl(argv[2:], "C", rebulid=False)
 elif argv[1] == "expand":
     sort_jsonl(argv[2:], ["title", "C"], expand=True)
 elif argv[1] == "append":
     sort_jsonl(argv[2:], ["title", "C"], append=True)
+elif argv[1] == "check":
+    check_jsonl(argv[2:], ["prompt"])
 else:
     print("error: invalid command use [convert, format, lora, sort, rebuild]")
     usage()
