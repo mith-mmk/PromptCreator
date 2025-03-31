@@ -47,7 +47,7 @@ class DataSaver:
             f.write(data)
 
     def __del__(self):
-        if self.thread is not None:
+        if self.thread is not None and self.thread != threading.current_thread():
             self.thread.join()
 
 
