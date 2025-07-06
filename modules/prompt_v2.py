@@ -316,7 +316,8 @@ def yaml_parse_v2(filename, opt={}):
     return yml
 
 
-def read_file_v2(filename, error_info=""):
+def read_file_v2(filename, error_info="", query_suffixes=None):
+    Logger.debug(f"read_file_v2 {filename} {error_info} {query_suffixes}")
     strs = []
     filenames = filename.split()
     for filename in filenames:
@@ -337,7 +338,14 @@ def read_file_v2(filename, error_info=""):
                     # trim space
                     for i, q in enumerate(queries):
                         queries[i] = q.strip()
-                Logger.debug(f"query {query}")
+
+                qs = copy.deepcopy(queries)
+                if query_suffixes is not None:
+                    # add query_prefixes to queries
+                    for suffix in query_suffixes:
+                        for query in qs:
+                            queries.append(query + suffix)
+                Logger.debug(f"query {queries}")
                 with open(filename, "r", encoding="utf_8") as f:
                     all_text = f.read()
                     # /* */ を削除 \n をまたぐので注意
@@ -387,10 +395,9 @@ def read_file_v2(filename, error_info=""):
                                             if _query != "":
                                                 _query = _query + "," + c
                                     item["query"] = _query.strip(",")
-
                             else:
                                 item["choice"] = ["*"]
-                            # Logger.debug(f"replaced item {item}")
+                            Logger.debug(f"replaced item {item}")
                             choice = item.get("choice", ["*"])
                             if "choice" in item:
                                 del item["choice"]
@@ -920,7 +927,11 @@ def create_text_v2(opt):
     for key, item in variables.items():
         # Logger.debug(f"key {key}")
         if type(item) is str:
-            variables[key] = read_file_v2(item, error_info=f"variables {key}")
+            variables[key] = read_file_v2(
+                item,
+                error_info=f"variables {key}",
+                query_suffixes=options.get("query_suffixes", None),
+            )
         elif type(item) is list:
             # Logger.debug(f"type list item {item}")
             variables[key] = []
@@ -1072,6 +1083,8 @@ def create_text_v2(opt):
                             item[key] = re.sub(r"\s*\]", "]", item[key])
                             # remove last , and space
                             item[key] = re.sub(r",\s*$", "", item[key])
+                            # remove ,) -> )
+                            item[key] = re.sub(r",\)", ")", item[key])
                             # trim
                             item[key] = item[key].strip()
         else:

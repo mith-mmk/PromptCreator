@@ -437,6 +437,16 @@ variables:
     date: date[category = `animal`] # select * from date where category = `animal`'
 ```
 
+### query suffixies add 2025/07/06
+ The query suffixies is enable query suffix(クエリーサフィックスを有効にする)
+ The query suffixies is used to query jsonl category. You can use different suffixes for different models (query suffixiesは、jsonlのカテゴリーをクエリするための接尾語です。modelによって、受け付ける単語が異なる場合にsuffixを使い分岐させることができます)
+```yaml
+options:
+    query_suffixies: [-xl] # enable query suffix(クエリーサフィックスを有効にする)
+variables:
+    date: jsonl/date.jsonl[animal] # query category animal(カテゴリーanimalとanimal-xlをクエリ)
+```
+
 ## profile(プロファイル)
 profile is override config file(設定ファイルをprofileで上書きします)
 ```yaml
