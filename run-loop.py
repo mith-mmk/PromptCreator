@@ -12,6 +12,7 @@ import httpx
 import yaml
 
 import create_prompts
+
 # import logging
 import img2img
 import modules.logger as logger
@@ -162,6 +163,10 @@ def load_prompts_csv(filename):
                 prompt["profile"] = row[5]
             else:
                 prompt["profile"] = ""
+            if len(row) > 6:
+                prompt["overrides"] = row[6]
+            if len(row) > 7:
+                prompt["values"] = row[7]
             prompts.append(prompt)
     Logger.debug(f"load_prompts_csv {filename} {prompts}")
     return prompts
@@ -748,6 +753,8 @@ def run_img2txt2img(config, args):
 
     backup = profile.get("backup", None)
     output_dir = profile.get("output", None)
+    if output_dir is None:
+        output_dir = "./outputs/"  # デフォルトの出力ディレクトリを設定
     options = profile.get("options", {})
     options["dry_run"] = dry_run
     if "default_vae" in profile:
@@ -845,6 +852,31 @@ def escape_split(str, split):
     return args
 
 
+def parse_values(values):
+    opt_values = {}
+
+    # values がある場合は、値を設定する char=test,test="test" のような形式
+    if values is not None:
+        if type(values) is str:
+            _values = escape_split(values, ",")
+        elif type(values) is list:  # リストの場合はそのまま
+            return values
+        else:  # 文字列でもリストでもない場合はエラー
+            Logger.error(f"values is not string or list {values}")
+            return opt_values
+        for value in _values:
+            if "=" in value:
+                key, val = value.split("=", 1)
+                # valがarrayの場合は、文字列に変換する
+                if type(val) is list:
+                    val = "=".join(val)
+                opt_values[key] = val
+            else:
+                opt_values[value] = ""
+    Logger.debug(f"opt_values {opt_values}")
+    return opt_values
+
+
 def run_txt2img(config, args=None):
     # Logger.verbose(f"run txt2img args {args}")
     try:
@@ -868,6 +900,7 @@ def run_txt2img(config, args=None):
     if type(prompts) is str:
         prompts = load_prompts_csv(prompts)
     Logger.debug(f"prompts {prompts}")
+
     output_dir = text_config.get("output", None)
     exception_list = text_config["prefix"].get("exception_list", [])
     prompt_base = text_config.get("prompt_base", "")
@@ -927,6 +960,11 @@ def run_txt2img(config, args=None):
             break
 
     for prompt in prompts:
+        opt_overrides = prompt.get("overrides")
+        Logger.debug(f"opt_overrides {opt_overrides}")
+        opt_values = parse_values(prompt.get("values"))
+        Logger.debug(f"opt_values {opt_values}")
+
         prompt_name = prompt["prompt_name"]
         Logger.debug(f"prompt_name {prompt_name}")
         if prompt_name in exception_list:
@@ -1010,6 +1048,11 @@ def run_txt2img(config, args=None):
                         }
                         if profile is not None:
                             opt["profile"] = profile
+                        if opt_values is not None:
+                            opt["values"] = opt_values
+                        if opt_overrides is not None:
+                            opt["overrides"] = opt_overrides
+
                         result = modules.prompt_v2.create_text_v2(opt)
 
                     # Logger.info(f"output_text {result['output_text']}")
