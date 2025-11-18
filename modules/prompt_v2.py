@@ -142,7 +142,7 @@ def text_formula_v2(text, args):
                     replace_text = attribute.get(key, None)
                     if replace_text is None:
                         Logger.warning(
-                            f"variable {variable} not has '{key}', use empty"
+                            f"variable ${{{variable}}} not has '{key}', use empty in {text}"
                         )
                         replace_text = ""
                     text = text.replace("${" + formula + "}", str(replace_text))
