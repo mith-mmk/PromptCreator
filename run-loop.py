@@ -128,6 +128,8 @@ def load_models_csv(filename):
                 }
                 if len(row) > 3:
                     model["overrrides"] = row[3]
+                if len(row) > 4:
+                    model["values"] = row[4]
             except Exception as e:
                 Logger.error(f"load_models_csv {filename} {i} {row} error {e}")
                 continue
@@ -852,13 +854,11 @@ def escape_split(str, split):
     return args
 
 
-def parse_values(values):
-    opt_values = {}
-
-    # values がある場合は、値を設定する char=test,test="test" のような形式
+def parse_values(values, opt_values={}):
+    # values がある場合は、値を設定する char=test;test="test" のような形式
     if values is not None:
         if type(values) is str:
-            _values = escape_split(values, ",")
+            _values = escape_split(values, ";")
         elif type(values) is list:  # リストの場合はそのまま
             return values
         else:  # 文字列でもリストでもない場合はエラー
@@ -923,7 +923,7 @@ def run_txt2img(config, args=None):
     info = text_config.get("info", "")
     options = text_config.get("options", {})
     if type(overrides) is str:
-        overrides = escape_split(overrides, " ")
+        overrides = escape_split(overrides, ";")
         Logger.debug(f"overrides string {overrides}")
     elif type(overrides) is list:
         Logger.debug(f"overrides list {overrides}")
@@ -945,11 +945,24 @@ def run_txt2img(config, args=None):
         else:
             info = f"$MODEL={model_name},$VAE={vae},$MODE={mode}"
 
+        model_overrides = {}
         if model.get("overrides"):
             # model overrides is only text
-            overrides = escape_split(model["overrides"], " ")
-            Logger.info(f"model overrides {overrides}")
+            values = escape_split(model["overrides"], ";")
+            for value in values:
+                splits = value.split("=", 1)
+                model_overrides[splits[0]] = splits[1]
 
+            Logger.info(f"model overrides {model_overrides}")
+
+        model_values = {}
+        if model.get("values"):
+            # model overrides is only text
+            values = escape_split(model["values"], ";")
+            for value in values:
+                splits = value.split("=", 1)
+                model_values[splits[0]] = splits[1]
+            Logger.info(f"model values {values}")
         if mode in abort_matrix:
             matrix = abort_matrix[mode]
         else:
@@ -960,9 +973,9 @@ def run_txt2img(config, args=None):
             break
 
     for prompt in prompts:
-        opt_overrides = prompt.get("overrides")
+        opt_overrides = prompt.get("overrides", model_overrides)
         Logger.debug(f"opt_overrides {opt_overrides}")
-        opt_values = parse_values(prompt.get("values"))
+        opt_values = parse_values(prompt.get("values"), model_values)
         Logger.debug(f"opt_values {opt_values}")
 
         prompt_name = prompt["prompt_name"]
@@ -1448,6 +1461,7 @@ def run_command(command, config_file, config, next=True):
             case "launch":
                 wait_launch(config, args)
             case "txt2img":
+                Logger.info("txt2img")
                 run_txt2img(config, args)
             case "img2img":
                 run_img2img(config, args)
@@ -1514,7 +1528,7 @@ def run_command(command, config_file, config, next=True):
         Logger.error(f"command error {command} {e}")
         return False
     except Exception as e:
-        Logger.error("run-loop error", e)
+        Logger.error("run-loop error run_command", e)
         return False
     return next
 
