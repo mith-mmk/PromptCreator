@@ -254,6 +254,9 @@ def prompt_formula_v2(
     return new_prompt
 
 
+# original_dict | new_dict　はシャローマージなので禁止
+
+
 def update_nested_dict(original_dict, new_dict):
     for key, value in new_dict.items():
         if (
@@ -277,10 +280,27 @@ def recursive_yaml_load(filename):
     if yml["version"] < 2:
         Logger.error(f"File {filename} is not v2 yaml")
         raise NotImplementedError(f"File {filename} is not v2 yaml")
+    # いわゆるテンプレート
     if "base_yaml" in yml:
         base_yaml = recursive_yaml_load(yml["base_yaml"])
         del yml["base_yaml"]
         yml = update_nested_dict(base_yaml, yml)
+    # ファイルを分割するのに使う
+    if "import" in yml:
+        dir = os.path.dirname(filename)
+        files = yml["import"]
+        if isinstance(files, str):
+            files = [files]
+        del yml["import"]
+        for file in files:
+            file = os.path.join(dir, file)
+            if not os.path.exists(file):
+                file = os.path.join(dir, file)
+            if not os.path.exists(file):
+                Logger.error(f"{file} is not exist")
+            import_yaml = recursive_yaml_load(file)
+            yml = update_nested_dict(yml, import_yaml)
+
     return yml
 
 
