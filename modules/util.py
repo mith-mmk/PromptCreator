@@ -80,7 +80,7 @@ def divide_values(values):
     return ["width=256", "height=256"]
     """
     result = {}
-    for value in values.split(","):
+    for value in values.split(";"):
         key, value = value.split("=")
         key = key.strip()
         value = value.strip()

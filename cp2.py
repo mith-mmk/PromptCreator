@@ -561,7 +561,7 @@ def run_from_args(command_args=None):
         "-v",
         type=str,
         default=None,
-        help="values for create prompt, values is override yml\nex) -v width=768,height=1024 -> ${width} in yaml is replaced by 768, ${height} is replaced by 1024",
+        help="values for create prompt, values is override yml\nex) -v width=768;height=1024 -> ${width} in yaml is replaced by 768, ${height} is replaced by 1024",
     )
 
     # comfyui
