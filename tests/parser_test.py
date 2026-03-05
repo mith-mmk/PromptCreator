@@ -55,7 +55,8 @@ def test_random_operations():
         assert result == expected
 
 
-# エラーがでる
+# エラーがでる ()の処理バグ、function()と 演算の()がバッティングで演算でエラー
+# 当面functionを優先
 """
 def test_random_operations2():
     for _ in range(1000):
