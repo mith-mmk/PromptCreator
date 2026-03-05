@@ -9,6 +9,7 @@ __pycache__
 .env
 $jsonl
 test/
+test_/
 plugins/**
 !plugins/curl
 plugins/curl/*

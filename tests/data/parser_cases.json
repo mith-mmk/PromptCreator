@@ -1,0 +1,305 @@
+[
+  {
+    "formula": "if(\"aa\" == aa[1], \"true\", \"false\")",
+    "vars": {
+      "aa": [
+        "sd",
+        "aa"
+      ]
+    },
+    "result": "false"
+  },
+  {
+    "formula": "if(\"aa\" == aa[2], \"true\", \"false\")",
+    "vars": {
+      "aa": [
+        "sd",
+        "aa"
+      ]
+    },
+    "result": "true"
+  },
+  {
+    "formula": "if(\"aa\" != aa[2], \"true\", \"false\")",
+    "vars": {
+      "aa": [
+        "sd",
+        "aa"
+      ]
+    },
+    "result": "false"
+  },
+  {
+    "formula": "if(\"aa\" != aa[1], \"true\", \"false\")",
+    "vars": {
+      "aa": [
+        "sd",
+        "aa"
+      ]
+    },
+    "result": "true"
+  },
+  {
+    "formula": "2 * 3 + 2",
+    "vars": {},
+    "result": 8
+  },
+  {
+    "formula": "2 + 3 * 2",
+    "vars": {},
+    "result": 8
+  },
+  {
+    "formula": "(2 + 3) * 2",
+    "vars": {},
+    "result": 10
+  },
+  {
+    "formula": "2 + 3 * 2 + 1",
+    "vars": {},
+    "result": 9
+  },
+  {
+    "formula": "2 + 3 * (2 + 1)",
+    "vars": {},
+    "result": 11
+  },
+  {
+    "formula": "2 - 3",
+    "vars": {},
+    "result": -1
+  },
+  {
+    "formula": "2 - 3 - 1",
+    "vars": {},
+    "result": -2
+  },
+  {
+    "formula": "- 2 + 3",
+    "vars": {},
+    "result": 1
+  },
+  {
+    "formula": "int(- 2 + 3 / -1)",
+    "vars": {},
+    "result": -5
+  },
+  {
+    "formula": "\"abc\" + \"bcd\"",
+    "vars": {},
+    "result": "abcbcd"
+  },
+  {
+    "formula": "int(\"12\") + \"bcd\"",
+    "vars": {},
+    "result": "12bcd"
+  },
+  {
+    "formula": "int(\"12\") + int(\"24\")",
+    "vars": {},
+    "result": 36
+  },
+  {
+    "formula": "aa[2] + \"bcd\"",
+    "vars": {
+      "aa": [
+        4,
+        5
+      ]
+    },
+    "result": "5bcd"
+  },
+  {
+    "formula": "aa[2] + aa[1]",
+    "vars": {
+      "aa": [
+        4,
+        5
+      ]
+    },
+    "result": 9
+  },
+  {
+    "formula": "\"aa\\\"\" == \"aa\\\"\"",
+    "vars": {
+      "aa": [
+        4,
+        5
+      ]
+    },
+    "result": 1
+  },
+  {
+    "formula": "\"aa\\\"\" == 'aa\"'",
+    "vars": {
+      "aa": [
+        4,
+        5
+      ]
+    },
+    "result": 1
+  },
+  {
+    "formula": "contains(aa[1], \"abc\")",
+    "vars": {
+      "aa": [
+        "abcde",
+        "ddddd"
+      ]
+    },
+    "result": 1
+  },
+  {
+    "formula": "contains(aa[2], \"abc\")",
+    "vars": {
+      "aa": [
+        "abcde",
+        "ddddd"
+      ]
+    },
+    "result": 0
+  },
+  {
+    "formula": "aa[\"c\"]",
+    "vars": {
+      "aa": [
+        "abcde",
+        "ddddd"
+      ]
+    },
+    "attr": {
+      "aa": {
+        "c": "xyx"
+      }
+    },
+    "result": "xyx"
+  },
+  {
+    "formula": "aa[\"d\"]",
+    "vars": {
+      "aa": [
+        "abcde",
+        "ddddd"
+      ]
+    },
+    "attr": {
+      "aa": {
+        "c": "xyx",
+        "d": "xyz"
+      }
+    },
+    "result": "xyz"
+  },
+  {
+    "formula": "if(aa[\"d\"]==\"xyz\", aa[1], aa[2])",
+    "vars": {
+      "aa": [
+        "abcde",
+        "ddddd"
+      ]
+    },
+    "attr": {
+      "aa": {
+        "c": "xyx",
+        "d": "xyz"
+      }
+    },
+    "result": "abcde"
+  },
+  {
+    "formula": "if(aa[\"d\"]!=\"xyz\", aa[1], aa[2])",
+    "vars": {
+      "aa": [
+        "abcde",
+        "ddddd"
+      ]
+    },
+    "attr": {
+      "aa": {
+        "c": "xyx",
+        "d": "xyz"
+      }
+    },
+    "result": "ddddd"
+  },
+  {
+    "formula": "if(contains(aa[1], \"abc\"), \"true\", \"false\")",
+    "vars": {
+      "aa": [
+        "abcde",
+        "ddddd"
+      ]
+    },
+    "result": "true"
+  },
+  {
+    "formula": "contains(aa, \"aac\", \"aab\", \"cde\")",
+    "vars": {
+      "aa": [
+        "abcde",
+        "ddddd"
+      ]
+    },
+    "result": 1
+  },
+  {
+    "formula": "contains(aa, \"aac\", \"aab\", \"cdf\")",
+    "vars": {
+      "aa": [
+        "abcde",
+        "ddddd"
+      ]
+    },
+    "result": 0
+  },
+  {
+    "formula": "if(contains(aa[1], \"abd\"), \"true\", if(contains(aa[2], \"ddd\"), \"true\", \"false\"))",
+    "vars": {
+      "aa": [
+        "abcde",
+        "ddddd"
+      ]
+    },
+    "result": "true"
+  },
+  {
+    "formula": "if(contains(aa[1], \"abd\"), \"true\", if(contains(aa[1], \"ddd\"), \"true\", \"false\"))",
+    "vars": {
+      "aa": [
+        "abcde",
+        "ddddd"
+      ]
+    },
+    "result": "false"
+  },
+  {
+    "formula": "int(aa) + int(bb)",
+    "vars": {
+      "aa": [
+        1
+      ],
+      "bb": [
+        2
+      ],
+      "cc": [
+        3
+      ]
+    },
+    "result": 3
+  },
+  {
+    "formula": "int(aa) + int(bb) + int(cc)",
+    "vars": {
+      "aa": [
+        1
+      ],
+      "bb": [
+        2
+      ],
+      "cc": [
+        3
+      ]
+    },
+    "result": 6
+  }
+]
