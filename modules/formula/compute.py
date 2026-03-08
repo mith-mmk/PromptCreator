@@ -78,6 +78,7 @@ class FormulaCompute:
         self.mode = "init"
         self.version = version
         self.callback = callback
+        self.error_stacks = ""
 
     def setVersion(self, version):
         self.version = version
@@ -384,16 +385,29 @@ class FormulaCompute:
                         reversed_polish.append(stack.pop())
             elif token["type"] == TOKENTYPE.BRACKET:
                 if token["value"] == "(":
-                    reversed_polish.append(token)
-                    stack.append(token)
+                    is_function_bracket = (
+                        len(stack) > 0 and stack[-1]["type"] == TOKENTYPE.FUNCTION
+                    )
+                    if is_function_bracket:
+                        reversed_polish.append(
+                            {
+                                "type": TOKENTYPE.FUNCTIONEND,
+                                "value": "$$$FUNCTIONEND$$$",
+                            }
+                        )
+                    stack.append(
+                        {
+                            "type": TOKENTYPE.BRACKET,
+                            "value": token["value"],
+                            "is_function": is_function_bracket,
+                        }
+                    )
                 else:
                     while len(stack) > 0:
                         if stack[-1]["type"] == TOKENTYPE.BRACKET:
                             stack.pop()
                             break
                         reversed_polish.append(stack.pop())
-                    # ) を挿入
-                    reversed_polish.append(token)
 
             elif token["type"] == TOKENTYPE.OPERATOR:
                 if len(stack) > 0 and stack[-1]["type"] == TOKENTYPE.BRACKET:
@@ -453,57 +467,6 @@ class FormulaCompute:
         stack = []
         # blancket check
         if self.version >= 2:
-            debug_print(
-                "reverce porlad:", reversed_polish, mode="value", debug=self.debug
-            )
-
-            def search_functionend(reversed_polish, pos, is_nested=False):
-                is_function = False
-                blancket = 0
-                while pos >= 0:
-                    token = reversed_polish[pos]
-                    if token["type"] == TOKENTYPE.BRACKET:
-                        if token["value"] == ")":
-                            blancket += 1
-                            pos -= 1
-                            continue
-                        elif token["value"] == "(":
-                            if blancket > 0:
-                                blancket -= 1
-                                pos -= 1
-                                continue
-                    if token["type"] == TOKENTYPE.FUNCTION:
-                        pos -= 1
-                    if token["type"] == TOKENTYPE.BRACKET:
-                        if token["value"] == "(":
-                            is_function = False
-                            token["type"] = TOKENTYPE.FUNCTIONEND
-                            token["value"] = "$$$FUNCTIONEND$$$"
-                    pos -= 1
-                return pos
-
-            pos = len(reversed_polish) - 1
-            search_functionend(reversed_polish, pos)
-
-            """
-            nest = 0
-            is_function = False
-            pos = len(reversed_polish) - 1
-            while pos >= 0:  # pos > 0 から pos >= 0 へ変更
-                token = reversed_polish[pos]
-                if token["type"] == TOKENTYPE.FUNCTION:
-                    is_function = True
-                elif token["type"] == TOKENTYPE.BRACKET and is_function:
-                    if token["value"] == ")":
-                        nest += 1
-                    elif token["value"] == "(":  # 正しい括弧の種類を確認
-                        nest -= 1
-                        if nest == 0:
-                            is_function = False
-                            token["type"] = TOKENTYPE.FUNCTIONEND
-                            token["value"] = "$$$FUNCTIONEND$$$"
-                pos -= 1
-            """
             debug_print(
                 "reverce porlad:", reversed_polish, mode="value", debug=self.debug
             )
