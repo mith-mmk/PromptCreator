@@ -89,6 +89,17 @@ def test_random_operations2():
 """
 
 
+def test_grouped_expression_with_function_operands():
+    compute = FormulaCompute(
+        "( int(aa) + int(bb) ) * int(cc)",
+        variables={"aa": 2, "bb": 3, "cc": 4},
+        attributes={},
+        version=2,
+    )
+    result = compute.getCompute()
+    assert result == 20
+
+
 @pytest.mark.parametrize("formula,variables,attributes, expected", cases)
 def test_formula(formula, variables, attributes, expected):
     compute = FormulaCompute(

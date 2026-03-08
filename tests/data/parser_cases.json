@@ -301,5 +301,97 @@
       ]
     },
     "result": 6
+  },
+  {
+    "formula": "if(action[\"title\"] == \"HELLO\", hello, if(action[\"title\"] == \"GOODBY\", goodby, morning))",
+    "vars": {
+      "action": [
+        "dummy"
+      ],
+      "hello": [
+        "hello python"
+      ],
+      "goodby": [
+        "exit python"
+      ],
+      "morning": [
+        "I'm sleeping"
+      ]
+    },
+    "attr": {
+      "action": {
+        "title": "SLEEPY"
+      }
+    },
+    "result": "I'm sleeping"
+  },
+  {
+    "formula": "if(action[\"title\"] == \"HELLO\", hello, if(action[\"title\"] == \"GOODBY\", goodby, morning))",
+    "vars": {
+      "action": [
+        "dummy"
+      ],
+      "hello": [
+        "hello python"
+      ],
+      "goodby": [
+        "exit python"
+      ],
+      "morning": [
+        "I'm sleeping"
+      ]
+    },
+    "attr": {
+      "action": {
+        "title": "HELLO"
+      }
+    },
+    "result": "hello python"
+  },
+  {
+    "formula": "if(action[\"title\"] == \"HELLO\", hello, if(action[\"title\"] == \"GOODBY\", goodby, morning))",
+    "vars": {
+      "action": [
+        "dummy"
+      ],
+      "hello": [
+        "hello python"
+      ],
+      "goodby": [
+        "exit python"
+      ],
+      "morning": [
+        "I'm sleeping"
+      ]
+    },
+    "attr": {
+      "action": {
+        "title": "GOODBY"
+      }
+    },
+    "result": "exit python"
+  },
+  {
+    "formula": "action[\"title\"]",
+    "vars": {
+      "action": [
+        "dummy"
+      ],
+      "hello": [
+        "hello python"
+      ],
+      "goodby": [
+        "exit python"
+      ],
+      "morning": [
+        "I'm sleeping"
+      ]
+    },
+    "attr": {
+      "action": {
+        "title": "SLEEPY"
+      }
+    },
+    "result": "SLEEPY"
   }
 ]
