@@ -290,6 +290,9 @@ def main(args):
     if "info" in yml:
         opt["info"] = yml["info"]
 
+    if "escape_filename" in options:
+        opt["escape_filename"] = options["escape_filename"]
+
     if args.api_mode:
         sd_model = args.api_set_sd_model or options.get("sd_model")
         sd_vae = args.api_set_sd_vae or options.get("sd_vae", "Automatic")
@@ -321,6 +324,7 @@ def main(args):
         opt["sd_model"] = sd_model
         opt["sd_vae"] = sd_vae
         opt["save_image"] = save_image
+
         result = comfyui.ComufyClient.txt2img(
             output_text,
             hostname=args.api_base,
