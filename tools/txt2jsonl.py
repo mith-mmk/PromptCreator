@@ -214,10 +214,12 @@ def sort_jsonl(files, keys, rebulid=False, expand=False, append=False):
             # Vの場合は、arrayの場合[0]、array以外はそのまま
             if key == "V":
                 items.sort(
-                    key=lambda x: x[key][0] if isinstance(x[key], list) else x[key]
+                    key=lambda x: (
+                        x[key][0] if isinstance(x.get(key, ""), list) else x[key]
+                    )
                 )
             else:
-                items.sort(key=lambda x: x[key])
+                items.sort(key=lambda x: x.get(key, ""))
         # save new jsonl file
         new_filename = file.replace(".jsonl", "-new.jsonl")
         with open(new_filename, "w", encoding="utf_8") as f:

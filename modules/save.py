@@ -303,12 +303,44 @@ def get_variables(opt):
     return variables
 
 
+INVALID_CHARS = r'[%<>:"/\\|?*\n]'  # %もリプレイス
+
+
+def default_filename(s: str) -> str:
+    s = re.sub(r"[\<\>\:\"\/\\\\|?\*\n\s]", "_", str(s))[:127]
+    s = s[:127].rstrip(" .")
+    return s
+
+
+def encode_windows_filename(s: str) -> str:
+    import urllib.parse
+
+    def repl(match):
+        ch = match.group(0)
+        return urllib.parse.quote(ch, safe="")  # %XX に変換
+
+    # スペースは_にする
+    s = s.replace(" ", "_")
+    # 禁則文字だけエンコード
+    s = re.sub(INVALID_CHARS, repl, s)
+
+    # 末尾のスペースとドットもNGなので処理
+    s = s[:127].rstrip(" .")
+
+    return s
+
+
 def create_filename(nameseed, num, filename_pattern, need_names, parameters, opt={}):
     filename = nameseed + ".png"
     if opt.get("image_type") == "jpg":
         filename = nameseed + ".jpg"
     elif opt.get("image_type") == "webp":
         filename = nameseed + ".webp"
+
+    if opt.get("escape_filename"):
+        default_replacer = encode_windows_filename
+    else:
+        default_replacer = default_filename
 
     for seeds in need_names:
         replacer = ""
@@ -350,7 +382,7 @@ def create_filename(nameseed, num, filename_pattern, need_names, parameters, opt
                 replacer = date.strftime(match.group(1))
             except ValueError:
                 replacer = "[" + seeds + "]"
-                replacer = re.sub(r"[\<\>\:\"\/\\\\|?\*\n\s]", "_", str(replacer))[:127]
+                replacer = default_replacer(replacer)
         elif seeds == "shortdate" and "job_timestamp" in filename_pattern:
             replacer = filename_pattern["job_timestamp"][2:8]
         elif seeds == "year" and "job_timestamp" in filename_pattern:
@@ -375,27 +407,21 @@ def create_filename(nameseed, num, filename_pattern, need_names, parameters, opt
             replacer = model["model_name"] if model is not None else ""
         elif seeds == "prompt":
             replacer = parameters["prompt"]
-            replacer = re.sub(r"[\<\>\:\"\/\\\\|?\*\n\s]", "_", str(replacer))[:127]
+            replacer = default_replacer(str(replacer))
         elif seeds == "prompt_spaces":
             replacer = parameters["prompt"]
-            replacer = re.sub(r"[\<\>\:\"\/\\\\|?\*\n\s]+", " ", str(replacer))[:127]
+            replacer = default_replacer(str(replacer))
         elif seeds == "prompt_words":
             replacer = parameters["prompt"]
-            replacer = re.sub(r"[\<\>\:\"\/\\\\|?\*\n\,\(\)\{\}]+", " ", str(replacer))[
-                :127
-            ]
+            replacer = default_replacer(str(replacer))
         elif seeds == "prompt_hash":
             replacer = sha256(parameters["prompt"].encode("utf-8")).hexdigest()[:8]
         elif seeds == "prompt_no_styles":
             replacer = filename_pattern["prompt"]
-            replacer = re.sub(r"[\<\>\:\"\/\\\\|?\*\n\,\(\)\{\}]+", "_", str(replacer))[
-                :127
-            ]
+            replacer = default_replacer(str(replacer))
         elif seeds in parameters:
             replacer = parameters[seeds]
-            replacer = re.sub(r"[\<\>\:\"\/\\\\|?\*\n\,\(\)\{\}]+", "_", str(replacer))[
-                :127
-            ]
+            replacer = default_replacer(str(replacer))
         # elif seeds in filename_pattern and type(filename_pattern[seeds]) is list:
         #    replacer = filename_pattern[seeds][n]
         #    replacer = re.sub(r"[\<\>\:\"\/\\\\|?\*\n\,\(\)\{\}]+", "_", str(replacer))[
@@ -403,10 +429,10 @@ def create_filename(nameseed, num, filename_pattern, need_names, parameters, opt
         #    ]
         elif seeds in filename_pattern:
             replacer = filename_pattern[seeds]
-            replacer = re.sub(r"[\<\>\:\"\/\\\\|?\*\n\s]", "_", str(replacer))[:127]
+            replacer = default_replacer(str(replacer))
         else:
             replacer = "[" + seeds + "]"
-            replacer = re.sub(r"[\<\>\:\"\/\\\\|?\*\n\s]", "_", str(replacer))[:127]
+            replacer = default_replacer(str(replacer))
         try:
             filename = filename.replace("[" + seeds + "]", str(replacer))
         except Exception as e:
