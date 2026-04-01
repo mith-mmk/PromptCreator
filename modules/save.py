@@ -326,7 +326,6 @@ def encode_windows_filename(s: str) -> str:
 
     # 末尾のスペースとドットもNGなので処理
     s = s[:127].rstrip(" .")
-
     return s
 
 
@@ -434,6 +433,7 @@ def create_filename(nameseed, num, filename_pattern, need_names, parameters, opt
             replacer = "[" + seeds + "]"
             replacer = default_replacer(str(replacer))
         try:
+            replacer = default_replacer(str(replacer))
             filename = filename.replace("[" + seeds + "]", str(replacer))
         except Exception as e:
             Logger.error("replace error", e, filename, seeds, replacer)
@@ -459,6 +459,7 @@ def create_filename(nameseed, num, filename_pattern, need_names, parameters, opt
                         num = 0
                     filename = filename.replace("[num]", str(num).zfill(num_length))
                     break
+    filename = default_replacer(filename)
     return filename
 
 

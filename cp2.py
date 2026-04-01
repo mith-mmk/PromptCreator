@@ -290,8 +290,9 @@ def main(args):
     if "info" in yml:
         opt["info"] = yml["info"]
 
-    if "escape_filename" in options:
-        opt["escape_filename"] = options["escape_filename"]
+    opt["escape_filename"] = args.escape_filename or options.get(
+        "escape_filename", False
+    )
 
     if args.api_mode:
         sd_model = args.api_set_sd_model or options.get("sd_model")
@@ -362,6 +363,14 @@ def run_from_args(command_args=None):
 
     parser.add_argument(
         "--json", type=bool, nargs="?", const=True, default=False, help="output JSON"
+    )
+    parser.add_argument(
+        "--escape-filename",
+        type=bool,
+        nargs="?",
+        const=True,
+        default=False,
+        help="INVALID_CHARS escape urlencode filename, default replace _ only",
     )
 
     parser.add_argument(
