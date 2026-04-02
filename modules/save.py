@@ -303,7 +303,7 @@ def get_variables(opt):
     return variables
 
 
-INVALID_CHARS = r'[%<>:"/\\|?*\n]'  # %もリプレイス
+INVALID_CHARS = r'[<>:"/\\|?*\n]'  # %を入れると多重置換になる
 
 
 def default_filename(s: str) -> str:
