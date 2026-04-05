@@ -296,7 +296,7 @@ def loader(yml, path):
     jpeg = glob.glob(os.path.join(path, "*.jpg"))
 
     files = [] + webp + png + jpeg
-    files = sorted(files)
+    files = sorted(files, key=lambda x: x.split("-")[0])
     if not files:
         return
     pre_text = "- AIによる判定です(誤判定率高め)\n\n"
