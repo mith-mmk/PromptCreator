@@ -227,7 +227,7 @@ def create_table(prepared: PreparedImage, result, raw):
     notes = result.get("notes", "")  # type: ignore
     score = result.get("score", "")  # type: ignore
     error = "👎" if result.get("error", True) else "👍"
-    text = f'|<img loading="lazy"  height="256" src="{filename}">|{error}|{score}|{notes}<!--{raw}-->|'
+    text = f'|<img loading="lazy"  width="256" src="{filename}">|{error}|{score}|{notes}<!--{raw}-->|'
     return text
 
 
