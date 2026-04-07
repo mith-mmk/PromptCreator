@@ -307,7 +307,7 @@ INVALID_CHARS = r'[<>:"/\\|?*\n]'  # %を入れると多重置換になる
 
 
 def default_filename(s: str) -> str:
-    s = re.sub(r"[\<\>\:\"\/\\\\|?\*\n\s]", "_", str(s))[:127]
+    s = re.sub(r"[\<\>\:\"\\\\|?\*\n\s]", "_", str(s))[:127]  # /はfolder spliter除く
     s = s[:127].rstrip(" .")
     return s
 
