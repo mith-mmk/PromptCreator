@@ -3,6 +3,7 @@ import json
 import os
 import re
 import sqlite3
+from pathlib import Path
 
 
 def strip_jsonl_comments(all_text):
@@ -34,16 +35,8 @@ def normalize_jsonl_item(item, default_weight=0.1):
     variable = normalized.pop(
         "V", normalized.pop("variable", normalized.pop("variables", [""]))
     )
-    name = normalized.pop("name", normalized.pop("title", ""))
-
-    if name == "":
-        if isinstance(variable, list) and len(variable) > 0:
-            name = str(variable[0])
-        elif variable is not None:
-            name = str(variable)
 
     return {
-        "name": str(name),
         "category": encode_json_field(category),
         "weight": float(weight),
         "variable": encode_json_field(variable),
@@ -87,12 +80,14 @@ def load_jsonl_records(filename):
     return records
 
 
-def import_jsonl_to_db(
-    filename, db_connection, table=None, truncate=False, name="default"
-):
-    if table is None:
-        table = os.path.splitext(os.path.basename(filename))[0]
+def build_import_name(root_path, file_path):
+    relative = Path(file_path).resolve().relative_to(Path(root_path).resolve())
+    return "__".join(relative.with_suffix("").parts)
 
+
+def import_jsonl_file_to_db(filename, db_connection, table, truncate=False, name=None):
+    if name is None:
+        name = Path(filename).stem
     records = load_jsonl_records(filename)
     conn = sqlite3.connect(db_connection)
     try:
@@ -149,6 +144,43 @@ def import_jsonl_to_db(
     return len(records)
 
 
+def iter_jsonl_files(path):
+    path = Path(path)
+    if path.is_file():
+        if path.suffix.lower() == ".jsonl":
+            yield path
+        return
+    for file in sorted(path.rglob("*.jsonl")):
+        if file.is_file():
+            yield file
+
+
+def import_jsonl_to_db(
+    filename, db_connection, table=None, truncate=False, name=None
+):
+    path = Path(filename)
+    if path.is_file():
+        current_table = table or path.stem
+        return import_jsonl_file_to_db(
+            str(path), db_connection, current_table, truncate=truncate, name=name
+        )
+
+    current_table = table or "jsonl_items"
+    total = 0
+    first = True
+    for file in iter_jsonl_files(path):
+        import_name = build_import_name(path, file) if name is None else name
+        total += import_jsonl_file_to_db(
+            str(file),
+            db_connection,
+            current_table,
+            truncate=truncate and first,
+            name=import_name,
+        )
+        first = False
+    return total
+
+
 def build_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument("input", type=str, help="input jsonl file")
@@ -163,8 +195,8 @@ def build_parser():
     parser.add_argument(
         "--name",
         type=str,
-        default="default",
-        help="name to store in __name__ column, default is 'default'",
+        default=None,
+        help="name to store in __name__ column for single-file import",
     )
     parser.add_argument(
         "--truncate",

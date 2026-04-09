@@ -142,6 +142,11 @@ def _normalize_item(item, queries=None, default_weight=0.1):
     if queries is not None:
         item["query"] = _build_query_text(choice, queries)
 
+    if "__name__" in item and "name" not in item:
+        item["name"] = item["__name__"]
+    if "name" in item and "__name__" not in item:
+        item["__name__"] = item["name"]
+
     for key in SQLITE_INTERNAL_COLUMNS:
         if key in item:
             del item[key]
@@ -237,7 +242,10 @@ def _match_db_conditions(item, conditions):
             if expected not in choice and "*" not in choice:
                 return False
             continue
-        actual = normalized.get(key)
+        actual_key = "__name__" if key == "__name__" else key
+        if actual_key == "__name__" and actual_key not in normalized:
+            actual_key = "name"
+        actual = normalized.get(actual_key)
         if isinstance(actual, list):
             if expected not in [str(value) for value in actual]:
                 return False

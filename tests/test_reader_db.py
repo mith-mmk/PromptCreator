@@ -28,7 +28,7 @@ def test_read_file_v2_reads_sqlite_rows_with_schema():
         conn.execute(
             """
             CREATE TABLE date_items (
-                name TEXT,
+                __name__ TEXT,
                 category TEXT,
                 weight REAL,
                 variable TEXT,
@@ -38,11 +38,11 @@ def test_read_file_v2_reads_sqlite_rows_with_schema():
         )
         conn.execute(
             """
-            INSERT INTO date_items (name, category, weight, variable, attributes)
+            INSERT INTO date_items (__name__, category, weight, variable, attributes)
             VALUES (?, ?, ?, ?, ?)
             """,
             (
-                "day-animal",
+                "date_source",
                 '["animal","animal-xl"]',
                 0.2,
                 '["day","sunny"]',
@@ -51,11 +51,11 @@ def test_read_file_v2_reads_sqlite_rows_with_schema():
         )
         conn.execute(
             """
-            INSERT INTO date_items (name, category, weight, variable, attributes)
+            INSERT INTO date_items (__name__, category, weight, variable, attributes)
             VALUES (?, ?, ?, ?, ?)
             """,
             (
-                "night-human",
+                "date_source",
                 '["human"]',
                 0.4,
                 '"night"',
@@ -67,7 +67,7 @@ def test_read_file_v2_reads_sqlite_rows_with_schema():
         conn.close()
 
     records = read_file_v2(
-        "date_items[category = `animal` and animal = `cat`]",
+        "date_items[__name__ = `date_source` and category = `animal` and animal = `cat`]",
         database={"db": "sqlite3", "db_connection": str(db_file)},
     )
 
@@ -75,7 +75,7 @@ def test_read_file_v2_reads_sqlite_rows_with_schema():
     assert records[0]["variables"] == ["day", "sunny"]
     assert records[0]["weight"] == 0.2
     assert records[0]["animal"] == "cat"
-    assert records[0]["name"] == "day-animal"
+    assert records[0]["__name__"] == "date_source"
     assert records[0]["query"] == "animal"
 
 
@@ -98,14 +98,15 @@ def test_jsonl2db_import_creates_readable_rows():
     assert count == 2
 
     records = read_file_v2(
-        "date_items[category = `animal`]",
+        "date_items[__name__ = `sample` and category = `animal`]",
         database={"db": "sqlite3", "db_connection": str(db_file)},
     )
 
     assert len(records) == 1
     assert records[0]["variables"] == ["day"]
     assert records[0]["animal"] == "cat"
-    assert records[0]["name"] == "Day Cat"
+    assert records[0]["__name__"] == "sample"
+    assert records[0]["title"] == "Day Cat"
 
     conn = sqlite3.connect(db_file)
     try:
@@ -116,3 +117,41 @@ def test_jsonl2db_import_creates_readable_rows():
         conn.close()
 
     assert "animal" in columns
+
+
+def test_jsonl2db_import_recursively_loads_directory():
+    test_dir = make_test_dir("test_jsonl2db_recursive")
+    root_dir = test_dir / "jsonl"
+    (root_dir / "animals").mkdir(parents=True, exist_ok=True)
+    (root_dir / "humans").mkdir(parents=True, exist_ok=True)
+
+    (root_dir / "animals" / "eyes.jsonl").write_text(
+        '{"W": 0.1, "C": ["animal"], "V": "blue eyes", "kind": "cat"}\n',
+        encoding="utf-8",
+    )
+    (root_dir / "humans" / "eyes.jsonl").write_text(
+        '{"W": 0.2, "C": ["human"], "V": "green eyes", "kind": "person"}\n',
+        encoding="utf-8",
+    )
+
+    db_file = test_dir / "recursive.sqlite3"
+    count = import_jsonl_to_db(str(root_dir), str(db_file), "jsonl_items")
+
+    assert count == 2
+
+    animal_records = read_file_v2(
+        "jsonl_items[__name__ = `animals__eyes` and category = `animal`]",
+        database={"db": "sqlite3", "db_connection": str(db_file)},
+    )
+    human_records = read_file_v2(
+        "jsonl_items[__name__ = `humans__eyes` and category = `human`]",
+        database={"db": "sqlite3", "db_connection": str(db_file)},
+    )
+
+    assert len(animal_records) == 1
+    assert animal_records[0]["kind"] == "cat"
+    assert animal_records[0]["__name__"] == "animals__eyes"
+
+    assert len(human_records) == 1
+    assert human_records[0]["kind"] == "person"
+    assert human_records[0]["__name__"] == "humans__eyes"
