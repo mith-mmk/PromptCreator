@@ -827,6 +827,7 @@ def create_text_v2(opt):
                 item,
                 error_info=f"variables {key}",
                 query_suffixes=options.get("query_suffixes", None),
+                database=yml.get("database"),
             )
         elif type(item) is list:
             # Logger.debug(f"type list item {item}")
@@ -844,7 +845,9 @@ def create_text_v2(opt):
         array[key] = []
         # Logger.debug(f"key {key}")
         if type(item) is str:
-            array[key] = read_file_v2(item, error_info=f"array {key}")
+            array[key] = read_file_v2(
+                item, error_info=f"array {key}", database=yml.get("database")
+            )
         elif type(item) is list:
             # Logger.debug(f"type list item {item}")
             array[key] = []
