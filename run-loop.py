@@ -1035,38 +1035,25 @@ def run_txt2img(config, args=None):
                 # create prompt
                 Logger.verbose(f"create prompt {prompt_name}")
                 try:
-                    if version == 1:
-                        import modules.prompt
+                    import modules.prompt_v2
 
-                        opt = {
-                            "mode": "json",
-                            "override": overrides,
-                            "info": info,
-                            "input": prompt_name,
-                            "max_number": number,
-                            "api_filename_variable": True,
-                        }
-                        result = modules.prompt.create_text(opt)
-                    else:
-                        import modules.prompt_v2
+                    opt = {
+                        "mode": "json",
+                        "v1json": True,
+                        "override": overrides,
+                        "info": info,
+                        "input": prompt_name,
+                        "max_number": number,
+                        "api_filename_variable": True,
+                    }
+                    if profile is not None:
+                        opt["profile"] = profile
+                    if opt_values is not None:
+                        opt["values"] = opt_values
+                    if opt_overrides is not None:
+                        opt["overrides"] = opt_overrides
 
-                        opt = {
-                            "mode": "json",
-                            "v1json": True,
-                            "override": overrides,
-                            "info": info,
-                            "input": prompt_name,
-                            "max_number": number,
-                            "api_filename_variable": True,
-                        }
-                        if profile is not None:
-                            opt["profile"] = profile
-                        if opt_values is not None:
-                            opt["values"] = opt_values
-                        if opt_overrides is not None:
-                            opt["overrides"] = opt_overrides
-
-                        result = modules.prompt_v2.create_text_v2(opt)
+                    result = modules.prompt_v2.create_text_v2(opt)
 
                     # Logger.info(f"output_text {result['output_text']}")
                 except Exception as e:

@@ -1,7 +1,7 @@
 import re
 
 import modules.logger as logger
-from modules.prompt import item_split
+from modules.prompt_v2 import item_split
 
 # Read a file and return a list of prompt
 Logger = logger.getDefaultLogger()

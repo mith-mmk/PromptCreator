@@ -15,8 +15,7 @@ import modules.api as api
 from modules.img2img import img2img
 from modules.interrogate import interrogate
 from modules.logger import getDefaultLogger
-from modules.prompt import expand_arg
-from modules.prompt_v2 import create_text_v2
+from modules.prompt_v2 import create_text_v2, expand_arg
 from modules.save import DataSaver
 from modules.txt2img import txt2img
 from modules.util import divide_values

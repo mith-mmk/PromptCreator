@@ -13,7 +13,7 @@ import modules.api as api
 from modules.img2img import img2img
 from modules.interrogate import interrogate
 from modules.logger import getDefaultLogger
-from modules.prompt import create_text, expand_arg
+from modules.prompt_v2 import create_text_v2, expand_arg
 from modules.txt2img import txt2img
 
 Logger = getDefaultLogger()
@@ -141,10 +141,13 @@ def main(args):
             # arg ->dict
             opt = vars(args)
             Logger.debug(opt)
-            result = create_text(opt)
+            result = create_text_v2(opt)
         except Exception as e:
             Logger.error("create_text error")
             Logger.info(e)
+            return False
+        if result is None:
+            Logger.error("create_text error")
             return False
         options = result["options"]
         output_text = result["output_text"]

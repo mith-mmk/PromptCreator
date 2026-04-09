@@ -1,6 +1,7 @@
 import copy
 import json
 import os
+import platform
 import random
 import re
 
@@ -9,7 +10,48 @@ import yaml
 from modules.callback_function import CallbackFunctions as Callback
 from modules.formula import FormulaCompute
 from modules.logger import getDefaultLogger
-from modules.prompt import set_reserved
+
+
+def item_split(item):
+    if type(item) is not str:
+        return [str(item)]
+    item = item.replace("\n", " ").strip().replace(r"\;", r"${semicolon}")
+    split = item.split(";")
+
+    if type(split) is list:
+        for i in range(0, len(split)):
+            split[i] = split[i].replace(r"${semicolon}", ";")
+    return split
+
+
+def expand_arg(args):
+    array = None
+    if args is not None:
+        array = {}
+        for arg in args:
+            for col in arg.split(","):
+                items = col.split("=")
+                key = items[0].strip()
+                item = "=".join(items[1:]).strip()
+                array[key] = item
+    return array
+
+
+def set_reserved(keys):
+    # 10 integer numbers
+    keys["$RANDOM"] = []
+    for _ in range(0, 10):
+        keys["$RANDOM"].append(str(random.randint(0, 2**31 - 1)))
+    keys["$SYSTEM"] = [platform.system()]
+    keys["$ARCHITECTURE"] = [platform.architecture()[0]]
+    keys["$VERSION"] = [platform.version()]
+    keys["$MACHINE"] = [platform.machine()]
+    keys["$PROCESSOR"] = [platform.processor()]
+    keys["$PYTHON_VERSION"] = [platform.python_version()]
+    keys["$HOSTNAME"] = [platform.node()]
+
+    return keys
+
 
 Logger = getDefaultLogger()
 
@@ -825,6 +867,11 @@ def convert_params(param):
         except ValueError:
             pass
     return param
+
+
+def create_text(opt):
+    Logger.warning("create_text is deprecated, use create_text_v2 instead")
+    return create_text_v2(opt)
 
 
 def create_text_v2(opt):
