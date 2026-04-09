@@ -31,7 +31,9 @@ def normalize_jsonl_item(item, default_weight=0.1):
         "W", normalized.pop("weight", normalized.pop("weigth", default_weight))
     )
     category = normalized.pop("C", normalized.pop("category", ["*"]))
-    variable = normalized.pop("V", normalized.pop("variable", normalized.pop("variables", [""])))
+    variable = normalized.pop(
+        "V", normalized.pop("variable", normalized.pop("variables", [""]))
+    )
     name = normalized.pop("name", normalized.pop("title", ""))
 
     if name == "":
@@ -85,7 +87,9 @@ def load_jsonl_records(filename):
     return records
 
 
-def import_jsonl_to_db(filename, db_connection, table=None, truncate=False):
+def import_jsonl_to_db(
+    filename, db_connection, table=None, truncate=False, name="default"
+):
     if table is None:
         table = os.path.splitext(os.path.basename(filename))[0]
 
@@ -93,15 +97,15 @@ def import_jsonl_to_db(filename, db_connection, table=None, truncate=False):
     conn = sqlite3.connect(db_connection)
     try:
         conn.execute(
-            f'''
+            f"""
             CREATE TABLE IF NOT EXISTS "{table}" (
-                name TEXT,
+                __name__ TEXT,
                 category TEXT,
                 weight REAL,
                 variable TEXT,
                 attributes TEXT
             )
-            '''
+            """
         )
         ensure_expanded_columns(conn, table, records)
         if truncate:
@@ -109,10 +113,11 @@ def import_jsonl_to_db(filename, db_connection, table=None, truncate=False):
         expanded_columns = [
             row[1]
             for row in conn.execute(f'PRAGMA table_info("{table}")').fetchall()
-            if row[1] not in {"name", "category", "weight", "variable", "attributes"}
+            if row[1]
+            not in {"__name__", "category", "weight", "variable", "attributes"}
         ]
         insert_columns = [
-            "name",
+            "__name__",
             "category",
             "weight",
             "variable",
@@ -125,7 +130,7 @@ def import_jsonl_to_db(filename, db_connection, table=None, truncate=False):
             f'INSERT INTO "{table}" ({quoted_columns}) VALUES ({placeholders})',
             [
                 (
-                    record["name"],
+                    name,
                     record["category"],
                     record["weight"],
                     record["variable"],
@@ -156,6 +161,12 @@ def build_parser():
         help="destination table name, default is input file stem",
     )
     parser.add_argument(
+        "--name",
+        type=str,
+        default="default",
+        help="name to store in __name__ column, default is 'default'",
+    )
+    parser.add_argument(
         "--truncate",
         action="store_true",
         help="delete existing rows in the destination table before import",
@@ -166,7 +177,9 @@ def build_parser():
 def main(argv=None):
     parser = build_parser()
     args = parser.parse_args(argv)
-    count = import_jsonl_to_db(args.input, args.db, args.table, args.truncate)
+    count = import_jsonl_to_db(
+        args.input, args.db, args.table, args.truncate, args.name
+    )
     print(f"imported {count} rows")
 
 
