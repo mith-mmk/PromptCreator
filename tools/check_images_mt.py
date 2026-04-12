@@ -84,7 +84,7 @@ async def prepare_image_async(path, filename):
     return await asyncio.to_thread(prepare_image, path, filename)
 
 
-async def post_json(url: str, payload: dict, headers: dict, timeout: float = 65.0):
+async def post_json(url: str, payload: dict, headers: dict, timeout: float = 120.0):
     parts = urlsplit(url)
     if parts.scheme not in {"http", "https"}:
         raise ValueError(f"unsupported scheme: {parts.scheme}")
@@ -197,7 +197,7 @@ async def check_image(yml, prepared: PreparedImage):
         exit(1)
     url = yml["server_url"] + "/v1/chat/completions"
 
-    status_code, body = await post_json(url, prompt, headers, timeout=65.0)
+    status_code, body = await post_json(url, prompt, headers, timeout=120.0)
     if status_code != 200:
         try:
             payload = json.loads(body)
